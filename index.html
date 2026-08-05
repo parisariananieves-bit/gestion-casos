@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
   /* Misma paleta que Planning de Entregas — Gestión de Casos usa el coral
@@ -183,6 +184,16 @@ table.tbl tr:hover td{background:var(--panel-2);}
 .form-grid .full{grid-column:1/-1;}
 @media(max-width:700px){ .form-grid{grid-template-columns:1fr;} }
 
+.overlay{position:fixed; inset:0; background:rgba(6,7,10,.6); backdrop-filter:blur(2px); opacity:0; pointer-events:none; transition:opacity .18s; z-index:70;}
+.overlay.show{opacity:1; pointer-events:auto;}
+.modal{position:fixed; top:50%; left:50%; transform:translate(-50%,-48%); width:min(600px,92vw); max-height:82vh; overflow-y:auto; background:var(--panel); border:1px solid var(--hairline); border-radius:var(--radius-l); box-shadow:var(--shadow-2); z-index:76; opacity:0; pointer-events:none; transition:opacity .18s, transform .18s;}
+.modal.show{opacity:1; transform:translate(-50%,-50%); pointer-events:auto;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--hairline);}
+.modal-head h3{font-size:14px; font-weight:700; color:var(--text);}
+.modal-head .close{background:none; border:none; color:var(--text-faint); font-size:16px; cursor:pointer; padding:4px;}
+.modal-head .close:hover{color:var(--text);}
+.modal-body{padding:6px 0;}
+
 @media print{ .sidebar,.topbar,.action-row,.comment-box{display:none !important;} }
 </style>
 </head>
@@ -210,6 +221,8 @@ table.tbl tr:hover td{background:var(--panel-2);}
     <button class="nav-item" id="navBuscar" onclick="setView('buscar')"><span class="material-symbols-outlined">search</span>Buscar cliente / VIN</button>
     <button class="nav-item" id="navReportar" onclick="setView('reportar')"><span class="material-symbols-outlined">add_circle</span>Reportar un caso</button>
     <button class="nav-item" id="navReportes" onclick="setView('reportes')"><span class="material-symbols-outlined">bar_chart</span>Reportes</button>
+    <button class="nav-item" id="navDefensa" onclick="setView('defensa')"><span class="material-symbols-outlined">balance</span>Defensa del Consumidor</button>
+    <button class="nav-item" id="navActas" onclick="setView('actas')"><span class="material-symbols-outlined">description</span>Actas de reunión</button>
     <button class="nav-item" id="navEquipo" onclick="setView('equipo')"><span class="material-symbols-outlined">group</span>Equipo</button>
     <button class="nav-item" id="navConfig" onclick="setView('config')"><span class="material-symbols-outlined">settings</span>Configuración</button>
     <div class="sidebar-foot">
@@ -224,12 +237,18 @@ table.tbl tr:hover td{background:var(--panel-2);}
   <div class="main">
     <div class="topbar">
       <div><h1 id="topbarTitulo">Dashboard</h1><div class="sub" id="topbarSub">Estado general de los casos</div></div>
+      <button class="btn btn-ghost btn-sm" style="width:auto;margin-left:auto;" onclick="refrescarVistaActual_()" title="Volver a traer los datos"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">refresh</span> Actualizar</button>
     </div>
     <div class="content" id="content"></div>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+<div class="overlay" id="overlay" onclick="cerrarModalListaFiltrada_()"></div>
+<div class="modal" id="modalListaFiltrada">
+  <div class="modal-head"><h3 id="listaFiltradaTitulo">Casos</h3><button class="close" onclick="cerrarModalListaFiltrada_()">✕</button></div>
+  <div class="modal-body" id="listaFiltradaBody"></div>
+</div>
 
 <script>
 // ============================================================
@@ -355,7 +374,7 @@ function etiquetaRol_(r){
 // ============================================================
 // NAVEGACIÓN
 // ============================================================
-var VISTAS = ['dashboard','bandeja','casos','buscar','reportar','reportes','equipo','config','detalle'];
+var VISTAS = ['dashboard','bandeja','casos','buscar','reportar','reportes','defensa','actas','equipo','config','detalle'];
 var TITULOS = {
   dashboard:['Dashboard','Estado general de los casos'],
   bandeja:['Bandeja de entrada','Eventos esperando revisión antes de convertirse en caso'],
@@ -363,12 +382,15 @@ var TITULOS = {
   buscar:['Buscar cliente / VIN','Historial completo de un cliente o vehículo'],
   reportar:['Reportar un caso','Carga manual — queda igual que cualquier otro caso'],
   reportes:['Reportes','Cuánto se resuelve, de dónde viene y qué se repite'],
+  defensa:['Defensa del Consumidor','Seguimiento diferenciado, sin mezclarse con el resto'],
+  actas:['Actas de reunión','Minutas de las reuniones del equipo'],
   equipo:['Equipo','Quiénes pueden gestionar y seguir casos'],
   config:['Configuración','Catálogos y parámetros del sistema'],
   detalle:['Detalle del caso','']
 };
 
 function setView(v, param){
+  window._vistaActual = v; window._vistaActualParam = param;
   VISTAS.forEach(function(x){
     var nav = document.getElementById('nav'+x.charAt(0).toUpperCase()+x.slice(1));
     if(nav) nav.classList.toggle('active', x===v);
@@ -382,12 +404,21 @@ function setView(v, param){
     buscar: renderBuscar,
     reportar: renderReportar,
     reportes: renderReportes,
+    defensa: renderDefensaConsumidor,
+    actas: renderActas,
     equipo: renderEquipo,
     config: renderConfig,
     detalle: function(){ renderDetalle(param); }
   }[v];
   document.getElementById('content').innerHTML = '<div class="empty-state">Cargando…</div>';
   if(render) render();
+}
+function refrescarVistaActual_(){
+  if(!window._vistaActual) return;
+  if(window._vistaActual==='casos') window._casosCache = null;
+  setView(window._vistaActual, window._vistaActualParam);
+  actualizarBadgeBandeja_();
+  showToast('Actualizado');
 }
 
 function actualizarBadgeBandeja_(){
@@ -407,12 +438,12 @@ function renderDashboard(){
   gasGet('dashboard').then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     var html = '<div class="kpi-grid">'+
-      kpiCard_(res.urgentes,'Casos urgentes','var(--danger)')+
-      kpiCard_(res.abiertos,'Casos abiertos','var(--text)')+
-      kpiCard_(res.vencidos,'Vencidos (SLA)','var(--danger)')+
-      kpiCard_(res.nuevosSinAsignar,'Nuevos sin asignar','var(--caso)')+
-      kpiCard_(res.resueltosSemana,'Resueltos esta semana','var(--ok)')+
-      kpiCard_(res.eventosPendientesRevision,'En bandeja de entrada','var(--purple)')+
+      kpiCardClick_(res.urgentes,'Casos urgentes','var(--danger)', "verListaFiltrada_('Casos urgentes',{prioridad:'Alta',soloAbiertos:true})")+
+      kpiCardClick_(res.abiertos,'Casos abiertos','var(--text)', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
+      kpiCardClick_(res.vencidos,'Vencidos (SLA)','var(--danger)', "verListaFiltrada_('Casos vencidos (SLA)',{soloVencidos:true})")+
+      kpiCardClick_(res.nuevosSinAsignar,'Nuevos sin asignar','var(--caso)', "verListaFiltrada_('Nuevos sin asignar',{estado:'nuevo',soloSinAsignar:true})")+
+      kpiCardClick_(res.resueltosSemana,'Resueltos esta semana','var(--ok)', "verListaFiltrada_('Resueltos / cerrados',{soloResueltos:true})")+
+      kpiCardClick_(res.eventosPendientesRevision,'En bandeja de entrada','var(--purple)', "setView('bandeja')")+
     '</div>';
     if(res.eventosPendientesRevision>0){
       html += '<div class="alert-box purple"><span class="material-symbols-outlined">inbox</span><div>Hay <b>'+res.eventosPendientesRevision+' evento(s)</b> esperando revisión en la <a href="#" onclick="setView(\'bandeja\');return false;" style="color:var(--purple);font-weight:700;text-decoration:underline;">Bandeja de entrada</a> antes de convertirse en caso.</div></div>';
@@ -422,6 +453,38 @@ function renderDashboard(){
 }
 function kpiCard_(num, label, color){
   return '<div class="kpi-card"><div class="kpi-num" style="color:'+color+';">'+(num!==undefined?num:'—')+'</div><div class="kpi-label">'+label+'</div></div>';
+}
+function kpiCardClick_(num, label, color, onclickJs){
+  return '<div class="kpi-card" style="cursor:pointer;transition:transform .12s,box-shadow .15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'var(--shadow-2)\';" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\';" onclick="'+onclickJs.replace(/"/g,'&quot;')+'"><div class="kpi-num" style="color:'+color+';">'+(num!==undefined?num:'—')+'</div><div class="kpi-label">'+label+'</div></div>';
+}
+// Modal genérico: lista de casos que cumplen ciertos filtros — usado por
+// los KPIs clickeables del Dashboard y de Reportes ("apretar y ver la lista").
+function verListaFiltrada_(titulo, filtros){
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('modalListaFiltrada').classList.add('show');
+  document.getElementById('listaFiltradaTitulo').textContent = titulo;
+  document.getElementById('listaFiltradaBody').innerHTML = '<div class="empty-state">Cargando…</div>';
+  gasGet('casos', filtros).then(function(res){
+    var body = document.getElementById('listaFiltradaBody');
+    if(!res.ok){ body.innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    var casos = res.casos||[];
+    if(casos.length===0){ body.innerHTML = '<div class="empty-state">No hay casos en esta categoría.</div>'; return; }
+    body.innerHTML = '<table class="tbl"><thead><tr><th>Caso</th><th>Cliente</th><th>Marca</th><th>Estado</th><th>Prioridad</th><th>Responsable</th></tr></thead><tbody>'+
+      casos.map(function(c){
+        return '<tr onclick="cerrarModalListaFiltrada_();setView(\'detalle\',\''+c.id+'\')">'+
+          '<td class="mono" style="color:var(--caso);font-weight:700;">'+c.id+'</td>'+
+          '<td>'+(c.cliente||'—')+'</td><td>'+(c.marca||'—')+'</td>'+
+          '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
+          '<td><span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span></td>'+
+          '<td>'+(c.responsable||'<span style="color:var(--text-faint);">Sin asignar</span>')+'</td>'+
+        '</tr>';
+      }).join('')+
+    '</tbody></table>';
+  });
+}
+function cerrarModalListaFiltrada_(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('modalListaFiltrada').classList.remove('show');
 }
 
 // ============================================================
@@ -570,6 +633,7 @@ function renderDetalle(id){
 
     html += '<div class="detail-grid"><div>';
     html += '<div class="panel"><div class="panel-head"><h3>Novedades</h3></div><div class="timeline" id="timelineCaso">'+renderTimelineSeguimientos_(c.seguimientos||[])+'</div></div>';
+    html += '<div class="panel"><div class="panel-head"><h3>🔍 Análisis de causa raíz (5 Porqués)</h3><button class="btn btn-ghost btn-sm" style="width:auto;" onclick="toggleAnalisisCausaRaiz_(\''+c.id+'\')" id="btnToggleAnalisis">Ver / completar</button></div><div id="panelAnalisisCausaRaiz" class="hidden" style="padding:16px 17px;"></div></div>';
     if(c.timelineVin && c.timelineVin.length){
       html += '<div class="panel"><div class="panel-head"><h3>Historial del vehículo (todos los casos)</h3></div><div class="timeline">'+
         c.timelineVin.map(function(t){ return '<div class="t-item"><div class="t-dot sistema"></div><div class="t-when">'+t.fecha+'</div><div><div class="t-what">'+t.tipoEvento+' — '+t.descripcion+'</div><div class="t-who">'+t.casoRelacionado+' · '+t.fuente+'</div></div></div>'; }).join('')+
@@ -583,6 +647,60 @@ function renderDetalle(id){
 
     document.getElementById('content').innerHTML = html;
     poblarSelectResponsables_();
+  });
+}
+function toggleAnalisisCausaRaiz_(casoId){
+  var panel = document.getElementById('panelAnalisisCausaRaiz');
+  var abierto = !panel.classList.contains('hidden');
+  if(abierto){ panel.classList.add('hidden'); document.getElementById('btnToggleAnalisis').textContent = 'Ver / completar'; return; }
+  panel.classList.remove('hidden');
+  document.getElementById('btnToggleAnalisis').textContent = 'Ocultar';
+  panel.innerHTML = '<div class="empty-state">Cargando…</div>';
+  gasGet('analisisCausaRaiz', {casoId:casoId}).then(function(res){
+    var a = (res.ok && res.analisis) || {};
+    panel.innerHTML =
+      campoAnalisis_('Problema (qué pasó)', 'anProblema', a.problema, true)+
+      campoAnalisis_('Por qué 1', 'anPorque1', a.porque1)+
+      campoAnalisis_('Por qué 2 (por qué pasa eso)', 'anPorque2', a.porque2)+
+      campoAnalisis_('Por qué 3', 'anPorque3', a.porque3)+
+      campoAnalisis_('Por qué 4', 'anPorque4', a.porque4)+
+      campoAnalisis_('Por qué 5', 'anPorque5', a.porque5)+
+      campoAnalisis_('Causa raíz identificada', 'anCausaRaiz', a.causaRaiz, true)+
+      campoAnalisis_('Plan de acción', 'anPlanAccion', a.planAccion, true)+
+      '<div class="form-grid">'+
+        campo_('Responsable del plan','anResponsablePlan','text', a.responsablePlan||'')+
+        campo_('Fecha límite','anFechaLimitePlan','date', a.fechaLimitePlan||'')+
+      '</div>'+
+      campoSelect_('Estado del plan','anEstadoPlan', '<option value="pendiente"'+(a.estadoPlan==='pendiente'?' selected':'')+'>Pendiente</option><option value="en curso"'+(a.estadoPlan==='en curso'?' selected':'')+'>En curso</option><option value="completado"'+(a.estadoPlan==='completado'?' selected':'')+'>Completado</option>')+
+      '<button class="btn btn-primary btn-sm" style="width:auto;margin-top:8px;" onclick="guardarAnalisisUI_(\''+casoId+'\')">Guardar análisis</button>';
+  });
+}
+function campoAnalisis_(label, id, valor, esTextarea){
+  if(esTextarea) return '<div class="field"><label>'+label+'</label><textarea id="'+id+'" style="min-height:52px;">'+(valor||'')+'</textarea></div>';
+  return '<div class="field"><label>'+label+'</label><input id="'+id+'" type="text" value="'+(valor||'')+'"></div>';
+}
+function guardarAnalisisUI_(casoId){
+  var s = sesionActual();
+  var datos = {
+    casoId: casoId,
+    problema: document.getElementById('anProblema').value.trim(),
+    porque1: document.getElementById('anPorque1').value.trim(),
+    porque2: document.getElementById('anPorque2').value.trim(),
+    porque3: document.getElementById('anPorque3').value.trim(),
+    porque4: document.getElementById('anPorque4').value.trim(),
+    porque5: document.getElementById('anPorque5').value.trim(),
+    causaRaiz: document.getElementById('anCausaRaiz').value.trim(),
+    planAccion: document.getElementById('anPlanAccion').value.trim(),
+    responsablePlan: document.getElementById('anResponsablePlan').value.trim(),
+    fechaLimitePlan: document.getElementById('anFechaLimitePlan').value,
+    estadoPlan: document.getElementById('anEstadoPlan').value,
+    autor: s?s.nombre:''
+  };
+  if(!datos.problema){ showToast('Contá primero qué pasó (Problema)'); return; }
+  gasPost('guardarAnalisisCausaRaiz', datos).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    showToast('Análisis guardado');
+    renderDetalle(casoId);
   });
 }
 function infoItem_(label, valor){
@@ -774,17 +892,51 @@ function crearCasoUI_(){
 // EQUIPO (gestión de usuarios — solo Calidad)
 // ============================================================
 // ============================================================
+// DEFENSA DEL CONSUMIDOR — vista dedicada, separada del resto de los casos
+// ============================================================
+function renderDefensaConsumidor(){
+  gasGet('reporteDefensaConsumidor').then(function(res){
+    if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    var html = '<div class="kpi-grid">'+
+      kpiCard_(res.activos,'Expedientes activos','var(--purple)')+
+      kpiCard_(res.resueltosEsteAnio,'Resueltos este año','var(--ok)')+
+      kpiCard_(res.tiempoPromedioDias!==null?res.tiempoPromedioDias+'d':'—','Tiempo prom. resolución','var(--caso)')+
+      kpiCard_(res.reincidencias,'Reincidencias detectadas','var(--danger)')+
+    '</div>';
+    html += '<div class="panel"><div class="panel-head"><h3>Expedientes</h3></div>';
+    if(!res.expedientes || res.expedientes.length===0){
+      html += '<div class="empty-state">Todavía no hay casos marcados como Defensa del Consumidor.</div>';
+    } else {
+      html += '<table class="tbl"><thead><tr><th>Expediente</th><th>Cliente</th><th>Marca</th><th>Estado</th><th>Prioridad</th><th>Fecha</th></tr></thead><tbody>'+
+        res.expedientes.map(function(c){
+          return '<tr onclick="setView(\'detalle\',\''+c.id+'\')">'+
+            '<td class="mono" style="color:var(--purple);font-weight:700;">'+c.id+'</td>'+
+            '<td>'+(c.cliente||'—')+'</td>'+
+            '<td>'+(c.marca||'—')+'</td>'+
+            '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
+            '<td><span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span></td>'+
+            '<td style="white-space:nowrap;">'+(c.fechaCreacion||'—')+'</td>'+
+          '</tr>';
+        }).join('')+
+      '</tbody></table>';
+    }
+    html += '</div>';
+    document.getElementById('content').innerHTML = html;
+  });
+}
+
+// ============================================================
 // REPORTES
 // ============================================================
 function renderReportes(){
   gasGet('reporte').then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     var html = '<div class="kpi-grid">'+
-      kpiCard_(res.total,'Casos totales','var(--text)')+
+      kpiCardClick_(res.total,'Casos totales','var(--text)', "setView('casos')")+
       kpiCard_(res.tasaResolucion+'%','Tasa de resolución','var(--ok)')+
-      kpiCard_(res.resueltos,'Resueltos / cerrados','var(--ok)')+
-      kpiCard_(res.abiertos,'Todavía abiertos','var(--warn)')+
-      kpiCard_(res.defensaConsumidor,'Defensa del Consumidor','var(--danger)')+
+      kpiCardClick_(res.resueltos,'Resueltos / cerrados','var(--ok)', "verListaFiltrada_('Casos resueltos o cerrados',{soloResueltos:true})")+
+      kpiCardClick_(res.abiertos,'Todavía abiertos','var(--warn)', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
+      kpiCardClick_(res.defensaConsumidor,'Defensa del Consumidor','var(--danger)', "setView('defensa')")+
       kpiCard_(res.tiempoPromedioResolucionDias!==null ? res.tiempoPromedioResolucionDias+'d' : '—','Tiempo prom. de resolución','var(--purple)')+
     '</div>';
 
@@ -803,14 +955,61 @@ function renderReportes(){
       ['Cliente','VIN','Marca','Cantidad','Casos'],
       'Ningún cliente o vehículo tiene más de un caso todavía — buena señal.'
     );
+    html += '<div class="panel"><div class="panel-head"><h3>Resueltos vs. abiertos</h3></div><div style="padding:16px;height:220px;"><canvas id="chartResueltos"></canvas></div></div>';
     html += '</div><div>';
-    html += panelDistribucion_('Por fuente', res.porFuente);
-    html += panelDistribucion_('Por sector', res.porSector);
-    html += panelDistribucion_('Por marca', res.porMarca);
-    html += panelDistribucion_('Por tipo de caso', res.porTipoCaso);
+    html += panelChart_('chartFuente','Por fuente', res.porFuente);
+    html += panelChart_('chartSector','Por sector', res.porSector);
+    html += panelChart_('chartMarca','Por marca', res.porMarca);
+    html += panelChart_('chartTipo','Por tipo de caso', res.porTipoCaso);
     html += '</div></div>';
 
     document.getElementById('content').innerHTML = html;
+    dibujarDonut_('chartResueltos', ['Resueltos/cerrados','Abiertos'], [res.resueltos, res.abiertos], ['#3FBF88','#E8B23D']);
+    dibujarBarras_('chartFuente', res.porFuente);
+    dibujarBarras_('chartSector', res.porSector);
+    dibujarBarras_('chartMarca', res.porMarca);
+    dibujarBarras_('chartTipo', res.porTipoCaso);
+  });
+}
+function panelChart_(canvasId, titulo, lista){
+  if(!lista || lista.length===0) return '';
+  return '<div class="panel"><div class="panel-head"><h3>'+titulo+'</h3></div><div style="padding:14px 17px;height:'+Math.max(140, lista.length*34)+'px;"><canvas id="'+canvasId+'"></canvas></div></div>';
+}
+var _chartsGC_ = {};
+function coloresGrafico_(){
+  var css = getComputedStyle(document.body);
+  return {
+    caso: css.getPropertyValue('--caso').trim(), grid: css.getPropertyValue('--hairline').trim(),
+    texto: css.getPropertyValue('--text-dim').trim()
+  };
+}
+function dibujarBarras_(canvasId, lista){
+  var el = document.getElementById(canvasId);
+  if(!el || !window.Chart) return;
+  if(_chartsGC_[canvasId]) _chartsGC_[canvasId].destroy();
+  var c = coloresGrafico_();
+  _chartsGC_[canvasId] = new Chart(el, {
+    type: 'bar',
+    data: { labels: lista.map(function(x){return x.valor;}), datasets: [{ data: lista.map(function(x){return x.cantidad;}), backgroundColor: c.caso, borderRadius: 5, maxBarThickness: 22 }] },
+    options: {
+      indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ beginAtZero:true, ticks:{color:c.texto, precision:0}, grid:{color:c.grid} },
+        y:{ ticks:{color:c.texto, font:{size:11}}, grid:{display:false} }
+      }
+    }
+  });
+}
+function dibujarDonut_(canvasId, labels, datos, colores){
+  var el = document.getElementById(canvasId);
+  if(!el || !window.Chart) return;
+  if(_chartsGC_[canvasId]) _chartsGC_[canvasId].destroy();
+  var c = coloresGrafico_();
+  _chartsGC_[canvasId] = new Chart(el, {
+    type: 'doughnut',
+    data: { labels: labels, datasets: [{ data: datos, backgroundColor: colores, borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false, cutout:'68%', plugins:{legend:{position:'bottom', labels:{color:c.texto, font:{size:11.5}, boxWidth:11, padding:14}}} }
   });
 }
 function tablaReporte_(titulo, sub, filasHtml, columnas, vacioMsg){
@@ -820,18 +1019,68 @@ function tablaReporte_(titulo, sub, filasHtml, columnas, vacioMsg){
       '<div class="empty-state">'+vacioMsg+'</div>')+
   '</div>';
 }
-function panelDistribucion_(titulo, lista){
-  if(!lista || lista.length===0) return '';
-  var max = Math.max.apply(null, lista.map(function(x){return x.cantidad;}));
-  return '<div class="panel"><div class="panel-head"><h3>'+titulo+'</h3></div><div style="padding:14px 17px;">'+
-    lista.map(function(x){
-      var pct = max ? Math.round((x.cantidad/max)*100) : 0;
-      return '<div style="margin-bottom:9px;">'+
-        '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px;"><span>'+x.valor+'</span><b>'+x.cantidad+'</b></div>'+
-        '<div style="background:var(--panel-2);border-radius:6px;height:6px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:var(--caso);"></div></div>'+
+
+// ============================================================
+// ACTAS DE REUNIÓN
+// ============================================================
+function renderActas(){
+  document.getElementById('content').innerHTML =
+    '<button class="btn btn-primary" style="width:auto;margin-bottom:14px;" onclick="abrirFormActa_()">+ Nueva acta</button>'+
+    '<div class="panel hidden" id="panelFormActa"><div style="padding:18px;">'+
+      '<h3 style="font-size:13px;margin-bottom:14px;">Nueva acta de reunión</h3>'+
+      '<div class="form-grid">'+
+        campo_('Título','actaTitulo','text','','full')+
+        campo_('Fecha','actaFecha','date')+
+        campo_('Asistentes','actaAsistentes','text')+
+        campoTextarea_('Temas tratados','actaTemas')+
+        campoTextarea_('Próximos pasos','actaProximosPasos')+
+        campo_('Casos vinculados (códigos separados por coma, opcional)','actaCasosVinculados','text','','full')+
+      '</div>'+
+      '<div style="display:flex;gap:8px;margin-top:14px;">'+
+        '<button class="btn btn-primary" style="width:auto;" onclick="guardarActaUI_()">Guardar acta</button>'+
+        '<button class="btn btn-ghost" style="width:auto;" onclick="document.getElementById(\'panelFormActa\').classList.add(\'hidden\')">Cancelar</button>'+
+      '</div>'+
+    '</div></div>'+
+    '<div id="listadoActas"><div class="empty-state">Cargando…</div></div>';
+  cargarYPintarActas_();
+}
+function abrirFormActa_(){
+  document.getElementById('panelFormActa').classList.remove('hidden');
+  document.getElementById('actaFecha').valueAsDate = new Date();
+}
+function cargarYPintarActas_(){
+  gasGet('actas').then(function(res){
+    if(!res.ok){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">'+res.error+'</div></div>'; return; }
+    var actas = res.actas||[];
+    if(actas.length===0){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">Todavía no hay actas cargadas.</div></div>'; return; }
+    document.getElementById('listadoActas').innerHTML = actas.map(function(a){
+      return '<div class="panel"><div class="panel-head"><div><h3>'+a.titulo+'</h3><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">'+a.fecha+' · '+(a.asistentes||'—')+'</div></div></div>'+
+        '<div style="padding:14px 17px;font-size:12.5px;color:var(--text-dim);">'+
+          (a.temas ? '<div style="margin-bottom:8px;"><b style="color:var(--text);">Temas:</b> '+a.temas+'</div>' : '')+
+          (a.proximosPasos ? '<div style="margin-bottom:8px;"><b style="color:var(--text);">Próximos pasos:</b> '+a.proximosPasos+'</div>' : '')+
+          (a.casosVinculados && a.casosVinculados.length ? '<div>'+a.casosVinculados.map(function(cid){ return '<span class="pill" style="background:var(--caso-soft);color:var(--caso);margin-right:6px;cursor:pointer;" onclick="setView(\'detalle\',\''+cid+'\')">'+cid+'</span>'; }).join('')+'</div>' : '')+
+        '</div>'+
       '</div>';
-    }).join('')+
-  '</div></div>';
+    }).join('');
+  });
+}
+function guardarActaUI_(){
+  var s = sesionActual();
+  var titulo = document.getElementById('actaTitulo').value.trim();
+  if(!titulo){ showToast('Falta el título'); return; }
+  gasPost('crearActa', {
+    titulo: titulo,
+    fecha: document.getElementById('actaFecha').value,
+    asistentes: document.getElementById('actaAsistentes').value.trim(),
+    temas: document.getElementById('actaTemas').value.trim(),
+    proximosPasos: document.getElementById('actaProximosPasos').value.trim(),
+    casosVinculados: document.getElementById('actaCasosVinculados').value.trim(),
+    autor: s?s.nombre:''
+  }).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    showToast('Acta guardada'); document.getElementById('panelFormActa').classList.add('hidden');
+    cargarYPintarActas_();
+  });
 }
 
 function renderEquipo(){
@@ -843,7 +1092,10 @@ function renderEquipo(){
   document.getElementById('content').innerHTML =
     '<div class="page-title" style="margin-bottom:2px;">Equipo</div>'+
     '<div class="page-sub" style="margin-bottom:16px;">Creá usuarios para poder asignarles o derivarles casos.</div>'+
-    '<button class="btn btn-primary" style="width:auto;margin-bottom:14px;" onclick="abrirFormUsuario_()">+ Nuevo usuario</button>'+
+    '<div style="display:flex;gap:8px;margin-bottom:14px;">'+
+      '<button class="btn btn-primary" style="width:auto;" onclick="abrirFormUsuario_()">+ Nuevo usuario</button>'+
+      '<button class="btn btn-ghost" style="width:auto;" onclick="abrirFormImportar_()">Importar lista de nombres</button>'+
+    '</div>'+
     '<div class="panel"><div id="tablaEquipo"><div class="empty-state">Cargando…</div></div></div>'+
     '<div class="panel hidden" id="panelFormUsuario"><div style="padding:18px;">'+
       '<h3 style="font-size:13px;margin-bottom:14px;" id="formUsuarioTitulo">Nuevo usuario</h3>'+
@@ -859,6 +1111,15 @@ function renderEquipo(){
         '<button class="btn btn-primary" style="width:auto;" onclick="guardarUsuarioUI_()">Guardar</button>'+
         '<button class="btn btn-ghost" style="width:auto;" onclick="cerrarFormUsuario_()">Cancelar</button>'+
       '</div>'+
+    '</div></div>'+
+    '<div class="panel hidden" id="panelFormImportar"><div style="padding:18px;">'+
+      '<h3 style="font-size:13px;margin-bottom:6px;">Importar lista de nombres</h3>'+
+      '<div style="font-size:11.5px;color:var(--text-faint);margin-bottom:12px;">Un nombre por línea (opcional: "Nombre, Sector"). Se crean <b>sin acceso todavía</b> — sin contraseña utilizable — hasta que decidas activarlos y resetearles la contraseña desde la tabla de abajo. No se conecta en vivo con Planning ni ningún otro sistema: es solo para no tipear cada nombre a mano.</div>'+
+      '<textarea id="importarNombres" placeholder="Juan Pérez, Ventas'+String.fromCharCode(10)+'María Gómez, PDA'+String.fromCharCode(10)+'Diego Suárez" style="width:100%;min-height:120px;padding:10px 12px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);font-family:inherit;resize:vertical;"></textarea>'+
+      '<div style="display:flex;gap:8px;margin-top:14px;">'+
+        '<button class="btn btn-primary" style="width:auto;" onclick="importarUsuariosUI_()">Importar</button>'+
+        '<button class="btn btn-ghost" style="width:auto;" onclick="document.getElementById(\'panelFormImportar\').classList.add(\'hidden\')">Cancelar</button>'+
+      '</div>'+
     '</div></div>';
   cargarYPintarEquipo_();
 }
@@ -872,6 +1133,7 @@ function cargarYPintarEquipo_(){
   });
 }
 function abrirFormUsuario_(usuarioExistente){
+  document.getElementById('panelFormImportar').classList.add('hidden');
   document.getElementById('panelFormUsuario').classList.remove('hidden');
   document.getElementById('formUsuarioTitulo').textContent = usuarioExistente ? 'Editar usuario' : 'Nuevo usuario';
   document.getElementById('equNombre').value = usuarioExistente ? usuarioExistente.nombre : '';
@@ -886,6 +1148,26 @@ function abrirFormUsuario_(usuarioExistente){
 }
 function cerrarFormUsuario_(){
   document.getElementById('panelFormUsuario').classList.add('hidden');
+}
+function abrirFormImportar_(){
+  document.getElementById('panelFormUsuario').classList.add('hidden');
+  document.getElementById('panelFormImportar').classList.remove('hidden');
+  document.getElementById('importarNombres').value = '';
+}
+function importarUsuariosUI_(){
+  var s = sesionActual();
+  var actorPassword = _passwordSesionActual_();
+  if(!actorPassword) return;
+  var texto = document.getElementById('importarNombres').value.trim();
+  if(!texto){ showToast('Pegá al menos un nombre'); return; }
+  var lineas = texto.split('\n').map(function(l){return l.trim();}).filter(Boolean);
+  gasPost('importarUsuarios', {actorUsuario:s.usuario, actorPassword:actorPassword, nombres:lineas}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    var creados = res.creados||[], omitidos = res.omitidos||[];
+    showToast(creados.length+' usuario(s) importado(s), sin acceso todavía'+(omitidos.length?' — '+omitidos.length+' omitido(s)':''));
+    document.getElementById('panelFormImportar').classList.add('hidden');
+    renderEquipo();
+  });
 }
 function guardarUsuarioUI_(){
   var s = sesionActual();
@@ -958,46 +1240,65 @@ function renderConfig(){
 function pintarConfig_(){
   var cat = window._catalogosCache||{};
   var conf = window._configCache||{};
+  var tabActiva = window._configTabActiva || 'catalogos';
 
-  var html = '<div class="panel"><div class="panel-head"><h3>Catálogos</h3></div><div style="padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;">';
-  Object.keys(cat).forEach(function(nombre){
-    html += '<div>'+
-      '<div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;margin-bottom:8px;">'+nombre+'</div>'+
-      cat[nombre].map(function(v){
-        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;padding:4px 0;">'+
-          '<span>'+v+'</span>'+
-          '<button onclick="eliminarCatalogoItemUI_(\''+nombre+'\',\''+String(v).replace(/'/g,"\\'")+'\')" title="Quitar" style="background:none;border:none;color:var(--text-faint);cursor:pointer;padding:2px;"><span class="material-symbols-outlined" style="font-size:14px;">close</span></button>'+
-        '</div>';
+  var html = '<div class="filter-bar" style="margin-bottom:16px;">'+
+    tabBtn_('catalogos','Catálogos',tabActiva)+
+    tabBtn_('parametros','Parámetros y SLA',tabActiva)+
+    tabBtn_('automatizacion','Automatización',tabActiva)+
+  '</div>';
+
+  if(tabActiva==='catalogos'){
+    html += '<div class="panel"><div class="panel-head"><h3>Catálogos — listas desplegables del sistema</h3></div><div style="padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;">';
+    Object.keys(cat).forEach(function(nombre){
+      html += '<div>'+
+        '<div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;margin-bottom:8px;">'+nombre+'</div>'+
+        cat[nombre].map(function(v){
+          return '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;padding:4px 0;">'+
+            '<span>'+v+'</span>'+
+            '<button onclick="eliminarCatalogoItemUI_(\''+nombre+'\',\''+String(v).replace(/'/g,"\\'")+'\')" title="Quitar" style="background:none;border:none;color:var(--text-faint);cursor:pointer;padding:2px;"><span class="material-symbols-outlined" style="font-size:14px;">close</span></button>'+
+          '</div>';
+        }).join('')+
+        '<div style="display:flex;gap:6px;margin-top:8px;">'+
+          '<input type="text" id="nuevoItem_'+nombre+'" placeholder="Agregar..." style="flex:1;min-width:0;padding:6px 8px;border:1.5px solid var(--hairline);border-radius:7px;font-size:11.5px;background:var(--panel-2);color:var(--text);" onkeydown="if(event.key===\'Enter\')agregarCatalogoItemUI_(\''+nombre+'\')">'+
+          '<button class="btn btn-ghost btn-sm" style="width:auto;padding:6px 10px;" onclick="agregarCatalogoItemUI_(\''+nombre+'\')">+</button>'+
+        '</div>'+
+      '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  if(tabActiva==='parametros'){
+    html += '<div class="panel"><div class="panel-head"><h3>SLA por prioridad y avisos</h3></div><div style="padding:16px 18px;">'+
+      '<div class="form-grid">'+
+      Object.keys(CONFIG_EDITABLES_).map(function(k){
+        var def = CONFIG_EDITABLES_[k];
+        return '<div class="field"><label>'+def.label+'</label>'+
+          '<div style="display:flex;gap:6px;">'+
+          '<input type="'+def.tipo+'" id="conf_'+k+'" value="'+(conf[k]!==undefined?conf[k]:'')+'" style="flex:1;">'+
+          '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="guardarConfigParamUI_(\''+k+'\')">Guardar</button>'+
+          '</div></div>';
       }).join('')+
-      '<div style="display:flex;gap:6px;margin-top:8px;">'+
-        '<input type="text" id="nuevoItem_'+nombre+'" placeholder="Agregar..." style="flex:1;min-width:0;padding:6px 8px;border:1.5px solid var(--hairline);border-radius:7px;font-size:11.5px;background:var(--panel-2);color:var(--text);" onkeydown="if(event.key===\'Enter\')agregarCatalogoItemUI_(\''+nombre+'\')">'+
-        '<button class="btn btn-ghost btn-sm" style="width:auto;padding:6px 10px;" onclick="agregarCatalogoItemUI_(\''+nombre+'\')">+</button>'+
       '</div>'+
-    '</div>';
-  });
-  html += '</div></div>';
+      '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--hairline);font-size:11px;color:var(--text-faint);">'+
+        'Contadores internos (no editables): '+CONFIG_SOLO_LECTURA_.map(function(k){ return k+' = '+(conf[k]!==undefined?conf[k]:0); }).join(' · ')+
+      '</div>'+
+    '</div></div>';
+  }
 
-  html += '<div class="panel"><div class="panel-head"><h3>Parámetros</h3></div><div style="padding:16px 18px;">'+
-    '<div class="form-grid">'+
-    Object.keys(CONFIG_EDITABLES_).map(function(k){
-      var def = CONFIG_EDITABLES_[k];
-      return '<div class="field"><label>'+def.label+'</label>'+
-        '<div style="display:flex;gap:6px;">'+
-        '<input type="'+def.tipo+'" id="conf_'+k+'" value="'+(conf[k]!==undefined?conf[k]:'')+'" style="flex:1;">'+
-        '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="guardarConfigParamUI_(\''+k+'\')">Guardar</button>'+
-        '</div></div>';
-    }).join('')+
-    '</div>'+
-    '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--hairline);">'+
-      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Creación automática de casos desde eventos (Etapa 2) — hoy está <b style="color:'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true'?'var(--ok)':'var(--warn)')+';">'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true'?'ACTIVADA':'APAGADA')+'</b>. Apagada = todo pasa por la Bandeja de entrada para confirmar a mano.</div>'+
+  if(tabActiva==='automatizacion'){
+    html += '<div class="panel"><div class="panel-head"><h3>Motor de Eventos</h3></div><div style="padding:16px 18px;">'+
+      '<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;">Creación automática de casos desde eventos (Etapa 2) — hoy está <b style="color:'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true'?'var(--ok)':'var(--warn)')+';">'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true'?'ACTIVADA':'APAGADA')+'</b>.</div>'+
+      '<div style="font-size:11.5px;color:var(--text-faint);margin-bottom:14px;">Apagada = todo pasa por la Bandeja de entrada para confirmar a mano antes de crear el caso. Activada = el caso se crea solo apenas llega el evento.</div>'+
       '<button class="btn btn-dark btn-sm" style="width:auto;" onclick="toggleCreacionAutomaticaUI_()">'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true' ? 'Apagar creación automática' : 'Activar creación automática')+'</button>'+
-    '</div>'+
-    '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--hairline);font-size:11px;color:var(--text-faint);">'+
-      'Contadores internos (no editables): '+CONFIG_SOLO_LECTURA_.map(function(k){ return k+' = '+(conf[k]!==undefined?conf[k]:0); }).join(' · ')+
-    '</div>'+
-  '</div></div>';
+    '</div></div>';
+  }
 
   document.getElementById('content').innerHTML = html;
+}
+function tabBtn_(id, label, activa){
+  var esActiva = id===activa;
+  return '<button class="btn '+(esActiva?'btn-dark':'btn-ghost')+' btn-sm" style="width:auto;'+(esActiva?'border-color:var(--caso);color:var(--caso);':'')+'" onclick="window._configTabActiva=\''+id+'\';pintarConfig_();">'+label+'</button>';
 }
 function agregarCatalogoItemUI_(nombre){
   var input = document.getElementById('nuevoItem_'+nombre);
