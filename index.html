@@ -26,6 +26,13 @@
   --shadow-2:0 18px 40px -10px rgba(0,0,0,.5), 0 6px 16px -6px rgba(0,0,0,.35);
   --sidebar-w:224px; --topbar-h:58px;
 }
+body.light-mode{
+  --bg:#F2F3F5; --panel:#FFFFFF; --panel-2:#F5F6F8; --hairline:#E1E3E8;
+  --text:#181B20; --text-dim:#464D5A; --text-faint:#6B7280;
+  --shadow-1:0 1px 2px rgba(20,20,30,.06), 0 1px 1px rgba(20,20,30,.05);
+  --shadow-2:0 18px 40px -10px rgba(20,20,30,.14), 0 6px 16px -6px rgba(20,20,30,.10);
+}
+body.light-mode #login-screen{background:radial-gradient(1100px 760px at 18% 105%, #FFFFFF 0%, var(--bg) 55%);}
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%;}
 body{font-family:'Inter',system-ui,sans-serif; color:var(--text); background:var(--bg); -webkit-font-smoothing:antialiased; font-size:13.5px; line-height:1.45;}
@@ -202,8 +209,11 @@ table.tbl tr:hover td{background:var(--panel-2);}
     <button class="nav-item" id="navCasos" onclick="setView('casos')"><span class="material-symbols-outlined">folder_open</span>Casos</button>
     <button class="nav-item" id="navBuscar" onclick="setView('buscar')"><span class="material-symbols-outlined">search</span>Buscar cliente / VIN</button>
     <button class="nav-item" id="navReportar" onclick="setView('reportar')"><span class="material-symbols-outlined">add_circle</span>Reportar un caso</button>
+    <button class="nav-item" id="navReportes" onclick="setView('reportes')"><span class="material-symbols-outlined">bar_chart</span>Reportes</button>
+    <button class="nav-item" id="navEquipo" onclick="setView('equipo')"><span class="material-symbols-outlined">group</span>Equipo</button>
     <button class="nav-item" id="navConfig" onclick="setView('config')"><span class="material-symbols-outlined">settings</span>Configuración</button>
     <div class="sidebar-foot">
+      <button class="nav-item" id="themeToggleBtn" onclick="toggleTheme()"><span class="material-symbols-outlined">light_mode</span>Modo claro</button>
       <div class="user-chip" onclick="cerrarSesion()" title="Cerrar sesión">
         <div class="avatar" id="userAvatar">—</div>
         <div><div class="name" id="userNombre">—</div><div class="role" id="userRol">—</div></div>
@@ -262,6 +272,22 @@ function sesionActual(){
 }
 function guardarSesion(s){ localStorage.setItem('gc_sesion', JSON.stringify(s)); }
 function cerrarSesion(){ localStorage.removeItem('gc_sesion'); location.reload(); }
+function aplicarTema(modo){
+  document.body.classList.toggle('light-mode', modo==='claro');
+  var btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.innerHTML = '<span class="material-symbols-outlined">'+(modo==='claro'?'dark_mode':'light_mode')+'</span>'+(modo==='claro' ? 'Modo oscuro' : 'Modo claro');
+  localStorage.setItem('gc_tema', modo);
+}
+function toggleTheme(){
+  var actual = localStorage.getItem('gc_tema')==='claro' ? 'claro' : 'oscuro';
+  aplicarTema(actual==='claro' ? 'oscuro' : 'claro');
+}
+function _passwordSesionActual_(){
+  var s = sesionActual();
+  if(s && s.password) return s.password;
+  showToast('Cerrá sesión y volvé a entrar una vez para poder usar Equipo.');
+  return null;
+}
 
 function intentarLogin(){
   var usuario = document.getElementById('loginUsuario').value.trim();
@@ -276,6 +302,11 @@ function intentarLogin(){
   }).then(function(res){
     btn.disabled = false; btn.textContent = 'Ingresar';
     if(!res.ok){ errEl.textContent = res.error||'No se pudo ingresar.'; errEl.style.display='block'; return; }
+    // Guardamos la contraseña junto con la sesión (mismo criterio que ya usa
+    // Planning) porque las acciones de Equipo (crear/editar/desactivar
+    // usuarios) requieren re-confirmar credenciales de Calidad en cada
+    // llamada al backend, y no queremos pedírsela de nuevo a cada rato.
+    res.password = password;
     guardarSesion(res);
     iniciarApp();
   }).catch(function(err){
@@ -295,6 +326,7 @@ function showToast(msg){
 // ARRANQUE
 // ============================================================
 window.addEventListener('DOMContentLoaded', function(){
+  aplicarTema(localStorage.getItem('gc_tema')==='claro' ? 'claro' : 'oscuro');
   var s = sesionActual();
   if(s){ iniciarApp(); }
 });
@@ -306,6 +338,8 @@ function iniciarApp(){
   document.getElementById('userNombre').textContent = s.nombre;
   document.getElementById('userRol').textContent = etiquetaRol_(s.rol);
   document.getElementById('userAvatar').textContent = (s.nombre||'?').charAt(0).toUpperCase();
+  document.getElementById('navEquipo').style.display = (s.rol==='calidad') ? '' : 'none';
+  document.getElementById('navConfig').style.display = (s.rol==='calidad') ? '' : 'none';
   cargarConfigBackend().then(function(){
     setView('dashboard');
     actualizarBadgeBandeja_();
@@ -321,13 +355,15 @@ function etiquetaRol_(r){
 // ============================================================
 // NAVEGACIÓN
 // ============================================================
-var VISTAS = ['dashboard','bandeja','casos','buscar','reportar','config','detalle'];
+var VISTAS = ['dashboard','bandeja','casos','buscar','reportar','reportes','equipo','config','detalle'];
 var TITULOS = {
   dashboard:['Dashboard','Estado general de los casos'],
   bandeja:['Bandeja de entrada','Eventos esperando revisión antes de convertirse en caso'],
   casos:['Casos','Todos los casos registrados'],
   buscar:['Buscar cliente / VIN','Historial completo de un cliente o vehículo'],
   reportar:['Reportar un caso','Carga manual — queda igual que cualquier otro caso'],
+  reportes:['Reportes','Cuánto se resuelve, de dónde viene y qué se repite'],
+  equipo:['Equipo','Quiénes pueden gestionar y seguir casos'],
   config:['Configuración','Catálogos y parámetros del sistema'],
   detalle:['Detalle del caso','']
 };
@@ -345,6 +381,8 @@ function setView(v, param){
     casos: renderCasos,
     buscar: renderBuscar,
     reportar: renderReportar,
+    reportes: renderReportes,
+    equipo: renderEquipo,
     config: renderConfig,
     detalle: function(){ renderDetalle(param); }
   }[v];
@@ -444,6 +482,8 @@ function renderCasos(){
       ['nuevo','analisis','esperando','derivado','resuelto','cerrado'].map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('')+
     '</select>'+
     '<select id="fPrioridad" onchange="aplicarFiltrosCasos_()"><option value="">Toda prioridad</option><option>Alta</option><option>Media</option><option>Baja</option></select>'+
+    '<select id="fFuente" onchange="aplicarFiltrosCasos_()"><option value="">Toda fuente</option></select>'+
+    '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);"><input type="checkbox" id="fDefensa" onchange="aplicarFiltrosCasos_()"> ⚖️ Solo Defensa del Consumidor</label>'+
     '<input id="fBusqueda" type="text" placeholder="Buscar por cliente, VIN..." oninput="aplicarFiltrosCasos_()">'+
   '</div><div class="panel"><div id="tablaCasos"><div class="empty-state">Cargando…</div></div></div>';
   document.getElementById('content').innerHTML = html;
@@ -453,6 +493,9 @@ function cargarYPintarCasos_(){
   gasGet('casos').then(function(res){
     if(!res.ok){ document.getElementById('tablaCasos').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     window._casosCache = res.casos || res || [];
+    var selFuente = document.getElementById('fFuente');
+    var fuentes = Array.from(new Set(window._casosCache.map(function(c){return c.fuente;}).filter(Boolean)));
+    fuentes.forEach(function(f){ var opt=document.createElement('option'); opt.value=f; opt.textContent=f; selFuente.appendChild(opt); });
     pintarTablaCasos_();
   });
 }
@@ -460,10 +503,14 @@ function aplicarFiltrosCasos_(){ pintarTablaCasos_(); }
 function pintarTablaCasos_(){
   var estado = document.getElementById('fEstado').value;
   var prioridad = document.getElementById('fPrioridad').value;
+  var fuente = document.getElementById('fFuente').value;
+  var soloDefensa = document.getElementById('fDefensa').checked;
   var q = document.getElementById('fBusqueda').value.toLowerCase();
   var casos = (window._casosCache||[]).filter(function(c){
     if(estado && c.estado!==estado) return false;
     if(prioridad && c.prioridad!==prioridad) return false;
+    if(fuente && c.fuente!==fuente) return false;
+    if(soloDefensa && !(String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true)) return false;
     if(q){
       var texto = ((c.cliente||'')+' '+(c.dominio||'')+' '+(c.motivo||'')+' '+(c.id||'')).toLowerCase();
       if(texto.indexOf(q)===-1) return false;
@@ -472,8 +519,9 @@ function pintarTablaCasos_(){
   });
   if(casos.length===0){ document.getElementById('tablaCasos').innerHTML = '<div class="empty-state">No hay casos que coincidan.</div>'; return; }
   var filas = casos.map(function(c){
+    var esDefensa = String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true;
     return '<tr onclick="setView(\'detalle\',\''+c.id+'\')">'+
-      '<td class="mono" style="color:var(--caso);font-weight:700;">'+c.id+'</td>'+
+      '<td class="mono" style="color:var(--caso);font-weight:700;">'+c.id+(esDefensa?' ⚖️':'')+'</td>'+
       '<td>'+(c.cliente||'—')+'</td>'+
       '<td>'+(c.marca||'—')+'</td>'+
       '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
@@ -493,10 +541,14 @@ function renderDetalle(id){
   gasGet('caso', {id:id}).then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     var c = res.caso;
+    var esDefensa = String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true;
     document.getElementById('topbarSub').textContent = c.cliente+' · '+c.id;
     var html = '<div class="detail-header">'+
       '<div class="dh-top"><div><div class="dh-id">'+c.id+'</div><div class="dh-title">'+(c.motivo||c.tipoCaso||'Caso')+' — '+(c.marca||'')+' '+(c.modelo||'')+'</div></div>'+
-        '<span class="pill pill-'+c.estado+'" style="font-size:12px;padding:5px 12px;">'+c.estado+'</span></div>'+
+        '<div style="display:flex;gap:8px;align-items:center;">'+
+          (esDefensa ? '<span class="pill" style="background:var(--danger-soft);color:var(--danger);font-size:11px;padding:5px 11px;">⚖️ Defensa del Consumidor</span>' : '')+
+          '<span class="pill pill-'+c.estado+'" style="font-size:12px;padding:5px 12px;">'+c.estado+'</span>'+
+        '</div></div>'+
       '<div class="info-strip">'+
         infoItem_('Cliente', c.cliente)+infoItem_('DNI', c.dni||'—')+infoItem_('Teléfono', c.telefono||'—')+
         infoItem_('VIN / Dominio', c.dominio||'—')+infoItem_('Sucursal', c.sucursal||'—')+infoItem_('Sector', c.sector||'—')+
@@ -507,8 +559,10 @@ function renderDetalle(id){
       (c.descripcion ? '<div style="margin-top:12px;font-size:12.8px;color:var(--text-dim);">'+c.descripcion+'</div>' : '')+
       '<div class="action-row">'+
         estadoBotones_(c)+
+        '<button class="btn btn-ghost btn-sm" style="'+(esDefensa?'border-color:var(--danger);color:var(--danger);':'')+'" onclick="toggleDefensaConsumidorUI_(\''+c.id+'\','+(!esDefensa)+')">'+(esDefensa?'⚖️ Quitar Defensa del Consumidor':'⚖️ Marcar Defensa del Consumidor')+'</button>'+
         '<select id="selResponsable" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);"><option value="">Asignar a...</option></select>'+
         '<button class="btn btn-ghost btn-sm" onclick="asignarCasoUI_(\''+c.id+'\')">Asignar</button>'+
+        '<button class="btn btn-ghost btn-sm" style="border-color:var(--purple);color:var(--purple);" onclick="derivarCasoUI_(\''+c.id+'\')" title="Deriva el caso a esa persona y lo marca para seguimiento conjunto con Calidad">Derivar</button>'+
         '<select id="selPrioridad" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);"><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>'+
         '<button class="btn btn-ghost btn-sm" onclick="cambiarPrioridadUI_(\''+c.id+'\')">Cambiar prioridad</button>'+
       '</div>'+
@@ -549,10 +603,13 @@ function renderTimelineSeguimientos_(seguimientos){
 function poblarSelectResponsables_(){
   var sel = document.getElementById('selResponsable');
   if(!sel) return;
-  gasGet('config').then(function(res){
+  gasGet('usuariosActivos').then(function(res){
     if(!res.ok) return;
-    (res.catalogos.Responsable || res.catalogos.Sector || []).forEach(function(r){
-      var opt = document.createElement('option'); opt.value=r; opt.textContent=r; sel.appendChild(opt);
+    (res.usuarios||[]).forEach(function(u){
+      var opt = document.createElement('option');
+      opt.value = u.nombre;
+      opt.textContent = u.nombre + (u.sector ? ' ('+u.sector+')' : '');
+      sel.appendChild(opt);
     });
   });
 }
@@ -564,6 +621,14 @@ function cambiarEstadoUI_(id){
     showToast('Estado actualizado'); renderDetalle(id);
   });
 }
+function toggleDefensaConsumidorUI_(id, activo){
+  var s = sesionActual();
+  gasPost('toggleDefensaConsumidor', {id:id, activo:activo, autor:s?s.nombre:''}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    showToast(activo ? 'Marcado como Defensa del Consumidor' : 'Se quitó la marca de Defensa del Consumidor');
+    renderDetalle(id);
+  });
+}
 function asignarCasoUI_(id){
   var responsable = document.getElementById('selResponsable').value;
   if(!responsable){ showToast('Elegí a quién asignar'); return; }
@@ -571,6 +636,16 @@ function asignarCasoUI_(id){
   gasPost('asignarCaso', {id:id, responsable:responsable, autor:s?s.nombre:''}).then(function(res){
     if(!res.ok){ showToast(res.error); return; }
     showToast('Caso asignado a '+responsable); renderDetalle(id);
+  });
+}
+function derivarCasoUI_(id){
+  var responsable = document.getElementById('selResponsable').value;
+  if(!responsable){ showToast('Elegí a quién derivar el caso'); return; }
+  if(!confirm('¿Derivar este caso a '+responsable+'? Queda marcado como "derivado" — el seguimiento lo hacen en conjunto con Calidad.')) return;
+  var s = sesionActual();
+  gasPost('derivarCaso', {id:id, responsable:responsable, autor:s?s.nombre:''}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    showToast('Caso derivado a '+responsable); renderDetalle(id);
   });
 }
 function cambiarPrioridadUI_(id){
@@ -650,6 +725,7 @@ function renderReportar(){
         campo_('Motivo','repMotivo','text','','full')+
         campoTextarea_('Descripción','repDescripcion')+
       '</div>'+
+      '<div class="checkbox-row" style="margin-top:6px;"><input type="checkbox" id="repDefensaConsumidor"><label for="repDefensaConsumidor">⚖️ Es un caso de Defensa del Consumidor</label></div>'+
       '<button class="btn btn-primary" style="width:auto;margin-top:14px;" onclick="crearCasoUI_()">Crear caso</button>'+
       '</div></div>';
   });
@@ -679,6 +755,7 @@ function crearCasoUI_(){
     prioridadSugerida: document.getElementById('repPrioridad').value || 'Media',
     motivo: document.getElementById('repMotivo').value.trim(),
     descripcion: document.getElementById('repDescripcion').value.trim(),
+    defensaConsumidor: document.getElementById('repDefensaConsumidor').checked,
     fuente: 'Manual',
     usuario: s?s.nombre:''
   };
@@ -693,21 +770,276 @@ function crearCasoUI_(){
 // ============================================================
 // CONFIGURACIÓN (lectura de catálogos y parámetros)
 // ============================================================
+// ============================================================
+// EQUIPO (gestión de usuarios — solo Calidad)
+// ============================================================
+// ============================================================
+// REPORTES
+// ============================================================
+function renderReportes(){
+  gasGet('reporte').then(function(res){
+    if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    var html = '<div class="kpi-grid">'+
+      kpiCard_(res.total,'Casos totales','var(--text)')+
+      kpiCard_(res.tasaResolucion+'%','Tasa de resolución','var(--ok)')+
+      kpiCard_(res.resueltos,'Resueltos / cerrados','var(--ok)')+
+      kpiCard_(res.abiertos,'Todavía abiertos','var(--warn)')+
+      kpiCard_(res.defensaConsumidor,'Defensa del Consumidor','var(--danger)')+
+      kpiCard_(res.tiempoPromedioResolucionDias!==null ? res.tiempoPromedioResolucionDias+'d' : '—','Tiempo prom. de resolución','var(--purple)')+
+    '</div>';
+
+    html += '<div class="detail-grid">';
+    html += '<div>';
+    html += tablaReporte_('Casos recurrentes — mismo cliente/vehículo con 2 o más casos', 'Estos son los que conviene tratar con urgencia — algo se está repitiendo.',
+      (res.recurrentes||[]).map(function(g){
+        return '<tr>'+
+          '<td><b>'+(g.cliente||g.valor)+'</b></td>'+
+          '<td>'+(g.tipo==='vin' ? g.valor : '—')+'</td>'+
+          '<td>'+(g.marca||'—')+'</td>'+
+          '<td style="text-align:center;"><span class="pill" style="background:var(--danger-soft);color:var(--danger);">'+g.casos.length+' casos</span></td>'+
+          '<td style="font-size:11px;color:var(--text-faint);">'+g.casos.map(function(c){return c.id;}).join(', ')+'</td>'+
+        '</tr>';
+      }).join(''),
+      ['Cliente','VIN','Marca','Cantidad','Casos'],
+      'Ningún cliente o vehículo tiene más de un caso todavía — buena señal.'
+    );
+    html += '</div><div>';
+    html += panelDistribucion_('Por fuente', res.porFuente);
+    html += panelDistribucion_('Por sector', res.porSector);
+    html += panelDistribucion_('Por marca', res.porMarca);
+    html += panelDistribucion_('Por tipo de caso', res.porTipoCaso);
+    html += '</div></div>';
+
+    document.getElementById('content').innerHTML = html;
+  });
+}
+function tablaReporte_(titulo, sub, filasHtml, columnas, vacioMsg){
+  return '<div class="panel"><div class="panel-head"><div><h3>'+titulo+'</h3><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">'+sub+'</div></div></div>'+
+    (filasHtml ?
+      '<table class="tbl"><thead><tr>'+columnas.map(function(c){return '<th>'+c+'</th>';}).join('')+'</tr></thead><tbody>'+filasHtml+'</tbody></table>' :
+      '<div class="empty-state">'+vacioMsg+'</div>')+
+  '</div>';
+}
+function panelDistribucion_(titulo, lista){
+  if(!lista || lista.length===0) return '';
+  var max = Math.max.apply(null, lista.map(function(x){return x.cantidad;}));
+  return '<div class="panel"><div class="panel-head"><h3>'+titulo+'</h3></div><div style="padding:14px 17px;">'+
+    lista.map(function(x){
+      var pct = max ? Math.round((x.cantidad/max)*100) : 0;
+      return '<div style="margin-bottom:9px;">'+
+        '<div style="display:flex;justify-content:space-between;font-size:11.5px;margin-bottom:3px;"><span>'+x.valor+'</span><b>'+x.cantidad+'</b></div>'+
+        '<div style="background:var(--panel-2);border-radius:6px;height:6px;overflow:hidden;"><div style="width:'+pct+'%;height:100%;background:var(--caso);"></div></div>'+
+      '</div>';
+    }).join('')+
+  '</div></div>';
+}
+
+function renderEquipo(){
+  var s = sesionActual();
+  if(!s || s.rol!=='calidad'){
+    document.getElementById('content').innerHTML = '<div class="panel"><div class="empty-state">Esta pantalla es solo para el rol Calidad.</div></div>';
+    return;
+  }
+  document.getElementById('content').innerHTML =
+    '<div class="page-title" style="margin-bottom:2px;">Equipo</div>'+
+    '<div class="page-sub" style="margin-bottom:16px;">Creá usuarios para poder asignarles o derivarles casos.</div>'+
+    '<button class="btn btn-primary" style="width:auto;margin-bottom:14px;" onclick="abrirFormUsuario_()">+ Nuevo usuario</button>'+
+    '<div class="panel"><div id="tablaEquipo"><div class="empty-state">Cargando…</div></div></div>'+
+    '<div class="panel hidden" id="panelFormUsuario"><div style="padding:18px;">'+
+      '<h3 style="font-size:13px;margin-bottom:14px;" id="formUsuarioTitulo">Nuevo usuario</h3>'+
+      '<div class="form-grid">'+
+        campo_('Nombre completo','equNombre','text')+
+        campo_('Usuario (para ingresar)','equUsuario','text')+
+        campo_('Contraseña inicial','equPassword','password')+
+        campoSelect_('Rol','equRol', '<option value="calidad">Calidad — acceso total</option><option value="sector">Sector — solo sus casos</option><option value="referente">Referente — solo ver, de su sector</option>')+
+        campo_('Sector (ej: PDA, Postventa, Ventas)','equSector','text')+
+        campo_('Email (opcional)','equEmail','email')+
+      '</div>'+
+      '<div style="display:flex;gap:8px;margin-top:14px;">'+
+        '<button class="btn btn-primary" style="width:auto;" onclick="guardarUsuarioUI_()">Guardar</button>'+
+        '<button class="btn btn-ghost" style="width:auto;" onclick="cerrarFormUsuario_()">Cancelar</button>'+
+      '</div>'+
+    '</div></div>';
+  cargarYPintarEquipo_();
+}
+function cargarYPintarEquipo_(){
+  var s = sesionActual();
+  var pass = _passwordSesionActual_();
+  if(!pass) return;
+  gasPost('listarUsuarios', {actorUsuario:s.usuario, actorPassword:pass}).then(function(res){
+    if(!res.ok){ document.getElementById('tablaEquipo').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    pintarTablaEquipo_(res.usuarios||[]);
+  });
+}
+function abrirFormUsuario_(usuarioExistente){
+  document.getElementById('panelFormUsuario').classList.remove('hidden');
+  document.getElementById('formUsuarioTitulo').textContent = usuarioExistente ? 'Editar usuario' : 'Nuevo usuario';
+  document.getElementById('equNombre').value = usuarioExistente ? usuarioExistente.nombre : '';
+  document.getElementById('equUsuario').value = usuarioExistente ? usuarioExistente.usuario : '';
+  document.getElementById('equUsuario').disabled = !!usuarioExistente;
+  document.getElementById('equPassword').value = '';
+  document.getElementById('equPassword').placeholder = usuarioExistente ? '(dejar vacío para no cambiarla — próximamente)' : '';
+  document.getElementById('equRol').value = usuarioExistente ? usuarioExistente.rol : 'sector';
+  document.getElementById('equSector').value = usuarioExistente ? (usuarioExistente.sector||'') : '';
+  document.getElementById('equEmail').value = usuarioExistente ? (usuarioExistente.email||'') : '';
+  window._equipoEditando = usuarioExistente ? usuarioExistente.usuario : null;
+}
+function cerrarFormUsuario_(){
+  document.getElementById('panelFormUsuario').classList.add('hidden');
+}
+function guardarUsuarioUI_(){
+  var s = sesionActual();
+  var actorPassword = _passwordSesionActual_();
+  var nombre = document.getElementById('equNombre').value.trim();
+  var usuario = document.getElementById('equUsuario').value.trim();
+  var rol = document.getElementById('equRol').value;
+  var sector = document.getElementById('equSector').value.trim();
+  var email = document.getElementById('equEmail').value.trim();
+  if(!nombre || !usuario){ showToast('Falta nombre o usuario'); return; }
+
+  if(window._equipoEditando){
+    gasPost('editarUsuario', {actorUsuario:s.usuario, actorPassword:actorPassword, usuarioObjetivo:window._equipoEditando, nombre:nombre, rol:rol, sector:sector, email:email}).then(function(res){
+      if(!res.ok){ showToast(res.error); return; }
+      showToast('Usuario actualizado'); cerrarFormUsuario_(); renderEquipo();
+    });
+  } else {
+    var password = document.getElementById('equPassword').value;
+    if(!password || password.length<4){ showToast('La contraseña tiene que tener al menos 4 caracteres'); return; }
+    gasPost('crearUsuario', {actorUsuario:s.usuario, actorPassword:actorPassword, nombre:nombre, usuario:usuario, password:password, rol:rol, sector:sector, email:email}).then(function(res){
+      if(!res.ok){ showToast(res.error); return; }
+      showToast('Usuario creado'); cerrarFormUsuario_(); renderEquipo();
+    });
+  }
+}
+function cambiarActivoUsuarioUI_(usuario, activo){
+  var s = sesionActual();
+  gasPost('desactivarUsuario', {actorUsuario:s.usuario, actorPassword:_passwordSesionActual_(), usuarioObjetivo:usuario, activo:activo}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    showToast(activo?'Usuario activado':'Usuario desactivado'); renderEquipo();
+  });
+}
+function pintarTablaEquipo_(usuarios){
+  var etiquetasRol = {calidad:'Calidad', sector:'Sector', referente:'Referente'};
+  var filas = usuarios.map(function(u){
+    return '<tr style="cursor:default;">'+
+      '<td>'+u.nombre+'</td>'+
+      '<td class="mono">'+u.usuario+'</td>'+
+      '<td>'+(etiquetasRol[u.rol]||u.rol)+'</td>'+
+      '<td>'+(u.sector||'—')+'</td>'+
+      '<td>'+(u.email||'—')+'</td>'+
+      '<td>'+(u.activo ? '<span class="pill pill-resuelto">Activo</span>' : '<span class="pill pill-cerrado">Inactivo</span>')+'</td>'+
+      '<td style="white-space:nowrap;">'+
+        '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick=\'abrirFormUsuario_('+JSON.stringify(u)+')\'>Editar</button> '+
+        '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="cambiarActivoUsuarioUI_(\''+u.usuario+'\','+(!u.activo)+')">'+(u.activo?'Desactivar':'Activar')+'</button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('tablaEquipo').innerHTML = usuarios.length ?
+    '<table class="tbl"><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Sector</th><th>Email</th><th>Estado</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>' :
+    '<div class="empty-state">No hay usuarios cargados.</div>';
+}
+
+var CONFIG_EDITABLES_ = {
+  SLA_HORAS_ALTA: {label:'SLA — Prioridad Alta (horas)', tipo:'number'},
+  SLA_HORAS_MEDIA: {label:'SLA — Prioridad Media (horas)', tipo:'number'},
+  SLA_HORAS_BAJA: {label:'SLA — Prioridad Baja (horas)', tipo:'number'},
+  NOTIFICAR_EMAIL_CASO_NUEVO: {label:'Email para avisos de casos nuevos', tipo:'email'}
+};
+var CONFIG_SOLO_LECTURA_ = ['CONTADOR_CASOS','CONTADOR_EVENTOS','CONTADOR_SEGUIMIENTOS','CONTADOR_TIMELINE'];
+
 function renderConfig(){
   gasGet('config').then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
-    var cat = res.catalogos||{};
-    var conf = res.config||{};
-    var html = '<div class="panel"><div class="panel-head"><h3>Catálogos</h3></div><div style="padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;">';
-    Object.keys(cat).forEach(function(nombre){
-      html += '<div><div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;margin-bottom:6px;">'+nombre+'</div>'+
-        cat[nombre].map(function(v){return '<div style="font-size:12.5px;padding:3px 0;">'+v+'</div>';}).join('')+'</div>';
-    });
-    html += '</div></div>';
-    html += '<div class="panel"><div class="panel-head"><h3>Parámetros</h3></div><table class="tbl"><tbody>'+
-      Object.keys(conf).map(function(k){ return '<tr><td style="color:var(--text-faint);">'+k+'</td><td class="mono">'+conf[k]+'</td></tr>'; }).join('')+
-      '</tbody></table></div>';
-    document.getElementById('content').innerHTML = html;
+    window._configCache = res.config||{};
+    window._catalogosCache = res.catalogos||{};
+    pintarConfig_();
+  });
+}
+function pintarConfig_(){
+  var cat = window._catalogosCache||{};
+  var conf = window._configCache||{};
+
+  var html = '<div class="panel"><div class="panel-head"><h3>Catálogos</h3></div><div style="padding:16px 18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;">';
+  Object.keys(cat).forEach(function(nombre){
+    html += '<div>'+
+      '<div style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;margin-bottom:8px;">'+nombre+'</div>'+
+      cat[nombre].map(function(v){
+        return '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:12px;padding:4px 0;">'+
+          '<span>'+v+'</span>'+
+          '<button onclick="eliminarCatalogoItemUI_(\''+nombre+'\',\''+String(v).replace(/'/g,"\\'")+'\')" title="Quitar" style="background:none;border:none;color:var(--text-faint);cursor:pointer;padding:2px;"><span class="material-symbols-outlined" style="font-size:14px;">close</span></button>'+
+        '</div>';
+      }).join('')+
+      '<div style="display:flex;gap:6px;margin-top:8px;">'+
+        '<input type="text" id="nuevoItem_'+nombre+'" placeholder="Agregar..." style="flex:1;min-width:0;padding:6px 8px;border:1.5px solid var(--hairline);border-radius:7px;font-size:11.5px;background:var(--panel-2);color:var(--text);" onkeydown="if(event.key===\'Enter\')agregarCatalogoItemUI_(\''+nombre+'\')">'+
+        '<button class="btn btn-ghost btn-sm" style="width:auto;padding:6px 10px;" onclick="agregarCatalogoItemUI_(\''+nombre+'\')">+</button>'+
+      '</div>'+
+    '</div>';
+  });
+  html += '</div></div>';
+
+  html += '<div class="panel"><div class="panel-head"><h3>Parámetros</h3></div><div style="padding:16px 18px;">'+
+    '<div class="form-grid">'+
+    Object.keys(CONFIG_EDITABLES_).map(function(k){
+      var def = CONFIG_EDITABLES_[k];
+      return '<div class="field"><label>'+def.label+'</label>'+
+        '<div style="display:flex;gap:6px;">'+
+        '<input type="'+def.tipo+'" id="conf_'+k+'" value="'+(conf[k]!==undefined?conf[k]:'')+'" style="flex:1;">'+
+        '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="guardarConfigParamUI_(\''+k+'\')">Guardar</button>'+
+        '</div></div>';
+    }).join('')+
+    '</div>'+
+    '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--hairline);">'+
+      '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Creación automática de casos desde eventos (Etapa 2) — hoy está <b style="color:'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true'?'var(--ok)':'var(--warn)')+';">'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true'?'ACTIVADA':'APAGADA')+'</b>. Apagada = todo pasa por la Bandeja de entrada para confirmar a mano.</div>'+
+      '<button class="btn btn-dark btn-sm" style="width:auto;" onclick="toggleCreacionAutomaticaUI_()">'+(String(conf.CREAR_CASOS_AUTOMATICO)==='true' ? 'Apagar creación automática' : 'Activar creación automática')+'</button>'+
+    '</div>'+
+    '<div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--hairline);font-size:11px;color:var(--text-faint);">'+
+      'Contadores internos (no editables): '+CONFIG_SOLO_LECTURA_.map(function(k){ return k+' = '+(conf[k]!==undefined?conf[k]:0); }).join(' · ')+
+    '</div>'+
+  '</div></div>';
+
+  document.getElementById('content').innerHTML = html;
+}
+function agregarCatalogoItemUI_(nombre){
+  var input = document.getElementById('nuevoItem_'+nombre);
+  var valor = input.value.trim();
+  if(!valor) return;
+  gasPost('agregarCatalogoItem', {nombre:nombre, valor:valor}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    if(!window._catalogosCache[nombre]) window._catalogosCache[nombre]=[];
+    window._catalogosCache[nombre].push(valor);
+    pintarConfig_();
+    showToast('Agregado a '+nombre);
+  });
+}
+function eliminarCatalogoItemUI_(nombre, valor){
+  if(!confirm('¿Quitar "'+valor+'" de '+nombre+'?')) return;
+  gasPost('eliminarCatalogoItem', {nombre:nombre, valor:valor}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    window._catalogosCache[nombre] = window._catalogosCache[nombre].filter(function(v){return v!==valor;});
+    pintarConfig_();
+    showToast('Quitado de '+nombre);
+  });
+}
+function guardarConfigParamUI_(clave){
+  var valor = document.getElementById('conf_'+clave).value;
+  gasPost('actualizarConfig', {clave:clave, valor:valor}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    window._configCache[clave] = valor;
+    showToast('Guardado');
+  });
+}
+function toggleCreacionAutomaticaUI_(){
+  var actual = String(window._configCache.CREAR_CASOS_AUTOMATICO)==='true';
+  var nuevo = !actual;
+  var msg = nuevo
+    ? '¿Activar la creación automática de casos? A partir de ahora, los eventos van a crear el caso solos, sin pasar por la Bandeja de entrada.'
+    : '¿Apagar la creación automática? Los eventos van a volver a esperar confirmación manual en la Bandeja de entrada.';
+  if(!confirm(msg)) return;
+  gasPost('actualizarConfig', {clave:'CREAR_CASOS_AUTOMATICO', valor:nuevo}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    window._configCache.CREAR_CASOS_AUTOMATICO = nuevo;
+    pintarConfig_();
+    showToast(nuevo ? 'Creación automática activada' : 'Creación automática apagada');
   });
 }
 </script>
