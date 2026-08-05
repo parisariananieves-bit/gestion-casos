@@ -360,8 +360,7 @@ function iniciarApp(){
   document.getElementById('navEquipo').style.display = (s.rol==='calidad') ? '' : 'none';
   document.getElementById('navConfig').style.display = (s.rol==='calidad') ? '' : 'none';
   cargarConfigBackend().then(function(){
-    setView('dashboard');
-    actualizarBadgeBandeja_();
+    setView('dashboard'); // renderDashboard ya actualiza el contador de la Bandeja con el mismo pedido — no hace falta pedirlo dos veces.
   }).catch(function(err){
     document.getElementById('content').innerHTML = '<div class="empty-state">No se pudo conectar con el backend.<br>'+err.message+'</div>';
   });
@@ -417,17 +416,22 @@ function refrescarVistaActual_(){
   if(!window._vistaActual) return;
   if(window._vistaActual==='casos') window._casosCache = null;
   setView(window._vistaActual, window._vistaActualParam);
-  actualizarBadgeBandeja_();
+  // Si estamos en el dashboard, ese mismo pedido ya trae y pinta el contador
+  // de la Bandeja — pedirlo de nuevo acá sería la misma llamada al backend
+  // dos veces (justo lo que hacía sentir lenta la app).
+  if(window._vistaActual!=='dashboard') actualizarBadgeBandeja_();
   showToast('Actualizado');
 }
 
+function pintarBadgeBandeja_(n){
+  var badge = document.getElementById('badgeBandeja');
+  if(n>0){ badge.textContent = n; badge.classList.remove('hidden'); }
+  else badge.classList.add('hidden');
+}
 function actualizarBadgeBandeja_(){
   gasGet('dashboard').then(function(res){
     if(!res.ok) return;
-    var badge = document.getElementById('badgeBandeja');
-    var n = res.eventosPendientesRevision||0;
-    if(n>0){ badge.textContent = n; badge.classList.remove('hidden'); }
-    else badge.classList.add('hidden');
+    pintarBadgeBandeja_(res.eventosPendientesRevision||0);
   });
 }
 
@@ -437,6 +441,7 @@ function actualizarBadgeBandeja_(){
 function renderDashboard(){
   gasGet('dashboard').then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    pintarBadgeBandeja_(res.eventosPendientesRevision||0);
     var html = '<div class="kpi-grid">'+
       kpiCardClick_(res.urgentes,'Casos urgentes','var(--danger)', "verListaFiltrada_('Casos urgentes',{prioridad:'Alta',soloAbiertos:true})")+
       kpiCardClick_(res.abiertos,'Casos abiertos','var(--text)', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
@@ -718,12 +723,21 @@ function renderTimelineSeguimientos_(seguimientos){
     return '<div class="t-item"><div class="t-dot '+s.tipo+'"></div><div class="t-when">'+s.fecha+'</div><div><div class="t-what">'+s.texto+'</div><div class="t-who">'+s.autor+'</div></div></div>';
   }).join('');
 }
+// Cacheado en memoria durante la sesión — no cambia tan seguido como para
+// justificar pedirlo al backend cada vez que se abre un caso o se entra a
+// Reportar/Equipo. Se refresca solo si todavía no se cargó nunca.
+function usuariosActivosCacheados_(){
+  if(window._usuariosActivosCache) return Promise.resolve(window._usuariosActivosCache);
+  return gasGet('usuariosActivos').then(function(res){
+    window._usuariosActivosCache = (res.ok && res.usuarios) || [];
+    return window._usuariosActivosCache;
+  });
+}
 function poblarSelectResponsables_(){
   var sel = document.getElementById('selResponsable');
   if(!sel) return;
-  gasGet('usuariosActivos').then(function(res){
-    if(!res.ok) return;
-    (res.usuarios||[]).forEach(function(u){
+  usuariosActivosCacheados_().then(function(usuarios){
+    usuarios.forEach(function(u){
       var opt = document.createElement('option');
       opt.value = u.nombre;
       opt.textContent = u.nombre + (u.sector ? ' ('+u.sector+')' : '');
@@ -822,8 +836,19 @@ function ejecutarBusqueda_(){
 // ============================================================
 // REPORTAR UN CASO (manual — pasa por el Motor de Eventos igual que todo)
 // ============================================================
+// Config + catálogos cacheados en memoria — se piden una sola vez por
+// sesión (los usa Reportar y Configuración) y se invalidan solo cuando se
+// edita algo en Configuración, en vez de pedirlos de nuevo cada vez que se
+// cambia de pantalla.
+function configCacheada_(){
+  if(window._configGlobalCache) return Promise.resolve(window._configGlobalCache);
+  return gasGet('config').then(function(res){
+    window._configGlobalCache = res.ok ? res : {ok:false};
+    return window._configGlobalCache;
+  });
+}
 function renderReportar(){
-  gasGet('config').then(function(res){
+  configCacheada_().then(function(res){
     var cat = (res.ok && res.catalogos) || {};
     var opciones = function(lista){ return (lista||[]).map(function(v){return '<option>'+v+'</option>';}).join(''); };
     document.getElementById('content').innerHTML =
@@ -1164,6 +1189,7 @@ function importarUsuariosUI_(){
   gasPost('importarUsuarios', {actorUsuario:s.usuario, actorPassword:actorPassword, nombres:lineas}).then(function(res){
     if(!res.ok){ showToast(res.error); return; }
     var creados = res.creados||[], omitidos = res.omitidos||[];
+    window._usuariosActivosCache = null;
     showToast(creados.length+' usuario(s) importado(s), sin acceso todavía'+(omitidos.length?' — '+omitidos.length+' omitido(s)':''));
     document.getElementById('panelFormImportar').classList.add('hidden');
     renderEquipo();
@@ -1182,6 +1208,7 @@ function guardarUsuarioUI_(){
   if(window._equipoEditando){
     gasPost('editarUsuario', {actorUsuario:s.usuario, actorPassword:actorPassword, usuarioObjetivo:window._equipoEditando, nombre:nombre, rol:rol, sector:sector, email:email}).then(function(res){
       if(!res.ok){ showToast(res.error); return; }
+      window._usuariosActivosCache = null;
       showToast('Usuario actualizado'); cerrarFormUsuario_(); renderEquipo();
     });
   } else {
@@ -1189,6 +1216,7 @@ function guardarUsuarioUI_(){
     if(!password || password.length<4){ showToast('La contraseña tiene que tener al menos 4 caracteres'); return; }
     gasPost('crearUsuario', {actorUsuario:s.usuario, actorPassword:actorPassword, nombre:nombre, usuario:usuario, password:password, rol:rol, sector:sector, email:email}).then(function(res){
       if(!res.ok){ showToast(res.error); return; }
+      window._usuariosActivosCache = null;
       showToast('Usuario creado'); cerrarFormUsuario_(); renderEquipo();
     });
   }
@@ -1197,6 +1225,7 @@ function cambiarActivoUsuarioUI_(usuario, activo){
   var s = sesionActual();
   gasPost('desactivarUsuario', {actorUsuario:s.usuario, actorPassword:_passwordSesionActual_(), usuarioObjetivo:usuario, activo:activo}).then(function(res){
     if(!res.ok){ showToast(res.error); return; }
+    window._usuariosActivosCache = null;
     showToast(activo?'Usuario activado':'Usuario desactivado'); renderEquipo();
   });
 }
@@ -1234,6 +1263,7 @@ function renderConfig(){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     window._configCache = res.config||{};
     window._catalogosCache = res.catalogos||{};
+    window._configGlobalCache = res; // mismo caché que usa Reportar, así queda al día sin pedirlo de nuevo
     pintarConfig_();
   });
 }
