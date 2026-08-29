@@ -28,7 +28,7 @@
   --radius-s:9px; --radius-m:14px; --radius-l:22px;
   --shadow-1:0 1px 2px rgba(15,17,22,.05), 0 1px 1px rgba(15,17,22,.04);
   --shadow-2:0 14px 32px -8px rgba(15,17,22,.16), 0 4px 10px -4px rgba(15,17,22,.08);
-  --sidebar-w:230px; --topbar-h:66px;
+  --sidebar-w:196px; --topbar-h:60px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%;}
@@ -75,29 +75,63 @@ input,select,textarea{font-family:inherit;}
 
 /* SHELL — sidebar oscuro fijo, contenido claro (mismo criterio que el prototipo) */
 #app{display:flex; min-height:100vh;}
-.sidebar{width:var(--sidebar-w); flex-shrink:0; background:linear-gradient(180deg, var(--ink-soft) 0%, var(--ink) 100%); color:#fff; display:flex; flex-direction:column; padding:20px 13px; position:sticky; top:0; height:100vh; box-shadow:4px 0 24px rgba(0,0,0,.18); z-index:25;}
-.brand{display:flex; align-items:center; gap:9px; padding:6px 8px 20px;}
-.brand .dot{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--caso-bright),var(--caso-deep));flex-shrink:0;}
-.brand strong{font-size:14.5px; font-weight:800; letter-spacing:-.015em; display:block;}
-.brand small{display:block; font-size:9.5px; color:#8E92A0; letter-spacing:.08em; text-transform:uppercase;}
-.nav-item{display:flex; align-items:center; gap:11px; padding:9.5px 11px; border-radius:10px; color:#B8BAC5; font-size:13.4px; font-weight:550; margin-bottom:2px; transition:background .16s,color .16s; width:100%; text-align:left; background:none; border:none; position:relative;}
-.nav-item .material-symbols-outlined{font-size:17px; flex-shrink:0;}
+.sidebar{width:var(--sidebar-w); flex-shrink:0; background:linear-gradient(180deg, var(--ink-soft) 0%, var(--ink) 100%); color:#fff; display:flex; flex-direction:column; padding:14px 10px; position:sticky; top:0; height:100vh; box-shadow:4px 0 24px rgba(0,0,0,.18); z-index:25; transition:transform .22s ease;}
+.brand{display:flex; align-items:center; gap:8px; padding:4px 6px 14px;}
+.brand .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--caso-bright),var(--caso-deep));flex-shrink:0;}
+.brand strong{font-size:13px; font-weight:800; letter-spacing:-.015em; display:block;}
+.brand small{display:block; font-size:8.7px; color:#8E92A0; letter-spacing:.08em; text-transform:uppercase;}
+.nav-item{display:flex; align-items:center; gap:9px; padding:7.5px 9px; border-radius:8px; color:#B8BAC5; font-size:12.4px; font-weight:550; margin-bottom:1px; transition:background .16s,color .16s; width:100%; text-align:left; background:none; border:none; position:relative;}
+.nav-item .material-symbols-outlined{font-size:15.5px; flex-shrink:0;}
 .nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
 .nav-item.active{background:linear-gradient(135deg, var(--caso) 0%, var(--caso-deep) 100%); color:#fff; box-shadow:0 6px 16px -4px rgba(37,99,235,.55);}
-.nav-item .badge-count{margin-left:auto; background:rgba(255,255,255,.12); color:#fff; font-size:10.5px; padding:1px 6px; border-radius:20px; font-weight:650;}
+.nav-item .badge-count{margin-left:auto; background:rgba(255,255,255,.12); color:#fff; font-size:9.5px; padding:1px 6px; border-radius:20px; font-weight:650;}
 .nav-item.active .badge-count{background:rgba(255,255,255,.25);}
-.sidebar-foot{margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:12px;}
-.user-chip{display:flex; align-items:center; gap:9px; padding:8px 10px; border-radius:10px; cursor:pointer;}
+.sidebar-foot{margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:9px;}
+.user-chip{display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:9px; cursor:pointer;}
 .user-chip:hover{background:rgba(255,255,255,.06);}
-.avatar{width:29px; height:29px; border-radius:50%; background:linear-gradient(135deg, var(--caso-bright), var(--caso-deep)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11.5px; flex-shrink:0;}
-.user-chip .name{font-size:12.6px; font-weight:600; color:#fff;}
-.user-chip .role{font-size:10.3px; color:#8E92A0;}
+.avatar{width:25px; height:25px; border-radius:50%; background:linear-gradient(135deg, var(--caso-bright), var(--caso-deep)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:10.5px; flex-shrink:0;}
+.user-chip .name{font-size:11.8px; font-weight:600; color:#fff;}
+.user-chip .role{font-size:9.6px; color:#8E92A0;}
+.sidebar-scroll{overflow-y:auto; flex:1; min-height:0;}
+.sidebar-overlay{display:none;}
 
 .main{flex:1; min-width:0;}
-.topbar{height:var(--topbar-h); border-bottom:1px solid var(--hairline); background:rgba(255,255,255,.82); backdrop-filter:blur(10px); display:flex; align-items:center; padding:0 28px; gap:14px; position:sticky; top:0; z-index:20; box-shadow:0 1px 0 rgba(15,17,22,.03);}
-.topbar h1{font-size:16px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
-.topbar .sub{font-size:12px; color:var(--text-faint); font-weight:600;}
-.content{padding:24px 28px 60px; max-width:1320px;}
+.topbar{height:var(--topbar-h); border-bottom:1px solid var(--hairline); background:rgba(255,255,255,.86); backdrop-filter:blur(10px); display:flex; align-items:center; padding:0 22px; gap:14px; position:sticky; top:0; z-index:20; box-shadow:0 1px 0 rgba(15,17,22,.03);}
+.topbar h1{font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
+.topbar .sub{font-size:11.5px; color:var(--text-faint); font-weight:600;}
+.menu-toggle{display:none; background:none; border:none; color:var(--text); padding:4px; margin-right:2px; border-radius:8px; cursor:pointer;}
+.menu-toggle .material-symbols-outlined{font-size:22px;}
+.topbar-search{position:relative; flex:1; max-width:420px;}
+.topbar-search .material-symbols-outlined{position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text-faint); pointer-events:none;}
+.topbar-search input{width:100%; padding:8px 12px 8px 34px; border:1.5px solid var(--hairline); border-radius:20px; font-size:12.6px; background:var(--panel-2); color:var(--text); transition:border-color .15s, box-shadow .15s, background .15s;}
+.topbar-search input:focus{border-color:var(--caso); box-shadow:0 0 0 3px var(--caso-soft); background:#fff; outline:none;}
+.live-dot{width:6px; height:6px; border-radius:50%; background:var(--ok); display:inline-block; margin-right:5px; opacity:0; transition:opacity .2s;}
+.live-dot.show{opacity:1; animation:pulseDot 1s ease infinite;}
+@keyframes pulseDot{0%,100%{opacity:.4;} 50%{opacity:1;}}
+.content{padding:20px 24px 60px; max-width:1320px;}
+
+/* RESPONSIVE — sidebar se convierte en panel deslizable en pantallas chicas */
+@media (max-width:900px){
+  .sidebar{position:fixed; left:0; top:0; transform:translateX(-100%); z-index:60; width:220px;}
+  .sidebar.open{transform:translateX(0); box-shadow:12px 0 40px rgba(0,0,0,.35);}
+  .sidebar-overlay{display:none; position:fixed; inset:0; background:rgba(12,13,16,.45); z-index:50;}
+  .sidebar-overlay.show{display:block;}
+  .menu-toggle{display:inline-flex; align-items:center; justify-content:center;}
+  .topbar{padding:0 14px; gap:10px;}
+  .topbar-search{max-width:none;}
+  .content{padding:14px 12px 50px;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr) !important;}
+  .filter-bar{gap:6px;}
+  .filter-bar select, .filter-bar input{flex:1 1 46%; font-size:12.5px;}
+  .table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  table.tbl{min-width:640px;}
+  .info-strip{gap:12px 18px;}
+}
+@media (max-width:520px){
+  .kpi-grid{grid-template-columns:1fr 1fr !important; gap:9px;}
+  .topbar h1{font-size:13.5px;}
+  .topbar .sub{display:none;}
+}
 .page-title{font-size:22px; font-weight:800; letter-spacing:-.02em; color:var(--text);}
 .page-sub{font-size:13px; color:var(--text-faint); margin-top:3px;}
 
@@ -112,9 +146,30 @@ input,select,textarea{font-family:inherit;}
 .panel-head h3{font-size:13.5px; font-weight:700; color:var(--text); letter-spacing:-.005em;}
 .panel-body{padding:16px 18px;}
 
-.filter-bar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:13px;}
+.filter-bar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:13px; align-items:center;}
 .filter-bar select, .filter-bar input{padding:8px 11px; border:1.5px solid var(--hairline); border-radius:var(--radius-s); font-size:12px; background:var(--panel); color:var(--text);}
 .filter-bar input::placeholder{color:var(--text-faint);}
+.filter-bar .flabel{font-size:10.5px; color:var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-right:-4px;}
+.filter-bar .fclear{margin-left:auto; font-size:11.5px; color:var(--caso); font-weight:650; background:none; border:none; cursor:pointer; padding:6px 4px;}
+.table-wrap{overflow-x:auto;}
+.vin-group{border:1px solid var(--hairline); border-radius:var(--radius-m); margin-bottom:14px; overflow:hidden; background:var(--panel);}
+.vin-group-head{display:flex; align-items:center; gap:12px; padding:13px 16px; background:var(--panel-2); cursor:pointer;}
+.vin-group-head:hover{background:var(--caso-soft);}
+.vin-group-head .vgh-main{flex:1; min-width:0;}
+.vin-group-head .vgh-vin{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:var(--caso-deep);}
+.vin-group-head .vgh-cliente{font-size:12.5px; color:var(--text-dim); margin-top:1px;}
+.vin-group-count{background:var(--caso-soft); color:var(--caso-deep); font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; flex-shrink:0;}
+.vin-group-body{border-top:1px solid var(--hairline);}
+.vin-case-row{display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--hairline); cursor:pointer;}
+.vin-case-row:last-child{border-bottom:none;}
+.vin-case-row:hover{background:var(--panel-2);}
+.vin-case-row .vc-id{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--caso); font-size:12px; width:88px; flex-shrink:0;}
+.vin-case-row .vc-motivo{flex:1; min-width:0; font-size:12.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.vin-case-row .vc-fecha{font-size:11px; color:var(--text-faint); flex-shrink:0; white-space:nowrap;}
+.updating-pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-faint); font-weight:650; margin-bottom:10px; opacity:0; transition:opacity .2s;}
+.updating-pill.show{opacity:1;}
+.updating-pill .spin{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--hairline);border-top-color:var(--caso);animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
 
 table.tbl{width:100%; border-collapse:collapse; font-size:12.4px; background:var(--panel);}
 table.tbl th{text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); padding:11px 15px; background:var(--panel-2); border-bottom:1px solid var(--hairline); font-weight:700;}
@@ -211,18 +266,20 @@ table.tbl tr:hover td{background:var(--panel-2);}
 </div>
 
 <div id="app" class="hidden">
-  <div class="sidebar">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar_(false)"></div>
+  <div class="sidebar" id="sidebar">
     <div class="brand"><div class="dot"></div><div><strong>Gestión de Casos</strong><small>Grupo París</small></div></div>
+    <div class="sidebar-scroll">
     <button class="nav-item active" id="navDashboard" onclick="setView('dashboard')"><span class="material-symbols-outlined">dashboard</span>Dashboard</button>
     <button class="nav-item" id="navBandeja" onclick="setView('bandeja')"><span class="material-symbols-outlined">inbox</span>Bandeja de entrada<span class="badge-count hidden" id="badgeBandeja">0</span></button>
     <button class="nav-item" id="navCasos" onclick="setView('casos')"><span class="material-symbols-outlined">folder_open</span>Casos</button>
-    <button class="nav-item" id="navBuscar" onclick="setView('buscar')"><span class="material-symbols-outlined">search</span>Buscar cliente / VIN</button>
     <button class="nav-item" id="navReportar" onclick="setView('reportar')"><span class="material-symbols-outlined">add_circle</span>Reportar un caso</button>
     <button class="nav-item" id="navReportes" onclick="setView('reportes')"><span class="material-symbols-outlined">bar_chart</span>Reportes</button>
     <button class="nav-item" id="navDefensa" onclick="setView('defensa')"><span class="material-symbols-outlined">balance</span>Defensa del Consumidor</button>
     <button class="nav-item" id="navActas" onclick="setView('actas')"><span class="material-symbols-outlined">description</span>Actas de reunión</button>
     <button class="nav-item" id="navEquipo" onclick="setView('equipo')"><span class="material-symbols-outlined">group</span>Equipo</button>
     <button class="nav-item" id="navConfig" onclick="setView('config')"><span class="material-symbols-outlined">settings</span>Configuración</button>
+    </div>
     <div class="sidebar-foot">
       <div class="user-chip" onclick="cerrarSesion()" title="Cerrar sesión">
         <div class="avatar" id="userAvatar">—</div>
@@ -233,8 +290,14 @@ table.tbl tr:hover td{background:var(--panel-2);}
 
   <div class="main">
     <div class="topbar">
+      <button class="menu-toggle" onclick="toggleSidebar_()" title="Menú"><span class="material-symbols-outlined">menu</span></button>
       <div><h1 id="topbarTitulo">Dashboard</h1><div class="sub" id="topbarSub">Estado general de los casos</div></div>
-      <button class="btn btn-ghost btn-sm" style="width:auto;margin-left:auto;" onclick="refrescarVistaActual_()" title="Volver a traer los datos"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">refresh</span> Actualizar</button>
+      <div class="topbar-search">
+        <span class="material-symbols-outlined">search</span>
+        <input id="topSearch" type="text" placeholder="Buscar cliente, DNI o VIN/dominio..." onkeydown="if(event.key==='Enter')ejecutarBusquedaGlobal_()">
+      </div>
+      <span class="live-dot" id="liveDot" title="Actualizando en segundo plano"></span>
+      <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="refrescarVistaActual_()" title="Volver a traer los datos"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">refresh</span> Actualizar</button>
     </div>
     <div class="content" id="content"></div>
   </div>
@@ -357,6 +420,28 @@ function etiquetaRol_(r){
 }
 
 // ============================================================
+// SIDEBAR MÓVIL + BÚSQUEDA GLOBAL (arriba de todo, en el topbar)
+// ============================================================
+function toggleSidebar_(force){
+  var sb = document.getElementById('sidebar');
+  var ov = document.getElementById('sidebarOverlay');
+  var open = (force!==undefined) ? force : !sb.classList.contains('open');
+  sb.classList.toggle('open', open);
+  ov.classList.toggle('show', open);
+}
+function ejecutarBusquedaGlobal_(){
+  var q = document.getElementById('topSearch').value.trim();
+  if(!q) return;
+  window._pendingSearchQuery = q;
+  setView('buscar');
+  toggleSidebar_(false);
+}
+function marcarLive_(on){
+  var dot = document.getElementById('liveDot');
+  if(dot) dot.classList.toggle('show', !!on);
+}
+
+// ============================================================
 // NAVEGACIÓN
 // ============================================================
 var VISTAS = ['dashboard','bandeja','casos','buscar','reportar','reportes','defensa','actas','equipo','config','detalle'];
@@ -400,7 +485,8 @@ function setView(v, param){
 }
 function refrescarVistaActual_(){
   if(!window._vistaActual) return;
-  if(window._vistaActual==='casos') window._casosCache = null;
+  ['dashboard','casos','eventosPendientes'].forEach(function(k){ guardarCache_(k, null); });
+  window._casosCache = null; window._eventosCache = null;
   setView(window._vistaActual, window._vistaActualParam);
   // Si estamos en el dashboard, ese mismo pedido ya trae y pinta el contador
   // de la Bandeja — pedirlo de nuevo acá sería la misma llamada al backend
@@ -408,6 +494,23 @@ function refrescarVistaActual_(){
   if(window._vistaActual!=='dashboard') actualizarBadgeBandeja_();
   showToast('Actualizado');
 }
+// Refresco silencioso automático en segundo plano — cada 60s, sin spinner
+// ni "Cargando…", para que dashboard/bandeja/casos se mantengan al día
+// mientras el usuario los tiene abiertos (mismo criterio que Planning).
+setInterval(function(){
+  if(!window._vistaActual || document.hidden) return;
+  if(window._vistaActual==='dashboard') renderDashboard();
+  else if(window._vistaActual==='casos') cargarYPintarCasos_();
+  else if(window._vistaActual==='bandeja'){
+    gasGet('eventosPendientes').then(function(res){
+      if(!res.ok || window._vistaActual!=='bandeja') return;
+      guardarCache_('eventosPendientes', res.eventos||[]);
+      window._eventosCache = res.eventos||[];
+      poblarSelectsBandeja_(window._eventosCache);
+      pintarTablaBandeja_();
+    });
+  }
+}, 60000);
 
 function pintarBadgeBandeja_(n){
   var badge = document.getElementById('badgeBandeja');
@@ -422,25 +525,41 @@ function actualizarBadgeBandeja_(){
 }
 
 // ============================================================
+// CACHÉ EN MEMORIA (pintar al toque con lo último que había, refrescar
+// en silencio detrás — mismo criterio que ya usamos en Planning para que
+// las pantallas no se sientan lentas ni parpadeen en "Cargando…").
+// ============================================================
+function leerCache_(name){ try{ return JSON.parse(sessionStorage.getItem('gc_cache_'+name)||'null'); }catch(e){ return null; } }
+function guardarCache_(name,data){ try{ sessionStorage.setItem('gc_cache_'+name, JSON.stringify(data)); }catch(e){} }
+
+// ============================================================
 // DASHBOARD
 // ============================================================
+function pintarDashboard_(res){
+  pintarBadgeBandeja_(res.eventosPendientesRevision||0);
+  var html = '<div class="kpi-grid">'+
+    kpiCardClick_(res.urgentes,'Casos urgentes','var(--danger)', "verListaFiltrada_('Casos urgentes',{prioridad:'Alta',soloAbiertos:true})")+
+    kpiCardClick_(res.abiertos,'Casos abiertos','var(--text)', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
+    kpiCardClick_(res.vencidos,'Vencidos (SLA)','var(--danger)', "verListaFiltrada_('Casos vencidos (SLA)',{soloVencidos:true})")+
+    kpiCardClick_(res.nuevosSinAsignar,'Nuevos sin asignar','var(--caso)', "verListaFiltrada_('Nuevos sin asignar',{estado:'nuevo',soloSinAsignar:true})")+
+    kpiCardClick_(res.resueltosSemana,'Resueltos esta semana','var(--ok)', "verListaFiltrada_('Resueltos / cerrados',{soloResueltos:true})")+
+    kpiCardClick_(res.eventosPendientesRevision,'En bandeja de entrada','var(--purple)', "setView('bandeja')")+
+  '</div>';
+  if(res.eventosPendientesRevision>0){
+    html += '<div class="alert-box purple"><span class="material-symbols-outlined">inbox</span><div>Hay <b>'+res.eventosPendientesRevision+' evento(s)</b> esperando revisión en la <a href="#" onclick="setView(\'bandeja\');return false;" style="color:var(--purple);font-weight:700;text-decoration:underline;">Bandeja de entrada</a> antes de convertirse en caso.</div></div>';
+  }
+  document.getElementById('content').innerHTML = html;
+}
 function renderDashboard(){
+  var cache = leerCache_('dashboard');
+  if(cache){ pintarDashboard_(cache); } else { document.getElementById('content').innerHTML = '<div class="empty-state">Cargando…</div>'; }
+  marcarLive_(!!cache);
   gasGet('dashboard').then(function(res){
-    if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
-    pintarBadgeBandeja_(res.eventosPendientesRevision||0);
-    var html = '<div class="kpi-grid">'+
-      kpiCardClick_(res.urgentes,'Casos urgentes','var(--danger)', "verListaFiltrada_('Casos urgentes',{prioridad:'Alta',soloAbiertos:true})")+
-      kpiCardClick_(res.abiertos,'Casos abiertos','var(--text)', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
-      kpiCardClick_(res.vencidos,'Vencidos (SLA)','var(--danger)', "verListaFiltrada_('Casos vencidos (SLA)',{soloVencidos:true})")+
-      kpiCardClick_(res.nuevosSinAsignar,'Nuevos sin asignar','var(--caso)', "verListaFiltrada_('Nuevos sin asignar',{estado:'nuevo',soloSinAsignar:true})")+
-      kpiCardClick_(res.resueltosSemana,'Resueltos esta semana','var(--ok)', "verListaFiltrada_('Resueltos / cerrados',{soloResueltos:true})")+
-      kpiCardClick_(res.eventosPendientesRevision,'En bandeja de entrada','var(--purple)', "setView('bandeja')")+
-    '</div>';
-    if(res.eventosPendientesRevision>0){
-      html += '<div class="alert-box purple"><span class="material-symbols-outlined">inbox</span><div>Hay <b>'+res.eventosPendientesRevision+' evento(s)</b> esperando revisión en la <a href="#" onclick="setView(\'bandeja\');return false;" style="color:var(--purple);font-weight:700;text-decoration:underline;">Bandeja de entrada</a> antes de convertirse en caso.</div></div>';
-    }
-    document.getElementById('content').innerHTML = html;
-  });
+    marcarLive_(false);
+    if(!res.ok){ if(!cache) document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    guardarCache_('dashboard', res);
+    if(window._vistaActual==='dashboard') pintarDashboard_(res);
+  }).catch(function(){ marcarLive_(false); });
 }
 function kpiCard_(num, label, color){
   return '<div class="kpi-card"><div class="kpi-num" style="color:'+color+';">'+(num!==undefined?num:'—')+'</div><div class="kpi-label">'+label+'</div></div>';
@@ -479,33 +598,103 @@ function cerrarModalListaFiltrada_(){
 }
 
 // ============================================================
-// BANDEJA DE ENTRADA
+// BANDEJA DE ENTRADA — con filtros (fuente, marca, sucursal, fecha) y
+// caché instantánea + refresco silencioso, mismo criterio que Casos.
 // ============================================================
+function parseFechaGC_(str){
+  if(!str) return null;
+  var partes = String(str).split(' ');
+  var f = (partes[0]||'').split('/');
+  var h = (partes[1]||'0:0').split(':');
+  if(f.length!==3) return null;
+  return new Date(Number(f[2]), Number(f[1])-1, Number(f[0]), Number(h[0]||0), Number(h[1]||0));
+}
 function renderBandeja(){
+  var html = '<div class="filter-bar">'+
+    '<select id="bfFuente" onchange="pintarTablaBandeja_()"><option value="">Toda fuente</option></select>'+
+    '<select id="bfMarca" onchange="pintarTablaBandeja_()"><option value="">Toda marca</option></select>'+
+    '<select id="bfSucursal" onchange="pintarTablaBandeja_()"><option value="">Toda sucursal</option></select>'+
+    '<span class="flabel">Desde</span><input id="bfDesde" type="date" onchange="pintarTablaBandeja_()">'+
+    '<span class="flabel">Hasta</span><input id="bfHasta" type="date" onchange="pintarTablaBandeja_()">'+
+    '<input id="bfBusqueda" type="text" placeholder="Buscar cliente, VIN, motivo..." style="min-width:200px;" oninput="pintarTablaBandeja_()">'+
+    '<button class="fclear" onclick="limpiarFiltrosBandeja_()">Limpiar filtros</button>'+
+  '</div><div class="updating-pill" id="bandejaUpdating"><span class="spin"></span>Actualizando…</div>'+
+  '<div class="panel"><div class="table-wrap" id="tablaBandeja"><div class="empty-state">Cargando…</div></div></div>';
+  document.getElementById('content').innerHTML = html;
+  var cache = leerCache_('eventosPendientes');
+  if(cache){ window._eventosCache = cache; poblarSelectsBandeja_(cache); pintarTablaBandeja_(); }
+  document.getElementById('bandejaUpdating').classList.toggle('show', !!cache);
   gasGet('eventosPendientes').then(function(res){
-    if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    if(!res.ok){ if(!cache) document.getElementById('tablaBandeja').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     var eventos = res.eventos||[];
-    if(eventos.length===0){
-      document.getElementById('content').innerHTML = '<div class="panel"><div class="empty-state">✓ No hay eventos esperando revisión.</div></div>';
-      return;
-    }
-    var filas = eventos.map(function(e){
-      var d = e.datosNormalizados||{};
-      return '<tr>'+
-        '<td class="mono" style="color:var(--text-faint);">'+e.id+'</td>'+
-        '<td>'+(d.cliente||'—')+'</td>'+
-        '<td>'+(d.marca||'—')+' '+(d.modelo||'')+'</td>'+
-        '<td>'+(d.vin||'—')+'</td>'+
-        '<td><span class="pill pill-nuevo">'+(e.fuente||'Manual')+'</span></td>'+
-        '<td>'+(d.motivo||'—')+'</td>'+
-        '<td style="white-space:nowrap;">'+e.fechaRecepcion+'</td>'+
-        '<td style="white-space:nowrap;"><button class="btn btn-primary btn-sm" style="width:auto;" onclick="confirmarEvento_(\''+e.id+'\', event)">Convertir en caso</button> '+
-          '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="descartarEvento_(\''+e.id+'\', event)">Descartar</button></td>'+
-      '</tr>';
-    }).join('');
-    document.getElementById('content').innerHTML =
-      '<div class="panel"><table class="tbl"><thead><tr><th>Evento</th><th>Cliente</th><th>Vehículo</th><th>VIN</th><th>Fuente</th><th>Motivo</th><th>Recibido</th><th></th></tr></thead><tbody>'+filas+'</tbody></table></div>';
+    guardarCache_('eventosPendientes', eventos);
+    if(window._vistaActual!=='bandeja') return;
+    window._eventosCache = eventos;
+    document.getElementById('bandejaUpdating').classList.remove('show');
+    poblarSelectsBandeja_(eventos);
+    pintarTablaBandeja_();
   });
+}
+function poblarSelectsBandeja_(eventos){
+  var opts = function(id, valores){
+    var sel = document.getElementById(id);
+    var actual = sel.value;
+    sel.innerHTML = sel.options[0].outerHTML;
+    Array.from(new Set(valores.filter(Boolean))).sort().forEach(function(v){
+      var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+    });
+    sel.value = actual;
+  };
+  opts('bfFuente', eventos.map(function(e){return e.fuente;}));
+  opts('bfMarca', eventos.map(function(e){return (e.datosNormalizados||{}).marca;}));
+  opts('bfSucursal', eventos.map(function(e){return (e.datosNormalizados||{}).sucursal;}));
+}
+function limpiarFiltrosBandeja_(){
+  ['bfFuente','bfMarca','bfSucursal','bfDesde','bfHasta','bfBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  pintarTablaBandeja_();
+}
+function pintarTablaBandeja_(){
+  var eventos = window._eventosCache || [];
+  var fuente = document.getElementById('bfFuente').value;
+  var marca = document.getElementById('bfMarca').value;
+  var sucursal = document.getElementById('bfSucursal').value;
+  var desde = document.getElementById('bfDesde').value ? new Date(document.getElementById('bfDesde').value+'T00:00:00') : null;
+  var hasta = document.getElementById('bfHasta').value ? new Date(document.getElementById('bfHasta').value+'T23:59:59') : null;
+  var q = (document.getElementById('bfBusqueda').value||'').toLowerCase();
+  var filtrados = eventos.filter(function(e){
+    var d = e.datosNormalizados||{};
+    if(fuente && e.fuente!==fuente) return false;
+    if(marca && d.marca!==marca) return false;
+    if(sucursal && d.sucursal!==sucursal) return false;
+    var fecha = parseFechaGC_(e.fechaRecepcion);
+    if(desde && fecha && fecha<desde) return false;
+    if(hasta && fecha && fecha>hasta) return false;
+    if(q){
+      var texto = ((d.cliente||'')+' '+(d.vin||'')+' '+(d.motivo||'')+' '+e.id).toLowerCase();
+      if(texto.indexOf(q)===-1) return false;
+    }
+    return true;
+  });
+  // Más reciente primero — igual criterio que Planning.
+  filtrados.sort(function(a,b){ return (parseFechaGC_(b.fechaRecepcion)||0) - (parseFechaGC_(a.fechaRecepcion)||0); });
+  var cont = document.getElementById('tablaBandeja');
+  if(filtrados.length===0){ cont.innerHTML = '<div class="empty-state">'+(eventos.length===0?'✓ No hay eventos esperando revisión.':'No hay eventos que coincidan con los filtros.')+'</div>'; return; }
+  var filas = filtrados.map(function(e){
+    var d = e.datosNormalizados||{};
+    return '<tr>'+
+      '<td class="mono" style="color:var(--text-faint);">'+e.id+'</td>'+
+      '<td>'+(d.cliente||'—')+'</td>'+
+      '<td>'+(d.marca||'—')+' '+(d.modelo||'')+'</td>'+
+      '<td>'+(d.vin||'—')+'</td>'+
+      '<td>'+(d.sucursal||'—')+'</td>'+
+      '<td><span class="pill pill-nuevo">'+(e.fuente||'Manual')+'</span></td>'+
+      '<td>'+(d.motivo||'—')+'</td>'+
+      '<td style="white-space:nowrap;">'+e.fechaRecepcion+'</td>'+
+      '<td style="white-space:nowrap;"><button class="btn btn-primary btn-sm" style="width:auto;" onclick="confirmarEvento_(\''+e.id+'\', event)">Convertir en caso</button> '+
+        '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="descartarEvento_(\''+e.id+'\', event)">Descartar</button></td>'+
+    '</tr>';
+  }).join('');
+  cont.innerHTML = '<table class="tbl"><thead><tr><th>Evento</th><th>Cliente</th><th>Vehículo</th><th>VIN</th><th>Sucursal</th><th>Fuente</th><th>Motivo</th><th>Recibido</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>';
 }
 function confirmarEvento_(id, ev){
   ev.stopPropagation();
@@ -513,6 +702,7 @@ function confirmarEvento_(id, ev){
   gasPost('confirmarEventoComoCaso', {idEvento:id, usuario:s?s.nombre:''}).then(function(res){
     if(!res.ok){ showToast(res.error); return; }
     showToast('Caso creado: '+res.codigo);
+    guardarCache_('eventosPendientes', null); guardarCache_('casos', null);
     renderBandeja(); actualizarBadgeBandeja_();
   });
 }
@@ -522,6 +712,7 @@ function descartarEvento_(id, ev){
   gasPost('descartarEvento', {idEvento:id, motivo:'Descartado desde la Bandeja de entrada.'}).then(function(res){
     if(!res.ok){ showToast(res.error); return; }
     showToast('Evento descartado');
+    guardarCache_('eventosPendientes', null);
     renderBandeja(); actualizarBadgeBandeja_();
   });
 }
@@ -537,34 +728,73 @@ function renderCasos(){
     '</select>'+
     '<select id="fPrioridad" onchange="aplicarFiltrosCasos_()"><option value="">Toda prioridad</option><option>Alta</option><option>Media</option><option>Baja</option></select>'+
     '<select id="fFuente" onchange="aplicarFiltrosCasos_()"><option value="">Toda fuente</option></select>'+
+    '<select id="fMarca" onchange="aplicarFiltrosCasos_()"><option value="">Toda marca</option></select>'+
+    '<select id="fSucursal" onchange="aplicarFiltrosCasos_()"><option value="">Toda sucursal</option></select>'+
+    '<span class="flabel">Desde</span><input id="fDesde" type="date" onchange="aplicarFiltrosCasos_()">'+
+    '<span class="flabel">Hasta</span><input id="fHasta" type="date" onchange="aplicarFiltrosCasos_()">'+
     '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);"><input type="checkbox" id="fDefensa" onchange="aplicarFiltrosCasos_()"> ⚖️ Solo Defensa del Consumidor</label>'+
-    '<input id="fBusqueda" type="text" placeholder="Buscar por cliente, VIN..." oninput="aplicarFiltrosCasos_()">'+
-  '</div><div class="panel"><div id="tablaCasos"><div class="empty-state">Cargando…</div></div></div>';
+    '<input id="fBusqueda" type="text" placeholder="Buscar por cliente, VIN..." style="min-width:180px;" oninput="aplicarFiltrosCasos_()">'+
+    '<button class="fclear" onclick="limpiarFiltrosCasos_()">Limpiar filtros</button>'+
+  '</div><div class="updating-pill" id="casosUpdating"><span class="spin"></span>Actualizando…</div>'+
+  '<div class="panel"><div class="table-wrap" id="tablaCasos"><div class="empty-state">Cargando…</div></div></div>';
   document.getElementById('content').innerHTML = html;
+  var cache = leerCache_('casos');
+  if(cache){ window._casosCache = cache; poblarSelectsCasos_(cache); pintarTablaCasos_(); }
+  document.getElementById('casosUpdating').classList.toggle('show', !!cache);
   cargarYPintarCasos_();
 }
 function cargarYPintarCasos_(){
   gasGet('casos').then(function(res){
-    if(!res.ok){ document.getElementById('tablaCasos').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
-    window._casosCache = res.casos || res || [];
-    var selFuente = document.getElementById('fFuente');
-    var fuentes = Array.from(new Set(window._casosCache.map(function(c){return c.fuente;}).filter(Boolean)));
-    fuentes.forEach(function(f){ var opt=document.createElement('option'); opt.value=f; opt.textContent=f; selFuente.appendChild(opt); });
+    if(!res.ok){ if(!window._casosCache) document.getElementById('tablaCasos').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    var casos = res.casos || res || [];
+    guardarCache_('casos', casos);
+    if(window._vistaActual!=='casos') return;
+    window._casosCache = casos;
+    document.getElementById('casosUpdating').classList.remove('show');
+    poblarSelectsCasos_(casos);
     pintarTablaCasos_();
   });
+}
+function poblarSelectsCasos_(casos){
+  var opts = function(id, valores){
+    var sel = document.getElementById(id);
+    var actual = sel.value;
+    sel.innerHTML = sel.options[0].outerHTML;
+    Array.from(new Set(valores.filter(Boolean))).sort().forEach(function(v){
+      var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
+    });
+    sel.value = actual;
+  };
+  opts('fFuente', casos.map(function(c){return c.fuente;}));
+  opts('fMarca', casos.map(function(c){return c.marca;}));
+  opts('fSucursal', casos.map(function(c){return c.sucursal;}));
+}
+function limpiarFiltrosCasos_(){
+  ['fEstado','fPrioridad','fFuente','fMarca','fSucursal','fDesde','fHasta','fBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('fDefensa').checked = false;
+  pintarTablaCasos_();
 }
 function aplicarFiltrosCasos_(){ pintarTablaCasos_(); }
 function pintarTablaCasos_(){
   var estado = document.getElementById('fEstado').value;
   var prioridad = document.getElementById('fPrioridad').value;
   var fuente = document.getElementById('fFuente').value;
+  var marca = document.getElementById('fMarca').value;
+  var sucursal = document.getElementById('fSucursal').value;
+  var desde = document.getElementById('fDesde').value ? new Date(document.getElementById('fDesde').value+'T00:00:00') : null;
+  var hasta = document.getElementById('fHasta').value ? new Date(document.getElementById('fHasta').value+'T23:59:59') : null;
   var soloDefensa = document.getElementById('fDefensa').checked;
   var q = document.getElementById('fBusqueda').value.toLowerCase();
   var casos = (window._casosCache||[]).filter(function(c){
     if(estado && c.estado!==estado) return false;
     if(prioridad && c.prioridad!==prioridad) return false;
     if(fuente && c.fuente!==fuente) return false;
+    if(marca && c.marca!==marca) return false;
+    if(sucursal && c.sucursal!==sucursal) return false;
     if(soloDefensa && !(String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true)) return false;
+    var fecha = parseFechaGC_(c.fechaCreacion);
+    if(desde && fecha && fecha<desde) return false;
+    if(hasta && fecha && fecha>hasta) return false;
     if(q){
       var texto = ((c.cliente||'')+' '+(c.dominio||'')+' '+(c.motivo||'')+' '+(c.id||'')).toLowerCase();
       if(texto.indexOf(q)===-1) return false;
@@ -578,6 +808,7 @@ function pintarTablaCasos_(){
       '<td class="mono" style="color:var(--caso);font-weight:700;">'+c.id+(esDefensa?' ⚖️':'')+'</td>'+
       '<td>'+(c.cliente||'—')+'</td>'+
       '<td>'+(c.marca||'—')+'</td>'+
+      '<td>'+(c.sucursal||'—')+'</td>'+
       '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
       '<td><span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span></td>'+
       '<td>'+(c.responsable||'<span style="color:var(--text-faint);">Sin asignar</span>')+'</td>'+
@@ -585,7 +816,7 @@ function pintarTablaCasos_(){
     '</tr>';
   }).join('');
   document.getElementById('tablaCasos').innerHTML =
-    '<table class="tbl"><thead><tr><th>Caso</th><th>Cliente</th><th>Marca</th><th>Estado</th><th>Prioridad</th><th>Responsable</th><th>Creado</th></tr></thead><tbody>'+filas+'</tbody></table>';
+    '<table class="tbl"><thead><tr><th>Caso</th><th>Cliente</th><th>Marca</th><th>Sucursal</th><th>Estado</th><th>Prioridad</th><th>Responsable</th><th>Creado</th></tr></thead><tbody>'+filas+'</tbody></table>';
 }
 
 // ============================================================
@@ -786,14 +1017,33 @@ function comentarCasoUI_(id){
 }
 
 // ============================================================
-// BUSCAR CLIENTE / VIN
+// BUSCAR CLIENTE / VIN — agrupa por VIN: un mismo vehículo con varios
+// casos aparece como UN solo historial expandible, en vez de filas
+// sueltas repetidas. Sin VIN, se agrupa por cliente.
 // ============================================================
 function renderBuscar(){
+  var qInicial = window._pendingSearchQuery || '';
+  window._pendingSearchQuery = null;
   document.getElementById('content').innerHTML =
     '<div class="panel"><div style="padding:18px;">'+
-      '<div style="display:flex;gap:8px;"><input id="buscarQuery" type="text" placeholder="DNI, VIN/dominio o nombre del cliente..." style="flex:1;padding:10px 12px;border:1.5px solid var(--hairline);border-radius:9px;font-size:13px;background:var(--panel-2);color:var(--text);" onkeydown="if(event.key===\'Enter\')ejecutarBusqueda_()">'+
+      '<div style="display:flex;gap:8px;"><input id="buscarQuery" type="text" placeholder="DNI, VIN/dominio o nombre del cliente..." value="'+qInicial.replace(/"/g,'&quot;')+'" style="flex:1;padding:10px 12px;border:1.5px solid var(--hairline);border-radius:9px;font-size:13px;background:var(--panel-2);color:var(--text);" onkeydown="if(event.key===\'Enter\')ejecutarBusqueda_()">'+
       '<button class="btn btn-primary" style="width:auto;" onclick="ejecutarBusqueda_()">Buscar</button></div>'+
     '</div></div><div id="resultadoBusqueda"></div>';
+  if(qInicial) ejecutarBusqueda_();
+}
+function agruparPorVin_(casos){
+  var grupos = [], mapa = {};
+  casos.forEach(function(c){
+    var clave = (c.dominio && String(c.dominio).trim()) ? 'VIN:'+c.dominio.trim().toUpperCase() : 'CLIENTE:'+(c.cliente||'—');
+    if(!mapa[clave]){
+      mapa[clave] = {vin: c.dominio||'', cliente:c.cliente, marca:c.marca, modelo:c.modelo, casos:[]};
+      grupos.push(mapa[clave]);
+    }
+    mapa[clave].casos.push(c);
+  });
+  grupos.forEach(function(g){ g.casos.sort(function(a,b){ return (parseFechaGC_(b.fechaCreacion)||0) - (parseFechaGC_(a.fechaCreacion)||0); }); });
+  grupos.sort(function(a,b){ return b.casos.length - a.casos.length; });
+  return grupos;
 }
 function ejecutarBusqueda_(){
   var q = document.getElementById('buscarQuery').value.trim();
@@ -803,20 +1053,43 @@ function ejecutarBusqueda_(){
     if(!res.ok){ document.getElementById('resultadoBusqueda').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     var casos = res.casos||[];
     if(casos.length===0){ document.getElementById('resultadoBusqueda').innerHTML = '<div class="panel"><div class="empty-state">No se encontraron casos con ese dato.</div></div>'; return; }
-    var filas = casos.map(function(c){
-      return '<tr onclick="setView(\'detalle\',\''+c.id+'\')">'+
-        '<td class="mono" style="color:var(--caso);font-weight:700;">'+c.id+'</td>'+
-        '<td>'+(c.cliente||'—')+'</td>'+
-        '<td>'+(c.marca||'—')+' '+(c.modelo||'')+'</td>'+
-        '<td>'+(c.dominio||'—')+'</td>'+
-        '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
-        '<td>'+(c.fechaCreacion||'—')+'</td>'+
-      '</tr>';
+    var grupos = agruparPorVin_(casos);
+    var totalCasos = casos.length;
+    var html = '<div class="panel"><div class="panel-head"><h3>'+grupos.length+' vehículo/cliente encontrado(s) · '+totalCasos+' caso(s) en total</h3></div></div>';
+    html += grupos.map(function(g, gi){
+      var abierto = grupos.length===1; // si hay un solo grupo, lo dejamos ya desplegado
+      var ultimo = g.casos[0];
+      return '<div class="vin-group">'+
+        '<div class="vin-group-head" onclick="toggleVinGroup_('+gi+')">'+
+          '<div class="vgh-main">'+
+            '<div class="vgh-vin">'+(g.vin ? g.vin : (g.cliente||'Sin VIN'))+'</div>'+
+            '<div class="vgh-cliente">'+(g.cliente||'—')+(g.marca?' · '+g.marca+' '+(g.modelo||''):'')+' — último: '+(ultimo.motivo||ultimo.tipoCaso||'—')+'</div>'+
+          '</div>'+
+          '<span class="vin-group-count">'+g.casos.length+' caso'+(g.casos.length>1?'s':'')+'</span>'+
+          '<span class="material-symbols-outlined" id="vgIcon'+gi+'" style="color:var(--text-faint);">'+(abierto?'expand_less':'expand_more')+'</span>'+
+        '</div>'+
+        '<div class="vin-group-body'+(abierto?'':' hidden')+'" id="vgBody'+gi+'">'+
+          g.casos.map(function(c){
+            var esDefensa = String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true;
+            return '<div class="vin-case-row" onclick="setView(\'detalle\',\''+c.id+'\')">'+
+              '<span class="vc-id">'+c.id+(esDefensa?' ⚖️':'')+'</span>'+
+              '<span class="pill pill-'+c.estado+'">'+c.estado+'</span>'+
+              '<span class="vc-motivo">'+(c.motivo||c.tipoCaso||'—')+'</span>'+
+              '<span class="vc-fecha">'+(c.fechaCreacion||'—')+'</span>'+
+            '</div>';
+          }).join('')+
+        '</div>'+
+      '</div>';
     }).join('');
-    document.getElementById('resultadoBusqueda').innerHTML =
-      '<div class="panel"><div class="panel-head"><h3>'+casos.length+' caso(s) encontrado(s)</h3></div>'+
-      '<table class="tbl"><thead><tr><th>Caso</th><th>Cliente</th><th>Vehículo</th><th>VIN</th><th>Estado</th><th>Fecha</th></tr></thead><tbody>'+filas+'</tbody></table></div>';
+    document.getElementById('resultadoBusqueda').innerHTML = html;
   });
+}
+function toggleVinGroup_(gi){
+  var body = document.getElementById('vgBody'+gi);
+  var icon = document.getElementById('vgIcon'+gi);
+  var abierto = !body.classList.contains('hidden');
+  body.classList.toggle('hidden', abierto);
+  icon.textContent = abierto ? 'expand_more' : 'expand_less';
 }
 
 // ============================================================
