@@ -6,16 +6,34 @@
 <title>Gestión de Casos · Grupo París</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=block" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root{
-  /* Paleta exacta del prototipo aprobado (paris-calidad-gestion-casos) —
-     mismos NOMBRES de variable que ya usa todo el JS de acá (--bg, --panel,
-     --caso, etc.), pero con los valores de ese diseño en vez de los
-     nuestros. Así no hace falta tocar ni una línea de la lógica/render. */
+  /* Paleta oscura — mismos tokens que usa Planning de Entregas (--bg,
+     --panel, --panel-2, --hairline, --text...) para que las dos apps
+     compartan una sola identidad visual. Modo claro disponible abajo,
+     activable con el mismo toggle que tiene Planning. */
   --ink:#0C0D10; --ink-soft:#15171C;
+  --bg:#0F131A; --panel:#161B24; --panel-2:#1D2330; --hairline:#2A303D;
+  --text:#EAEDF3; --text-dim:#A3ABBD; --text-faint:#7A8296;
+  --ok:#3FBF88; --ok-soft:rgba(63,191,136,.16);
+  --warn:#E8B23D; --warn-soft:rgba(232,178,61,.16);
+  --danger:#E85D5D; --danger-soft:rgba(232,93,93,.16);
+  --pending:#7A8296; --pending-soft:rgba(122,130,150,.18);
+  --purple:#8B7CF6; --purple-soft:rgba(139,124,246,.16);
+  --info:#6D7CF6; --info-soft:rgba(109,124,246,.16);
+  --caso:#4C86F0; --caso-soft:rgba(76,134,240,.16); --caso-deep:#8FB4F8; --caso-bright:#5B93F5;
+  --accent: var(--caso); --accent-soft: var(--caso-soft);
+  --radius-s:9px; --radius-m:14px; --radius-l:22px;
+  --shadow-1:0 1px 2px rgba(0,0,0,.2), 0 1px 1px rgba(0,0,0,.16);
+  --shadow-2:0 14px 32px -8px rgba(0,0,0,.5), 0 4px 10px -4px rgba(0,0,0,.3);
+  --sidebar-w:196px; --topbar-h:60px;
+}
+/* MODO CLARO — el diseño original de la app; se activa con el toggle
+   de tema (mismo criterio y nombres de función que usa Planning). */
+body.light-mode{
   --bg:#FAFAFB; --panel:#FFFFFF; --panel-2:#FAFAFB; --hairline:#E1E3EA;
   --text:#0C0D10; --text-dim:#4E515D; --text-faint:#9DA0AC;
   --ok:#0F9D58; --ok-soft:#E8F7EF;
@@ -23,17 +41,16 @@
   --danger:#DC2626; --danger-soft:#FDECEC;
   --pending:#9DA0AC; --pending-soft:#F3F4F7;
   --purple:#7C3AED; --purple-soft:#F2ECFE;
+  --info:#4338CA; --info-soft:#EEF2FF;
   --caso:#2563EB; --caso-soft:#EFF4FF; --caso-deep:#1D4ED8; --caso-bright:#3B82F6;
-  --accent: var(--caso); --accent-soft: var(--caso-soft);
-  --radius-s:9px; --radius-m:14px; --radius-l:22px;
   --shadow-1:0 1px 2px rgba(15,17,22,.05), 0 1px 1px rgba(15,17,22,.04);
   --shadow-2:0 14px 32px -8px rgba(15,17,22,.16), 0 4px 10px -4px rgba(15,17,22,.08);
-  --sidebar-w:196px; --topbar-h:60px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%;}
-body{font-family:'Inter',system-ui,sans-serif; color:var(--text); background:var(--bg); -webkit-font-smoothing:antialiased; font-size:14.5px; line-height:1.45;}
-.mono{font-family:'JetBrains Mono',monospace;}
+body{font-family:'Inter',system-ui,sans-serif; color:var(--text); background:var(--bg); -webkit-font-smoothing:antialiased; font-size:14.5px; line-height:1.45; transition:background .18s ease, color .18s ease;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.headline{font-family:'Space Grotesk',sans-serif;}
 .hidden{display:none !important;}
 .view:not(.hidden){animation:viewIn .28s ease;}
 @keyframes viewIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
@@ -50,15 +67,15 @@ input,select,textarea{font-family:inherit;}
 .login-card{position:relative; z-index:2; width:380px; background:#fff; border-radius:var(--radius-l); padding:40px 36px 32px; box-shadow:0 40px 90px -20px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04);}
 .login-mark{display:flex; align-items:center; gap:10px; margin-bottom:22px;}
 .login-mark .dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--caso-bright),var(--caso-deep));flex-shrink:0;}
-.login-mark span{font-weight:800; letter-spacing:-.02em; font-size:16px; display:block; color:var(--text);}
+.login-mark span{font-family:'Space Grotesk',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:16px; display:block; color:var(--text);}
 .login-mark small{display:block; font-size:10.5px; color:var(--text-faint); letter-spacing:.06em; text-transform:uppercase; margin-top:1px;}
-.login-card h1{font-size:19px; font-weight:700; margin-bottom:4px; color:var(--text);}
+.login-card h1{font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; margin-bottom:4px; color:var(--text);}
 .login-card p.sub{color:var(--text-faint); font-size:12.8px; margin-bottom:22px;}
 .field{margin-bottom:14px;}
 .field label{display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:6px;}
 .field input, .field select, .field textarea{width:100%; padding:10px 12px; border:1.5px solid var(--hairline); border-radius:var(--radius-s); font-size:13.5px; font-family:inherit; background:var(--panel-2); color:var(--text); transition:border-color .15s, box-shadow .15s;}
 .field input::placeholder, .field textarea::placeholder{color:var(--text-faint);}
-.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--caso); box-shadow:0 0 0 3px var(--caso-soft); background:#fff; outline:none;}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--caso); box-shadow:0 0 0 3px var(--caso-soft); background:var(--panel); outline:none;}
 .field textarea{resize:vertical; min-height:80px;}
 .btn{border:none; border-radius:var(--radius-s); font-weight:650; font-size:13.5px; padding:11px 16px; transition:transform .14s, box-shadow .18s, filter .15s; display:inline-flex; align-items:center; justify-content:center; gap:7px;}
 .btn:active{transform:scale(.97);}
@@ -73,50 +90,82 @@ input,select,textarea{font-family:inherit;}
 .login-error{background:var(--danger-soft); color:var(--danger); border-radius:var(--radius-s); padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
 .login-foot{margin-top:18px; text-align:center; font-size:11px; color:var(--text-faint);}
 
-/* SHELL — sidebar oscuro fijo, contenido claro (mismo criterio que el prototipo) */
+/* SHELL — riel de íconos angosto que se expande al pasar el mouse o al
+   fijarlo (mismo patrón e interacción que usa Planning de Entregas), en
+   vez del panel ancho fijo de antes. */
 #app{display:flex; min-height:100vh;}
-.sidebar{width:var(--sidebar-w); flex-shrink:0; background:linear-gradient(180deg, var(--ink-soft) 0%, var(--ink) 100%); color:#fff; display:flex; flex-direction:column; padding:14px 10px; position:sticky; top:0; height:100vh; box-shadow:4px 0 24px rgba(0,0,0,.18); z-index:25; transition:transform .22s ease;}
-.brand{display:flex; align-items:center; gap:8px; padding:4px 6px 14px;}
+.sidebar{position:fixed; left:0; top:0; bottom:0; width:60px; background:linear-gradient(180deg, var(--ink-soft) 0%, var(--ink) 100%); color:#fff; display:flex; flex-direction:column; padding:14px 0 12px; overflow:hidden; box-shadow:4px 0 24px rgba(0,0,0,.18); z-index:65; transition:width .16s ease;}
+.sidebar:hover, .sidebar.pinned{width:206px; overflow:visible; box-shadow:6px 0 24px rgba(0,0,0,.4);}
+.sidebar-pin{position:absolute; top:13px; right:9px; background:none; border:none; color:#8E92A0; cursor:pointer; padding:3px; border-radius:6px; opacity:0; transition:opacity .12s,color .12s;}
+.sidebar-pin .material-symbols-outlined{font-size:15px; display:block;}
+.sidebar-pin:hover{color:#fff;}
+.sidebar:hover .sidebar-pin, .sidebar.pinned .sidebar-pin{opacity:1;}
+.sidebar.pinned .sidebar-pin{color:var(--caso-bright);}
+.brand{display:flex; align-items:center; gap:8px; padding:4px 0 16px 15px; white-space:nowrap;}
 .brand .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--caso-bright),var(--caso-deep));flex-shrink:0;}
-.brand strong{font-size:13px; font-weight:800; letter-spacing:-.015em; display:block;}
+.brand strong{font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:800; letter-spacing:-.015em; display:block;}
 .brand small{display:block; font-size:8.7px; color:#8E92A0; letter-spacing:.08em; text-transform:uppercase;}
-.nav-item{display:flex; align-items:center; gap:9px; padding:7.5px 9px; border-radius:8px; color:#B8BAC5; font-size:12.4px; font-weight:550; margin-bottom:1px; transition:background .16s,color .16s; width:100%; text-align:left; background:none; border:none; position:relative;}
-.nav-item .material-symbols-outlined{font-size:15.5px; flex-shrink:0;}
+.nav-label,.user-chip .info{opacity:0; max-width:0; overflow:hidden; transition:opacity .08s ease, max-width .16s ease; white-space:nowrap;}
+.sidebar:hover .nav-label, .sidebar.pinned .nav-label,
+.sidebar:hover .user-chip .info, .sidebar.pinned .user-chip .info{opacity:1; max-width:150px;}
+.nav-item{display:flex; align-items:center; gap:11px; padding:8px 18px; border-radius:0; color:#B8BAC5; font-size:12.6px; font-weight:550; margin-bottom:1px; transition:background .16s,color .16s; width:100%; text-align:left; background:none; border:none; position:relative;}
+.sidebar:not(:hover):not(.pinned):not(.open) .nav-item{justify-content:center; padding-left:0; padding-right:0;}
+.nav-item .material-symbols-outlined{font-size:17px; flex-shrink:0;}
 .nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
-.nav-item.active{background:linear-gradient(135deg, var(--caso) 0%, var(--caso-deep) 100%); color:#fff; box-shadow:0 6px 16px -4px rgba(37,99,235,.55);}
+.nav-item.active{background:var(--caso-soft); color:var(--caso-bright);}
 .nav-item .badge-count{margin-left:auto; background:rgba(255,255,255,.12); color:#fff; font-size:9.5px; padding:1px 6px; border-radius:20px; font-weight:650;}
-.nav-item.active .badge-count{background:rgba(255,255,255,.25);}
+.nav-item.active .badge-count{background:rgba(255,255,255,.2);}
+.sidebar-scroll{overflow-y:auto; overflow-x:hidden; flex:1; min-height:0; padding:0 6px;}
+.sidebar-scroll::-webkit-scrollbar{width:4px;}
+.sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18); border-radius:10px;}
 .sidebar-foot{margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:9px;}
-.user-chip{display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:9px; cursor:pointer;}
+.user-chip{display:flex; align-items:center; gap:9px; padding:8px 13px; cursor:pointer;}
+.sidebar:not(:hover):not(.pinned):not(.open) .user-chip{justify-content:center;}
 .user-chip:hover{background:rgba(255,255,255,.06);}
-.avatar{width:25px; height:25px; border-radius:50%; background:linear-gradient(135deg, var(--caso-bright), var(--caso-deep)); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:10.5px; flex-shrink:0;}
-.user-chip .name{font-size:11.8px; font-weight:600; color:#fff;}
+.avatar{width:27px; height:27px; border-radius:50%; background:var(--caso-soft); color:var(--caso-bright); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:11px; flex-shrink:0;}
+.user-chip .info{display:flex; flex-direction:column; min-width:0;}
+.user-chip .name{font-size:11.8px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .user-chip .role{font-size:9.6px; color:#8E92A0;}
-.sidebar-scroll{overflow-y:auto; flex:1; min-height:0;}
+.user-menu-pop{display:none; flex-direction:column; gap:1px; padding:6px; position:absolute; bottom:calc(100% + 4px); left:6px; width:190px; background:#20263a; border:1px solid rgba(255,255,255,.1); border-radius:10px; box-shadow:0 -8px 24px rgba(0,0,0,.5); z-index:70;}
+.user-menu-pop.show{display:flex;}
+.user-menu-pop button{display:flex; align-items:center; gap:9px; background:none; border:none; color:#B8BAC5; font-size:12px; font-weight:600; padding:8px 10px; border-radius:7px; cursor:pointer; text-align:left; font-family:inherit; white-space:nowrap;}
+.user-menu-pop button:hover{background:rgba(255,255,255,.08); color:#fff;}
+.user-menu-pop button .material-symbols-outlined{font-size:16px;}
+.user-menu-pop button.danger{color:#F09090;}
+.user-menu-pop button.danger:hover{background:rgba(232,93,93,.16);}
 .sidebar-overlay{display:none;}
 
-.main{flex:1; min-width:0;}
+.main{flex:1; min-width:0; margin-left:60px; transition:margin-left .16s ease;}
+.sidebar:hover ~ .main, .sidebar.pinned ~ .main{margin-left:206px;}
 .topbar{height:var(--topbar-h); border-bottom:1px solid var(--hairline); background:rgba(255,255,255,.86); backdrop-filter:blur(10px); display:flex; align-items:center; padding:0 22px; gap:14px; position:sticky; top:0; z-index:20; box-shadow:0 1px 0 rgba(15,17,22,.03);}
-.topbar h1{font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
+.topbar h1{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
 .topbar .sub{font-size:11.5px; color:var(--text-faint); font-weight:600;}
 .menu-toggle{display:none; background:none; border:none; color:var(--text); padding:4px; margin-right:2px; border-radius:8px; cursor:pointer;}
 .menu-toggle .material-symbols-outlined{font-size:22px;}
 .topbar-search{position:relative; flex:1; max-width:420px;}
 .topbar-search .material-symbols-outlined{position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:16px; color:var(--text-faint); pointer-events:none;}
 .topbar-search input{width:100%; padding:8px 12px 8px 34px; border:1.5px solid var(--hairline); border-radius:20px; font-size:12.6px; background:var(--panel-2); color:var(--text); transition:border-color .15s, box-shadow .15s, background .15s;}
-.topbar-search input:focus{border-color:var(--caso); box-shadow:0 0 0 3px var(--caso-soft); background:#fff; outline:none;}
+.topbar-search input:focus{border-color:var(--caso); box-shadow:0 0 0 3px var(--caso-soft); background:var(--panel); outline:none;}
 .live-dot{width:6px; height:6px; border-radius:50%; background:var(--ok); display:inline-block; margin-right:5px; opacity:0; transition:opacity .2s;}
 .live-dot.show{opacity:1; animation:pulseDot 1s ease infinite;}
 @keyframes pulseDot{0%,100%{opacity:.4;} 50%{opacity:1;}}
 .content{padding:20px 24px 60px; max-width:1320px;}
 
-/* RESPONSIVE — sidebar se convierte en panel deslizable en pantallas chicas */
+/* RESPONSIVE — en pantallas chicas el riel se esconde del todo y se
+   convierte en panel deslizable disparado por el botón de menú (mismo
+   criterio que Planning: sidebar oculta + acceso por ícono, ahí ellos
+   además suman un bottom-nav que acá no hizo falta por la cantidad de
+   secciones). */
 @media (max-width:900px){
-  .sidebar{position:fixed; left:0; top:0; transform:translateX(-100%); z-index:60; width:220px;}
-  .sidebar.open{transform:translateX(0); box-shadow:12px 0 40px rgba(0,0,0,.35);}
-  .sidebar-overlay{display:none; position:fixed; inset:0; background:rgba(12,13,16,.45); z-index:50;}
+  .sidebar{width:0; transform:translateX(-100%);}
+  .sidebar.open{width:230px; transform:translateX(0); box-shadow:12px 0 40px rgba(0,0,0,.35); overflow:visible;}
+  .sidebar.open .nav-label, .sidebar.open .user-chip .info{opacity:1; max-width:160px;}
+  .sidebar.open .nav-item{justify-content:flex-start; padding-left:18px; padding-right:18px;}
+  .sidebar-overlay{display:none; position:fixed; inset:0; background:rgba(12,13,16,.45); z-index:64;}
   .sidebar-overlay.show{display:block;}
+  .sidebar-pin{display:none;}
   .menu-toggle{display:inline-flex; align-items:center; justify-content:center;}
+  .main, .sidebar:hover ~ .main, .sidebar.pinned ~ .main{margin-left:0;}
   .topbar{padding:0 14px; gap:10px;}
   .topbar-search{max-width:none;}
   .content{padding:14px 12px 50px;}
@@ -138,14 +187,19 @@ input,select,textarea{font-family:inherit;}
 .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:14px; margin-bottom:22px;}
 .kpi-card{background:var(--panel); border:1px solid var(--hairline); border-radius:var(--radius-m); padding:18px 18px 16px; box-shadow:var(--shadow-1); transition:transform .18s cubic-bezier(.2,.8,.3,1), box-shadow .18s;}
 .kpi-card:hover{transform:translateY(-3px); box-shadow:var(--shadow-2);}
-.kpi-num{font-family:'JetBrains Mono',monospace; font-size:26px; font-weight:800; letter-spacing:-.02em;}
+.kpi-num{font-family:'Space Grotesk',sans-serif; font-size:27px; font-weight:800; letter-spacing:-.02em;}
 .kpi-label{font-size:11.6px; color:var(--text-faint); font-weight:600; margin-top:3px;}
 
 .panel{background:var(--panel); border:1px solid var(--hairline); border-radius:var(--radius-m); box-shadow:var(--shadow-1); margin-bottom:16px; overflow:hidden;}
 .panel-head{padding:15px 18px; border-bottom:1px solid var(--hairline); display:flex; align-items:center; justify-content:space-between;}
-.panel-head h3{font-size:13.5px; font-weight:700; color:var(--text); letter-spacing:-.005em;}
+.panel-head h3{font-family:'Space Grotesk',sans-serif; font-size:13.5px; font-weight:700; color:var(--text); letter-spacing:-.005em;}
 .panel-body{padding:16px 18px;}
 
+.chip-row{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:9px;}
+.chip-row .clabel{font-size:10.5px; color:var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-right:2px;}
+.filter-chip{padding:5px 12px; border-radius:20px; border:1px solid var(--hairline); background:var(--panel); color:var(--text-dim); font-size:11.5px; font-weight:650; cursor:pointer; white-space:nowrap; transition:border-color .12s,color .12s,background .12s;}
+.filter-chip:hover{border-color:var(--caso); color:var(--text);}
+.filter-chip.active{background:var(--caso-soft); border-color:var(--caso); color:var(--caso-deep);}
 .filter-bar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:13px; align-items:center;}
 .filter-bar select, .filter-bar input{padding:8px 11px; border:1.5px solid var(--hairline); border-radius:var(--radius-s); font-size:12px; background:var(--panel); color:var(--text);}
 .filter-bar input::placeholder{color:var(--text-faint);}
@@ -156,14 +210,14 @@ input,select,textarea{font-family:inherit;}
 .vin-group-head{display:flex; align-items:center; gap:12px; padding:13px 16px; background:var(--panel-2); cursor:pointer;}
 .vin-group-head:hover{background:var(--caso-soft);}
 .vin-group-head .vgh-main{flex:1; min-width:0;}
-.vin-group-head .vgh-vin{font-family:'JetBrains Mono',monospace; font-weight:700; font-size:12.5px; color:var(--caso-deep);}
+.vin-group-head .vgh-vin{font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:12.5px; color:var(--caso-deep);}
 .vin-group-head .vgh-cliente{font-size:12.5px; color:var(--text-dim); margin-top:1px;}
 .vin-group-count{background:var(--caso-soft); color:var(--caso-deep); font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; flex-shrink:0;}
 .vin-group-body{border-top:1px solid var(--hairline);}
 .vin-case-row{display:flex; align-items:center; gap:12px; padding:10px 16px; border-bottom:1px solid var(--hairline); cursor:pointer;}
 .vin-case-row:last-child{border-bottom:none;}
 .vin-case-row:hover{background:var(--panel-2);}
-.vin-case-row .vc-id{font-family:'JetBrains Mono',monospace; font-weight:700; color:var(--caso); font-size:12px; width:88px; flex-shrink:0;}
+.vin-case-row .vc-id{font-family:'IBM Plex Mono',monospace; font-weight:700; color:var(--caso); font-size:12px; width:88px; flex-shrink:0;}
 .vin-case-row .vc-motivo{flex:1; min-width:0; font-size:12.5px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .vin-case-row .vc-fecha{font-size:11px; color:var(--text-faint); flex-shrink:0; white-space:nowrap;}
 .updating-pill{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; color:var(--text-faint); font-weight:650; margin-bottom:10px; opacity:0; transition:opacity .2s;}
@@ -181,10 +235,10 @@ table.tbl tr:hover td{background:var(--panel-2);}
 .pill{display:inline-flex; align-items:center; gap:5px; padding:4.5px 11px; border-radius:20px; font-size:11px; font-weight:650; letter-spacing:-.005em;}
 .pill::before{content:""; width:6px; height:6px; border-radius:50%;}
 .pill-nuevo{background:var(--caso-soft); color:var(--caso-deep);} .pill-nuevo::before{background:var(--caso);}
-.pill-analisis{background:#EEF2FF; color:#4338CA;} .pill-analisis::before{background:#6366F1;}
-.pill-esperando{background:var(--warn-soft); color:#8A5A05;} .pill-esperando::before{background:var(--warn);}
-.pill-derivado{background:var(--purple-soft); color:#6D28D9;} .pill-derivado::before{background:var(--purple);}
-.pill-resuelto{background:var(--ok-soft); color:#0B7A44;} .pill-resuelto::before{background:var(--ok);}
+.pill-analisis{background:var(--info-soft); color:var(--info);} .pill-analisis::before{background:var(--info);}
+.pill-esperando{background:var(--warn-soft); color:var(--warn);} .pill-esperando::before{background:var(--warn);}
+.pill-derivado{background:var(--purple-soft); color:var(--purple);} .pill-derivado::before{background:var(--purple);}
+.pill-resuelto{background:var(--ok-soft); color:var(--ok);} .pill-resuelto::before{background:var(--ok);}
 .pill-cerrado{background:var(--pending-soft); color:var(--text-dim);} .pill-cerrado::before{background:var(--text-faint);}
 .prio{font-size:10.6px; font-weight:700; padding:3px 9px; border-radius:6px;}
 .prio-Alta{background:var(--danger-soft); color:var(--danger);}
@@ -198,8 +252,8 @@ table.tbl tr:hover td{background:var(--panel-2);}
 /* Detalle de caso */
 .detail-header{background:var(--panel); border:1px solid var(--hairline); border-radius:var(--radius-l); padding:20px 22px; margin-bottom:14px; box-shadow:var(--shadow-1);}
 .dh-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:10px;}
-.dh-id{font-family:'JetBrains Mono',monospace; font-size:11.5px; color:var(--text-faint); font-weight:650;}
-.dh-title{font-size:18px; font-weight:800; letter-spacing:-.01em; margin-top:2px; color:var(--text);}
+.dh-id{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--text-faint); font-weight:650;}
+.dh-title{font-family:'Space Grotesk',sans-serif; font-size:18px; font-weight:800; letter-spacing:-.01em; margin-top:2px; color:var(--text);}
 .info-strip{display:flex; gap:22px; flex-wrap:wrap; border-top:1px solid var(--hairline); padding-top:12px;}
 .info-item{font-size:12.2px;}
 .info-item span{display:block; color:var(--text-faint); font-size:10.3px; text-transform:uppercase; letter-spacing:.05em; font-weight:650; margin-bottom:3px;}
@@ -213,7 +267,7 @@ table.tbl tr:hover td{background:var(--panel-2);}
 .timeline{padding:14px 18px 14px 30px; position:relative;}
 .timeline::before{content:""; position:absolute; left:26px; top:18px; bottom:14px; width:2px; background:var(--hairline);}
 .t-item{display:grid; grid-template-columns:16px 96px 1fr; gap:12px; padding:9px 0; align-items:start; position:relative;}
-.t-dot{width:11px; height:11px; border-radius:50%; background:#fff; border:2.2px solid var(--caso); margin-top:2px; z-index:1;}
+.t-dot{width:11px; height:11px; border-radius:50%; background:var(--panel); border:2.2px solid var(--caso); margin-top:2px; z-index:1;}
 .t-dot.sistema{border-color:var(--text-faint);}
 .t-dot.comentario{background:var(--caso); border-color:var(--caso);}
 .t-dot.cambio_estado{background:var(--warn); border-color:var(--warn);}
@@ -228,8 +282,8 @@ table.tbl tr:hover td{background:var(--panel-2);}
 .comment-box textarea{width:100%; min-height:56px; border:1.5px solid var(--hairline); border-radius:var(--radius-s); padding:9px 11px; font-size:12.2px; font-family:inherit; resize:vertical; background:var(--panel-2); color:var(--text);}
 .checkbox-row{display:flex; align-items:center; gap:7px; margin-top:8px; font-size:11.5px; color:var(--text-dim);}
 
-.alert-box{display:flex; gap:11px; align-items:flex-start; background:var(--caso-soft); border:1.5px solid #BFD3FE; border-radius:var(--radius-m); padding:13px 15px; margin-bottom:18px; font-size:11.8px; color:var(--caso-deep);}
-.alert-box.purple{background:var(--purple-soft); border-color:#DDCBFB; color:#4C1D95;}
+.alert-box{display:flex; gap:11px; align-items:flex-start; background:var(--caso-soft); border:1.5px solid var(--caso); border-radius:var(--radius-m); padding:13px 15px; margin-bottom:18px; font-size:11.8px; color:var(--caso-deep);}
+.alert-box.purple{background:var(--purple-soft); border-color:var(--purple); color:var(--purple);}
 .alert-box a{color:inherit;}
 
 .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:15px;}
@@ -268,22 +322,27 @@ table.tbl tr:hover td{background:var(--panel-2);}
 <div id="app" class="hidden">
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar_(false)"></div>
   <div class="sidebar" id="sidebar">
-    <div class="brand"><div class="dot"></div><div><strong>Gestión de Casos</strong><small>Grupo París</small></div></div>
+    <button class="sidebar-pin" onclick="toggleSidebarPin_()" title="Fijar menú expandido" id="sidebarPinBtn"><span class="material-symbols-outlined">push_pin</span></button>
+    <div class="brand"><div class="dot"></div><div><strong class="nav-label">Gestión de Casos</strong><small class="nav-label">Grupo París</small></div></div>
     <div class="sidebar-scroll">
-    <button class="nav-item active" id="navDashboard" onclick="setView('dashboard')"><span class="material-symbols-outlined">dashboard</span>Dashboard</button>
-    <button class="nav-item" id="navBandeja" onclick="setView('bandeja')"><span class="material-symbols-outlined">inbox</span>Bandeja de entrada<span class="badge-count hidden" id="badgeBandeja">0</span></button>
-    <button class="nav-item" id="navCasos" onclick="setView('casos')"><span class="material-symbols-outlined">folder_open</span>Casos</button>
-    <button class="nav-item" id="navReportar" onclick="setView('reportar')"><span class="material-symbols-outlined">add_circle</span>Reportar un caso</button>
-    <button class="nav-item" id="navReportes" onclick="setView('reportes')"><span class="material-symbols-outlined">bar_chart</span>Reportes</button>
-    <button class="nav-item" id="navDefensa" onclick="setView('defensa')"><span class="material-symbols-outlined">balance</span>Defensa del Consumidor</button>
-    <button class="nav-item" id="navActas" onclick="setView('actas')"><span class="material-symbols-outlined">description</span>Actas de reunión</button>
-    <button class="nav-item" id="navEquipo" onclick="setView('equipo')"><span class="material-symbols-outlined">group</span>Equipo</button>
-    <button class="nav-item" id="navConfig" onclick="setView('config')"><span class="material-symbols-outlined">settings</span>Configuración</button>
+    <button class="nav-item active" id="navDashboard" onclick="setView('dashboard')" title="Dashboard"><span class="material-symbols-outlined">dashboard</span><span class="nav-label">Dashboard</span></button>
+    <button class="nav-item" id="navBandeja" onclick="setView('bandeja')" title="Bandeja de entrada"><span class="material-symbols-outlined">inbox</span><span class="nav-label">Bandeja de entrada</span><span class="badge-count hidden" id="badgeBandeja">0</span></button>
+    <button class="nav-item" id="navCasos" onclick="setView('casos')" title="Casos"><span class="material-symbols-outlined">folder_open</span><span class="nav-label">Casos</span></button>
+    <button class="nav-item" id="navReportar" onclick="setView('reportar')" title="Reportar un caso"><span class="material-symbols-outlined">add_circle</span><span class="nav-label">Reportar un caso</span></button>
+    <button class="nav-item" id="navReportes" onclick="setView('reportes')" title="Reportes"><span class="material-symbols-outlined">bar_chart</span><span class="nav-label">Reportes</span></button>
+    <button class="nav-item" id="navDefensa" onclick="setView('defensa')" title="Defensa del Consumidor"><span class="material-symbols-outlined">balance</span><span class="nav-label">Defensa del Consumidor</span></button>
+    <button class="nav-item" id="navActas" onclick="setView('actas')" title="Actas de reunión"><span class="material-symbols-outlined">description</span><span class="nav-label">Actas de reunión</span></button>
+    <button class="nav-item" id="navEquipo" onclick="setView('equipo')" title="Equipo"><span class="material-symbols-outlined">group</span><span class="nav-label">Equipo</span></button>
+    <button class="nav-item" id="navConfig" onclick="setView('config')" title="Configuración"><span class="material-symbols-outlined">settings</span><span class="nav-label">Configuración</span></button>
     </div>
-    <div class="sidebar-foot">
-      <div class="user-chip" onclick="cerrarSesion()" title="Cerrar sesión">
+    <div class="sidebar-foot" style="position:relative;">
+      <div class="user-menu-pop" id="userMenuPop">
+        <button onclick="toggleTheme()" id="themeToggleBtn"><span class="material-symbols-outlined">dark_mode</span><span>Modo claro</span></button>
+        <button onclick="cerrarSesion()" class="danger"><span class="material-symbols-outlined">logout</span><span>Cerrar sesión</span></button>
+      </div>
+      <div class="user-chip" onclick="toggleUserMenu_(event)" title="Cuenta">
         <div class="avatar" id="userAvatar">—</div>
-        <div><div class="name" id="userNombre">—</div><div class="role" id="userRol">—</div></div>
+        <div class="info"><div class="name" id="userNombre">—</div><div class="role" id="userRol">—</div></div>
       </div>
     </div>
   </div>
@@ -351,6 +410,32 @@ function sesionActual(){
 }
 function guardarSesion(s){ localStorage.setItem('gc_sesion', JSON.stringify(s)); }
 function cerrarSesion(){ localStorage.removeItem('gc_sesion'); location.reload(); }
+
+// ============================================================
+// TEMA (oscuro/claro) — mismo criterio y nombres que usa Planning de
+// Entregas, para que el toggle se sienta igual en las dos apps.
+// ============================================================
+function aplicarTema(modo){
+  document.body.classList.toggle('light-mode', modo==='claro');
+  var btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.innerHTML = '<span class="material-symbols-outlined">'+(modo==='claro'?'dark_mode':'light_mode')+'</span><span>'+(modo==='claro'?'Modo oscuro':'Modo claro')+'</span>';
+  localStorage.setItem('gc_tema', modo);
+}
+function toggleTheme(){
+  var actual = localStorage.getItem('gc_tema')==='claro' ? 'claro' : 'oscuro';
+  aplicarTema(actual==='claro' ? 'oscuro' : 'claro');
+}
+function toggleUserMenu_(ev){
+  ev.stopPropagation();
+  document.getElementById('userMenuPop').classList.toggle('show');
+}
+document.addEventListener('click', function(ev){
+  var pop = document.getElementById('userMenuPop');
+  if(pop && pop.classList.contains('show') && !pop.contains(ev.target)) pop.classList.remove('show');
+});
+// Tema por defecto: oscuro (igual que Planning) salvo que ya haya una
+// preferencia guardada — se aplica apenas carga la página, antes del login.
+aplicarTema(localStorage.getItem('gc_tema')==='claro' ? 'claro' : 'oscuro');
 function _passwordSesionActual_(){
   var s = sesionActual();
   if(s && s.password) return s.password;
@@ -403,6 +488,7 @@ function iniciarApp(){
   var s = sesionActual();
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
+  restaurarPinSidebar_();
   document.getElementById('userNombre').textContent = s.nombre;
   document.getElementById('userRol').textContent = etiquetaRol_(s.rol);
   document.getElementById('userAvatar').textContent = (s.nombre||'?').charAt(0).toUpperCase();
@@ -428,6 +514,19 @@ function toggleSidebar_(force){
   var open = (force!==undefined) ? force : !sb.classList.contains('open');
   sb.classList.toggle('open', open);
   ov.classList.toggle('show', open);
+}
+// Fijar el menú expandido (igual que en Planning) — se guarda la
+// preferencia para que quede así entre sesiones.
+function toggleSidebarPin_(){
+  var sb = document.getElementById('sidebar');
+  var pinned = !sb.classList.contains('pinned');
+  sb.classList.toggle('pinned', pinned);
+  try{ localStorage.setItem('gc_sidebar_pinned', pinned?'1':'0'); }catch(e){}
+}
+function restaurarPinSidebar_(){
+  try{
+    if(localStorage.getItem('gc_sidebar_pinned')==='1') document.getElementById('sidebar').classList.add('pinned');
+  }catch(e){}
 }
 function ejecutarBusquedaGlobal_(){
   var q = document.getElementById('topSearch').value.trim();
@@ -533,6 +632,29 @@ function leerCache_(name){ try{ return JSON.parse(sessionStorage.getItem('gc_cac
 function guardarCache_(name,data){ try{ sessionStorage.setItem('gc_cache_'+name, JSON.stringify(data)); }catch(e){} }
 
 // ============================================================
+// FILTROS EN FORMATO CHIP (mismo patrón visual que los chips de
+// marca/sucursal de Planning) — se usan en Casos y en la Bandeja para
+// que "filtrar por marca / por sucursal" esté siempre a un clic, no
+// escondido en un <select>.
+// ============================================================
+function pintarChipsFiltro_(contId, hiddenId, valores, aplicarFnName){
+  var cont = document.getElementById(contId);
+  if(!cont) return;
+  var actual = document.getElementById(hiddenId).value;
+  var unicos = Array.from(new Set(valores.filter(Boolean))).sort();
+  var botones = [{v:'',label:'Todas'}].concat(unicos.map(function(v){return {v:v,label:v};}));
+  cont.innerHTML = botones.map(function(b){
+    return '<button type="button" class="filter-chip'+(actual===b.v?' active':'')+'" data-value="'+String(b.v).replace(/"/g,'&quot;')+'" onclick="elegirChip_(\''+contId+'\',\''+hiddenId+'\',this,\''+aplicarFnName+'\')">'+b.label+'</button>';
+  }).join('');
+}
+function elegirChip_(contId, hiddenId, btn, aplicarFnName){
+  document.getElementById(hiddenId).value = btn.getAttribute('data-value');
+  Array.from(document.getElementById(contId).children).forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  window[aplicarFnName]();
+}
+
+// ============================================================
 // DASHBOARD
 // ============================================================
 function pintarDashboard_(res){
@@ -610,10 +732,12 @@ function parseFechaGC_(str){
   return new Date(Number(f[2]), Number(f[1])-1, Number(f[0]), Number(h[0]||0), Number(h[1]||0));
 }
 function renderBandeja(){
-  var html = '<div class="filter-bar">'+
-    '<select id="bfFuente" onchange="pintarTablaBandeja_()"><option value="">Toda fuente</option></select>'+
-    '<select id="bfMarca" onchange="pintarTablaBandeja_()"><option value="">Toda marca</option></select>'+
-    '<select id="bfSucursal" onchange="pintarTablaBandeja_()"><option value="">Toda sucursal</option></select>'+
+  var html =
+    '<div class="chip-row"><span class="clabel">Marca</span><div class="chip-row" id="bfMarcaChips" style="margin-bottom:0;"></div></div>'+
+    '<div class="chip-row"><span class="clabel">Sucursal</span><div class="chip-row" id="bfSucursalChips" style="margin-bottom:0;"></div></div>'+
+    '<div class="chip-row"><span class="clabel">De dónde viene</span><div class="chip-row" id="bfFuenteChips" style="margin-bottom:0;"></div></div>'+
+    '<input type="hidden" id="bfMarca" value=""><input type="hidden" id="bfSucursal" value=""><input type="hidden" id="bfFuente" value="">'+
+    '<div class="filter-bar">'+
     '<span class="flabel">Desde</span><input id="bfDesde" type="date" onchange="pintarTablaBandeja_()">'+
     '<span class="flabel">Hasta</span><input id="bfHasta" type="date" onchange="pintarTablaBandeja_()">'+
     '<input id="bfBusqueda" type="text" placeholder="Buscar cliente, VIN, motivo..." style="min-width:200px;" oninput="pintarTablaBandeja_()">'+
@@ -636,21 +760,13 @@ function renderBandeja(){
   });
 }
 function poblarSelectsBandeja_(eventos){
-  var opts = function(id, valores){
-    var sel = document.getElementById(id);
-    var actual = sel.value;
-    sel.innerHTML = sel.options[0].outerHTML;
-    Array.from(new Set(valores.filter(Boolean))).sort().forEach(function(v){
-      var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
-    });
-    sel.value = actual;
-  };
-  opts('bfFuente', eventos.map(function(e){return e.fuente;}));
-  opts('bfMarca', eventos.map(function(e){return (e.datosNormalizados||{}).marca;}));
-  opts('bfSucursal', eventos.map(function(e){return (e.datosNormalizados||{}).sucursal;}));
+  pintarChipsFiltro_('bfMarcaChips', 'bfMarca', eventos.map(function(e){return (e.datosNormalizados||{}).marca;}), 'pintarTablaBandeja_');
+  pintarChipsFiltro_('bfSucursalChips', 'bfSucursal', eventos.map(function(e){return (e.datosNormalizados||{}).sucursal;}), 'pintarTablaBandeja_');
+  pintarChipsFiltro_('bfFuenteChips', 'bfFuente', eventos.map(function(e){return e.fuente;}), 'pintarTablaBandeja_');
 }
 function limpiarFiltrosBandeja_(){
   ['bfFuente','bfMarca','bfSucursal','bfDesde','bfHasta','bfBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  if(window._eventosCache) poblarSelectsBandeja_(window._eventosCache);
   pintarTablaBandeja_();
 }
 function pintarTablaBandeja_(){
@@ -722,14 +838,16 @@ function descartarEvento_(id, ev){
 // ============================================================
 var filtroCasos_ = {};
 function renderCasos(){
-  var html = '<div class="filter-bar">'+
+  var html =
+    '<div class="chip-row"><span class="clabel">Marca</span><div class="chip-row" id="fMarcaChips" style="margin-bottom:0;"></div></div>'+
+    '<div class="chip-row"><span class="clabel">Sucursal</span><div class="chip-row" id="fSucursalChips" style="margin-bottom:0;"></div></div>'+
+    '<div class="chip-row"><span class="clabel">Fuente</span><div class="chip-row" id="fFuenteChips" style="margin-bottom:0;"></div></div>'+
+    '<input type="hidden" id="fMarca" value=""><input type="hidden" id="fSucursal" value=""><input type="hidden" id="fFuente" value="">'+
+    '<div class="filter-bar">'+
     '<select id="fEstado" onchange="aplicarFiltrosCasos_()"><option value="">Todos los estados</option>'+
       ['nuevo','analisis','esperando','derivado','resuelto','cerrado'].map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('')+
     '</select>'+
     '<select id="fPrioridad" onchange="aplicarFiltrosCasos_()"><option value="">Toda prioridad</option><option>Alta</option><option>Media</option><option>Baja</option></select>'+
-    '<select id="fFuente" onchange="aplicarFiltrosCasos_()"><option value="">Toda fuente</option></select>'+
-    '<select id="fMarca" onchange="aplicarFiltrosCasos_()"><option value="">Toda marca</option></select>'+
-    '<select id="fSucursal" onchange="aplicarFiltrosCasos_()"><option value="">Toda sucursal</option></select>'+
     '<span class="flabel">Desde</span><input id="fDesde" type="date" onchange="aplicarFiltrosCasos_()">'+
     '<span class="flabel">Hasta</span><input id="fHasta" type="date" onchange="aplicarFiltrosCasos_()">'+
     '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);"><input type="checkbox" id="fDefensa" onchange="aplicarFiltrosCasos_()"> ⚖️ Solo Defensa del Consumidor</label>'+
@@ -756,22 +874,14 @@ function cargarYPintarCasos_(){
   });
 }
 function poblarSelectsCasos_(casos){
-  var opts = function(id, valores){
-    var sel = document.getElementById(id);
-    var actual = sel.value;
-    sel.innerHTML = sel.options[0].outerHTML;
-    Array.from(new Set(valores.filter(Boolean))).sort().forEach(function(v){
-      var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o);
-    });
-    sel.value = actual;
-  };
-  opts('fFuente', casos.map(function(c){return c.fuente;}));
-  opts('fMarca', casos.map(function(c){return c.marca;}));
-  opts('fSucursal', casos.map(function(c){return c.sucursal;}));
+  pintarChipsFiltro_('fMarcaChips', 'fMarca', casos.map(function(c){return c.marca;}), 'aplicarFiltrosCasos_');
+  pintarChipsFiltro_('fSucursalChips', 'fSucursal', casos.map(function(c){return c.sucursal;}), 'aplicarFiltrosCasos_');
+  pintarChipsFiltro_('fFuenteChips', 'fFuente', casos.map(function(c){return c.fuente;}), 'aplicarFiltrosCasos_');
 }
 function limpiarFiltrosCasos_(){
   ['fEstado','fPrioridad','fFuente','fMarca','fSucursal','fDesde','fHasta','fBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
   document.getElementById('fDefensa').checked = false;
+  if(window._casosCache) poblarSelectsCasos_(window._casosCache);
   pintarTablaCasos_();
 }
 function aplicarFiltrosCasos_(){ pintarTablaCasos_(); }
