@@ -3,6 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0A0D16">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16.png">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gestión de Casos">
+<meta name="mobile-web-app-capable" content="yes">
 <title>Gestión de Casos · Grupo París</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -51,6 +60,19 @@ html,body{height:100%;}
 body{font-family:'Inter',system-ui,sans-serif; color:var(--text); background:var(--bg); -webkit-font-smoothing:antialiased; font-size:14.5px; line-height:1.45; transition:background .18s ease, color .18s ease;}
 .mono{font-family:'IBM Plex Mono',monospace;}
 .headline{font-family:'Space Grotesk',sans-serif;}
+/* Íconos — esta regla es la que activa la tipografía de Material
+   Symbols; sin ella, cualquier ícono se ve como texto literal
+   (dashboard, inbox, folder_managed...) en vez del glifo. Faltaba en
+   el archivo original — por eso el ícono del login se veía como texto. */
+.material-symbols-outlined{
+  font-family:'Material Symbols Outlined';
+  font-weight:normal; font-style:normal; font-size:20px; line-height:1;
+  letter-spacing:normal; text-transform:none; display:inline-block;
+  width:1em; height:1em; overflow:hidden;
+  white-space:nowrap; word-wrap:normal; direction:ltr;
+  -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased;
+  vertical-align:middle;
+}
 .hidden{display:none !important;}
 .view:not(.hidden){animation:viewIn .28s ease;}
 @keyframes viewIn{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
@@ -61,16 +83,27 @@ input,select,textarea{font-family:inherit;}
 @media (prefers-reduced-motion: reduce){ *{animation-duration:.01ms !important; transition-duration:.01ms !important;} }
 ::selection{background:var(--caso-soft); color:var(--text);}
 
-/* LOGIN — igual al prototipo: fondo oscuro con halo, tarjeta blanca centrada */
-#login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; background:radial-gradient(1200px 800px at 15% 100%, #16181D 0%, var(--ink) 55%); position:relative; overflow:hidden;}
-#login-screen::before{content:""; position:absolute; inset:0; background:radial-gradient(700px 500px at 82% 18%, rgba(37,99,235,.32), transparent 60%), radial-gradient(500px 400px at 8% 85%, rgba(124,58,237,.14), transparent 60%);}
-.login-card{position:relative; z-index:2; width:380px; background:#fff; border-radius:var(--radius-l); padding:40px 36px 32px; box-shadow:0 40px 90px -20px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.04);}
-.login-mark{display:flex; align-items:center; gap:10px; margin-bottom:22px;}
-.login-mark .dot{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--caso-bright),var(--caso-deep));flex-shrink:0;}
-.login-mark span{font-family:'Space Grotesk',sans-serif; font-weight:800; letter-spacing:-.02em; font-size:16px; display:block; color:var(--text);}
-.login-mark small{display:block; font-size:10.5px; color:var(--text-faint); letter-spacing:.06em; text-transform:uppercase; margin-top:1px;}
-.login-card h1{font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; margin-bottom:4px; color:var(--text);}
-.login-card p.sub{color:var(--text-faint); font-size:12.8px; margin-bottom:22px;}
+/* LOGIN — pantalla propia, con estilo fijo (no depende del tema
+   claro/oscuro de la app) para que no se rompa la combinación de
+   colores según qué tema haya quedado guardado. Mismo criterio visual
+   que Planning: fondo oscuro con glow, tarjeta "vidrio esmerilado". */
+#login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; position:relative; overflow:hidden;
+  background:radial-gradient(900px 620px at 82% 12%, rgba(76,134,240,.35), transparent 60%),
+             radial-gradient(650px 500px at 10% 90%, rgba(139,124,246,.18), transparent 60%),
+             linear-gradient(160deg, #05060A 0%, #0A0D16 40%, #10141F 75%, #0A0D16 100%);
+}
+.login-card{position:relative; z-index:2; width:100%; max-width:392px; background:rgba(22,27,36,.6); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px); border:1px solid rgba(255,255,255,.12); border-radius:22px; padding:34px 32px 28px; box-shadow:0 30px 70px -16px rgba(0,0,0,.6);}
+.login-mark{display:flex; align-items:center; gap:11px; margin-bottom:26px;}
+.login-mark .dot{width:38px;height:38px;border-radius:11px;background:linear-gradient(135deg,#5B93F5,#1D4ED8);flex-shrink:0; box-shadow:0 6px 16px -4px rgba(37,99,235,.55); display:flex; align-items:center; justify-content:center;}
+.login-mark span{font-family:'Space Grotesk',sans-serif; font-weight:800; letter-spacing:-.01em; font-size:19px; display:block; color:#fff;}
+.login-mark small{display:block; font-size:10.5px; color:rgba(255,255,255,.5); letter-spacing:.08em; text-transform:uppercase; margin-top:2px; font-weight:650;}
+.login-card h1{font-family:'Space Grotesk',sans-serif; font-size:20px; font-weight:700; margin-bottom:5px; color:#fff;}
+.login-card p.sub{color:rgba(255,255,255,.55); font-size:12.8px; margin-bottom:24px; line-height:1.5;}
+.login-field-gc{margin-bottom:14px; text-align:left;}
+.login-field-gc label{display:block; font-size:11.5px; font-weight:650; color:rgba(255,255,255,.6); margin-bottom:6px; letter-spacing:.02em;}
+.login-field-gc input{width:100%; padding:11px 13px; border:1px solid rgba(255,255,255,.16); border-radius:12px; font-size:13.5px; font-family:inherit; background:rgba(255,255,255,.06); color:#fff; transition:border-color .15s, background .15s;}
+.login-field-gc input::placeholder{color:rgba(255,255,255,.32);}
+.login-field-gc input:focus{border-color:#5B93F5; background:rgba(255,255,255,.1); outline:none;}
 .field{margin-bottom:14px;}
 .field label{display:block; font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:6px;}
 .field input, .field select, .field textarea{width:100%; padding:10px 12px; border:1.5px solid var(--hairline); border-radius:var(--radius-s); font-size:13.5px; font-family:inherit; background:var(--panel-2); color:var(--text); transition:border-color .15s, box-shadow .15s;}
@@ -82,13 +115,17 @@ input,select,textarea{font-family:inherit;}
 .btn:disabled{opacity:.5; cursor:not-allowed;}
 .btn-primary{background:linear-gradient(135deg, var(--caso-bright), var(--caso-deep)); color:#fff; width:100%; box-shadow:0 4px 12px -3px rgba(37,99,235,.45);}
 .btn-primary:hover{filter:brightness(1.07); box-shadow:0 10px 24px -6px rgba(37,99,235,.4); transform:translateY(-1px);}
+.login-submit-gc{width:100%; background:linear-gradient(135deg,#5B93F5,#1D4ED8); color:#fff; border:none; border-radius:12px; padding:12px; font-weight:700; font-size:14px; cursor:pointer; box-shadow:0 8px 20px -6px rgba(37,99,235,.5); transition:transform .12s,filter .15s;}
+.login-submit-gc:hover{filter:brightness(1.08); transform:translateY(-1px);}
+.login-submit-gc:active{transform:scale(.98);}
+.login-submit-gc:disabled{opacity:.55; cursor:not-allowed;}
 .btn-ghost{background:transparent; color:var(--text-dim); border:1.5px solid var(--hairline);}
 .btn-ghost:hover{border-color:var(--caso); color:var(--caso-deep); background:var(--caso-soft);}
 .btn-dark{background:linear-gradient(135deg, #24262C, var(--ink)); color:#fff; box-shadow:0 4px 12px -4px rgba(12,13,16,.4);}
 .btn-dark:hover{filter:brightness(1.25); transform:translateY(-1px);}
 .btn-sm{padding:8px 13px; font-size:12.5px;}
-.login-error{background:var(--danger-soft); color:var(--danger); border-radius:var(--radius-s); padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
-.login-foot{margin-top:18px; text-align:center; font-size:11px; color:var(--text-faint);}
+.login-error{background:rgba(232,93,93,.16); color:#ff9a9a; border:1px solid rgba(232,93,93,.3); border-radius:12px; padding:9px 12px; font-size:12.5px; margin-bottom:14px; display:none;}
+.login-foot{margin-top:20px; text-align:center; font-size:11px; color:rgba(255,255,255,.4);}
 
 /* SHELL — riel de íconos angosto que se expande al pasar el mouse o al
    fijarlo (mismo patrón e interacción que usa Planning de Entregas), en
@@ -172,9 +209,15 @@ input,select,textarea{font-family:inherit;}
   .kpi-grid{grid-template-columns:repeat(2,1fr) !important;}
   .filter-bar{gap:6px;}
   .filter-bar select, .filter-bar input{flex:1 1 46%; font-size:12.5px;}
+  .filter-bar .fdrop{flex:1 1 46%;}
+  .filter-bar .fdrop-btn{width:100%; justify-content:space-between;}
   .table-wrap{overflow-x:auto; -webkit-overflow-scrolling:touch;}
   table.tbl{min-width:640px;}
   .info-strip{gap:12px 18px;}
+  .cal-day{min-height:64px; padding:4px 3px 3px;}
+  .cal-case-chip{font-size:9px; padding:2px 4px;}
+  .cal-toggle{margin-left:0;}
+  .cal-mes-label{font-size:14px; min-width:0;}
 }
 @media (max-width:520px){
   .kpi-grid{grid-template-columns:1fr 1fr !important; gap:9px;}
@@ -185,8 +228,11 @@ input,select,textarea{font-family:inherit;}
 .page-sub{font-size:13px; color:var(--text-faint); margin-top:3px;}
 
 .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:14px; margin-bottom:22px;}
-.kpi-card{background:var(--panel); border:1px solid var(--hairline); border-radius:var(--radius-m); padding:18px 18px 16px; box-shadow:var(--shadow-1); transition:transform .18s cubic-bezier(.2,.8,.3,1), box-shadow .18s;}
-.kpi-card:hover{transform:translateY(-3px); box-shadow:var(--shadow-2);}
+.kpi-card{position:relative; background:var(--panel); border:1px solid var(--hairline); border-radius:var(--radius-m); padding:16px 18px 17px; box-shadow:var(--shadow-1); overflow:hidden; transition:transform .18s cubic-bezier(.2,.8,.3,1), box-shadow .18s, border-color .18s;}
+.kpi-card:hover{transform:translateY(-3px); box-shadow:var(--shadow-2); border-color:transparent;}
+.kpi-topbar{position:absolute; top:0; left:0; right:0; height:3px;}
+.kpi-icon{width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:11px;}
+.kpi-icon .material-symbols-outlined{font-size:17px;}
 .kpi-num{font-family:'Space Grotesk',sans-serif; font-size:27px; font-weight:800; letter-spacing:-.02em;}
 .kpi-label{font-size:11.6px; color:var(--text-faint); font-weight:600; margin-top:3px;}
 
@@ -200,11 +246,25 @@ input,select,textarea{font-family:inherit;}
 .filter-chip{padding:5px 12px; border-radius:20px; border:1px solid var(--hairline); background:var(--panel); color:var(--text-dim); font-size:11.5px; font-weight:650; cursor:pointer; white-space:nowrap; transition:border-color .12s,color .12s,background .12s;}
 .filter-chip:hover{border-color:var(--caso); color:var(--text);}
 .filter-chip.active{background:var(--caso-soft); border-color:var(--caso); color:var(--caso-deep);}
-.filter-bar{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:13px; align-items:center;}
-.filter-bar select, .filter-bar input{padding:8px 11px; border:1.5px solid var(--hairline); border-radius:var(--radius-s); font-size:12px; background:var(--panel); color:var(--text);}
+.filter-bar{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; align-items:center; row-gap:8px;}
+.filter-bar select, .filter-bar input{padding:6px 9px; border:1.5px solid var(--hairline); border-radius:var(--radius-s); font-size:11.5px; background:var(--panel); color:var(--text); height:30px;}
+.filter-bar input[type=date]{color:var(--text-dim);}
 .filter-bar input::placeholder{color:var(--text-faint);}
-.filter-bar .flabel{font-size:10.5px; color:var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:.04em; margin-right:-4px;}
-.filter-bar .fclear{margin-left:auto; font-size:11.5px; color:var(--caso); font-weight:650; background:none; border:none; cursor:pointer; padding:6px 4px;}
+.filter-bar .flabel{font-size:10px; color:var(--text-faint); font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-right:-4px;}
+.filter-bar .fclear{margin-left:auto; font-size:11px; color:var(--caso); font-weight:650; background:none; border:none; cursor:pointer; padding:6px 4px; white-space:nowrap;}
+/* Filtro tipo dropdown compacto (Marca / Sucursal / Fuente) — un solo
+   botón chiquito que abre una lista, en vez de una fila de chips, para
+   que todos los filtros entren en un solo renglón sin scrollear. */
+.fdrop{position:relative; display:inline-block;}
+.fdrop-btn{padding:6px 10px; height:30px; border-radius:var(--radius-s); border:1.5px solid var(--hairline); background:var(--panel); color:var(--text-dim); font-size:11.5px; font-weight:650; cursor:pointer; display:inline-flex; align-items:center; gap:4px; white-space:nowrap; font-family:inherit;}
+.fdrop-btn:hover{border-color:var(--caso);}
+.fdrop-btn.on{background:var(--caso-soft); border-color:var(--caso); color:var(--caso-deep);}
+.fdrop-btn .material-symbols-outlined{font-size:15px;}
+.fdrop-menu{display:none; position:absolute; top:calc(100% + 4px); left:0; min-width:170px; max-height:260px; overflow-y:auto; background:var(--panel); border:1px solid var(--hairline); border-radius:10px; box-shadow:var(--shadow-2); z-index:45; padding:4px;}
+.fdrop-menu.show{display:block;}
+.fdrop-menu button{display:block; width:100%; text-align:left; padding:6.5px 9px; border-radius:7px; border:none; background:none; color:var(--text-dim); font-size:12px; cursor:pointer; font-family:inherit; white-space:nowrap;}
+.fdrop-menu button:hover{background:var(--panel-2); color:var(--text);}
+.fdrop-menu button.sel{color:var(--caso-deep); font-weight:700; background:var(--caso-soft);}
 .table-wrap{overflow-x:auto;}
 .vin-group{border:1px solid var(--hairline); border-radius:var(--radius-m); margin-bottom:14px; overflow:hidden; background:var(--panel);}
 .vin-group-head{display:flex; align-items:center; gap:12px; padding:13px 16px; background:var(--panel-2); cursor:pointer;}
@@ -224,6 +284,33 @@ input,select,textarea{font-family:inherit;}
 .updating-pill.show{opacity:1;}
 .updating-pill .spin{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--hairline);border-top-color:var(--caso);animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+
+/* CALENDARIO — vista mensual estilo TaskTrak: casos como chips de color
+   por prioridad, dentro de cada día. */
+.cal-toolbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+.cal-nav-btn{width:32px; height:32px; border-radius:9px; border:1px solid var(--hairline); background:var(--panel); color:var(--text-dim); display:flex; align-items:center; justify-content:center; cursor:pointer;}
+.cal-nav-btn:hover{border-color:var(--caso); color:var(--caso);}
+.cal-mes-label{font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:800; text-transform:capitalize; min-width:170px;}
+.cal-today-btn{padding:7px 13px; border-radius:8px; border:1px solid var(--hairline); background:var(--panel); color:var(--text-dim); font-size:12px; font-weight:650; cursor:pointer;}
+.cal-today-btn:hover{border-color:var(--caso); color:var(--caso);}
+.cal-toggle{display:flex; gap:3px; background:var(--panel-2); border:1px solid var(--hairline); border-radius:9px; padding:3px; margin-left:auto;}
+.cal-toggle button{padding:6px 12px; border-radius:6px; border:none; background:none; color:var(--text-dim); font-size:11.5px; font-weight:650; cursor:pointer; font-family:inherit;}
+.cal-toggle button.active{background:var(--caso); color:#fff;}
+.cal-grid{display:grid; grid-template-columns:repeat(7,1fr); border:1px solid var(--hairline); border-radius:var(--radius-m); overflow:hidden; background:var(--hairline); gap:1px;}
+.cal-weekday{background:var(--panel-2); padding:8px 0; text-align:center; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint);}
+.cal-day{background:var(--panel); min-height:104px; padding:6px 6px 4px; display:flex; flex-direction:column; gap:3px;}
+.cal-day.otro-mes{background:var(--panel-2); opacity:.5;}
+.cal-day .cal-daynum{font-size:11.5px; font-weight:700; color:var(--text-dim); margin-bottom:2px;}
+.cal-day.hoy .cal-daynum{background:var(--caso); color:#fff; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center;}
+.cal-case-chip{font-size:10.3px; padding:2.5px 6px; border-radius:6px; background:var(--caso-soft); color:var(--caso-deep); border-left:2.5px solid var(--caso); cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600;}
+.cal-case-chip:hover{filter:brightness(.97);}
+.cal-case-chip.prio-Alta{background:var(--danger-soft); color:var(--danger); border-left-color:var(--danger);}
+.cal-case-chip.prio-Media{background:var(--warn-soft); color:var(--warn); border-left-color:var(--warn);}
+.cal-case-chip.prio-Baja{background:var(--pending-soft); color:var(--text-dim); border-left-color:var(--text-faint);}
+.cal-mas{font-size:10px; color:var(--caso); font-weight:700; cursor:pointer; padding:1px 4px;}
+.cal-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:12px; font-size:11px; color:var(--text-dim);}
+.cal-legend span{display:inline-flex; align-items:center; gap:5px;}
+.cal-legend i{width:9px; height:9px; border-radius:3px; display:inline-block;}
 
 table.tbl{width:100%; border-collapse:collapse; font-size:12.4px; background:var(--panel);}
 table.tbl th{text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint); padding:11px 15px; background:var(--panel-2); border-bottom:1px solid var(--hairline); font-weight:700;}
@@ -308,13 +395,13 @@ table.tbl tr:hover td{background:var(--panel-2);}
 
 <div id="login-screen">
   <div class="login-card">
-    <div class="login-mark"><div class="dot"></div><div><span>Gestión de Casos</span><small>Grupo París · Calidad</small></div></div>
+    <div class="login-mark"><div class="dot"><span class="material-symbols-outlined" style="color:#fff;font-size:20px;">folder_managed</span></div><div><span>Gestión de Casos</span><small>Grupo París · Calidad</small></div></div>
     <h1>Ingresar</h1>
     <p class="sub">Accedé con tu usuario del equipo de Calidad.</p>
     <div class="login-error" id="loginError"></div>
-    <div class="field"><label>Usuario</label><input id="loginUsuario" type="text" placeholder="tu.usuario" onkeydown="if(event.key==='Enter')intentarLogin()"></div>
-    <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')intentarLogin()"></div>
-    <button class="btn btn-primary" onclick="intentarLogin()" id="btnLogin">Ingresar</button>
+    <div class="login-field-gc"><label>Usuario</label><input id="loginUsuario" type="text" placeholder="tu.usuario" onkeydown="if(event.key==='Enter')intentarLogin()"></div>
+    <div class="login-field-gc"><label>Contraseña</label><input id="loginPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')intentarLogin()"></div>
+    <button class="login-submit-gc" onclick="intentarLogin()" id="btnLogin">Ingresar</button>
     <div class="login-foot">Sistema interno — Grupo París</div>
   </div>
 </div>
@@ -328,6 +415,7 @@ table.tbl tr:hover td{background:var(--panel-2);}
     <button class="nav-item active" id="navDashboard" onclick="setView('dashboard')" title="Dashboard"><span class="material-symbols-outlined">dashboard</span><span class="nav-label">Dashboard</span></button>
     <button class="nav-item" id="navBandeja" onclick="setView('bandeja')" title="Bandeja de entrada"><span class="material-symbols-outlined">inbox</span><span class="nav-label">Bandeja de entrada</span><span class="badge-count hidden" id="badgeBandeja">0</span></button>
     <button class="nav-item" id="navCasos" onclick="setView('casos')" title="Casos"><span class="material-symbols-outlined">folder_open</span><span class="nav-label">Casos</span></button>
+    <button class="nav-item" id="navCalendario" onclick="setView('calendario')" title="Calendario"><span class="material-symbols-outlined">calendar_month</span><span class="nav-label">Calendario</span></button>
     <button class="nav-item" id="navReportar" onclick="setView('reportar')" title="Reportar un caso"><span class="material-symbols-outlined">add_circle</span><span class="nav-label">Reportar un caso</span></button>
     <button class="nav-item" id="navReportes" onclick="setView('reportes')" title="Reportes"><span class="material-symbols-outlined">bar_chart</span><span class="nav-label">Reportes</span></button>
     <button class="nav-item" id="navDefensa" onclick="setView('defensa')" title="Defensa del Consumidor"><span class="material-symbols-outlined">balance</span><span class="nav-label">Defensa del Consumidor</span></button>
@@ -403,6 +491,27 @@ function gasPost(action, params){
 }
 
 // ============================================================
+// LOGOS DE MARCA — mismos archivos que usa Planning de Entregas
+// (assets/logos/logo-<marca>.png). Si el archivo no está subido en ese
+// path, el <img> se oculta solo y queda el texto de la marca sin ícono.
+// ============================================================
+var MARCA_LOGO_SLUG_ = {
+  'Chevrolet':'chevrolet', 'Peugeot':'peugeot', 'Citroën':'citroen', 'Citroen':'citroen',
+  'DFSK':'dfsk', 'Honda':'honda', 'Usados':'usados', 'Paris Usados':'usados'
+};
+function logoMarcaHtml_(marca, size){
+  size = size || 16;
+  var slug = MARCA_LOGO_SLUG_[marca];
+  if(!slug) return '';
+  return '<img src="/assets/logos/logo-'+slug+'.png" alt="" style="width:'+size+'px;height:'+size+'px;object-fit:contain;border-radius:4px;background:#fff;flex-shrink:0;vertical-align:middle;" onerror="this.style.display=\'none\'">';
+}
+function marcaConLogo_(marca, size){
+  if(!marca) return '—';
+  var logo = logoMarcaHtml_(marca, size);
+  return '<span style="display:inline-flex;align-items:center;gap:6px;">'+logo+'<span>'+marca+'</span></span>';
+}
+
+// ============================================================
 // SESIÓN
 // ============================================================
 function sesionActual(){
@@ -420,6 +529,11 @@ function aplicarTema(modo){
   var btn = document.getElementById('themeToggleBtn');
   if(btn) btn.innerHTML = '<span class="material-symbols-outlined">'+(modo==='claro'?'dark_mode':'light_mode')+'</span><span>'+(modo==='claro'?'Modo oscuro':'Modo claro')+'</span>';
   localStorage.setItem('gc_tema', modo);
+  // Los gráficos de Chart.js toman el color al dibujarse — si cambiamos
+  // de tema con uno ya pintado en pantalla, lo volvemos a dibujar para
+  // que no quede con los colores del tema anterior.
+  if(window._vistaActual==='dashboard'){ var c=leerCache_('reporteDashboard'); if(c) dibujarGraficosDashboard_(c); }
+  if(window._vistaActual==='reportes' && window._reporteCache) pintarGraficosReportes_(window._reporteCache);
 }
 function toggleTheme(){
   var actual = localStorage.getItem('gc_tema')==='claro' ? 'claro' : 'oscuro';
@@ -543,11 +657,12 @@ function marcarLive_(on){
 // ============================================================
 // NAVEGACIÓN
 // ============================================================
-var VISTAS = ['dashboard','bandeja','casos','buscar','reportar','reportes','defensa','actas','equipo','config','detalle'];
+var VISTAS = ['dashboard','bandeja','casos','calendario','buscar','reportar','reportes','defensa','actas','equipo','config','detalle'];
 var TITULOS = {
   dashboard:['Dashboard','Estado general de los casos'],
   bandeja:['Bandeja de entrada','Eventos esperando revisión antes de convertirse en caso'],
   casos:['Casos','Todos los casos registrados'],
+  calendario:['Calendario','Los casos, día por día'],
   buscar:['Buscar cliente / VIN','Historial completo de un cliente o vehículo'],
   reportar:['Reportar un caso','Carga manual — queda igual que cualquier otro caso'],
   reportes:['Reportes','Cuánto se resuelve, de dónde viene y qué se repite'],
@@ -570,6 +685,7 @@ function setView(v, param){
     dashboard: renderDashboard,
     bandeja: renderBandeja,
     casos: renderCasos,
+    calendario: renderCalendario,
     buscar: renderBuscar,
     reportar: renderReportar,
     reportes: renderReportes,
@@ -600,6 +716,16 @@ setInterval(function(){
   if(!window._vistaActual || document.hidden) return;
   if(window._vistaActual==='dashboard') renderDashboard();
   else if(window._vistaActual==='casos') cargarYPintarCasos_();
+  else if(window._vistaActual==='calendario'){
+    gasGet('casos').then(function(res){
+      if(!res.ok || window._vistaActual!=='calendario') return;
+      var casos = res.casos || res || [];
+      guardarCache_('casos', casos);
+      window._casosCache = casos;
+      poblarSelectsCalendario_(casos);
+      pintarCalendario_();
+    });
+  }
   else if(window._vistaActual==='bandeja'){
     gasGet('eventosPendientes').then(function(res){
       if(!res.ok || window._vistaActual!=='bandeja') return;
@@ -655,22 +781,86 @@ function elegirChip_(contId, hiddenId, btn, aplicarFnName){
 }
 
 // ============================================================
+// FILTRO TIPO DROPDOWN COMPACTO — un botón chiquito que abre una lista
+// (Marca / Sucursal / Fuente), para que todos los filtros entren en un
+// solo renglón sin scrollear en vez de una fila de chips que se enrosca.
+// ============================================================
+function pintarDropdownFiltro_(btnId, menuId, hiddenId, labelBase, valores, aplicarFnName){
+  var menu = document.getElementById(menuId), btn = document.getElementById(btnId);
+  if(!menu || !btn) return;
+  var actual = document.getElementById(hiddenId).value;
+  var unicos = Array.from(new Set(valores.filter(Boolean))).sort();
+  var opciones = [''].concat(unicos);
+  var conLogos = labelBase==='Marca';
+  menu.innerHTML = opciones.map(function(v){
+    var etiqueta = (conLogos && v) ? (logoMarcaHtml_(v,14)+' <span>'+v+'</span>') : (v||'Todas');
+    return '<button type="button" class="'+(actual===v?'sel':'')+'" style="display:flex;align-items:center;gap:6px;" onclick="elegirDropdownValor_(\''+btnId+'\',\''+menuId+'\',\''+hiddenId+'\',\''+String(v).replace(/'/g,"\\'")+'\',\''+labelBase+'\',\''+aplicarFnName+'\')">'+etiqueta+'</button>';
+  }).join('');
+  var logoBtn = (conLogos && actual) ? (logoMarcaHtml_(actual,14)+' ') : '';
+  btn.innerHTML = logoBtn + (actual ? (labelBase+': '+actual) : labelBase) + ' <span class="material-symbols-outlined" style="font-size:14px;">expand_more</span>';
+  btn.classList.toggle('on', !!actual);
+}
+function toggleFdrop_(menuId){
+  var menu = document.getElementById(menuId);
+  var abierto = menu.classList.contains('show');
+  document.querySelectorAll('.fdrop-menu.show').forEach(function(m){ m.classList.remove('show'); });
+  if(!abierto) menu.classList.add('show');
+}
+function elegirDropdownValor_(btnId, menuId, hiddenId, valor, labelBase, aplicarFnName){
+  document.getElementById(hiddenId).value = valor;
+  document.getElementById(menuId).classList.remove('show');
+  var btn = document.getElementById(btnId);
+  var logoBtn = (labelBase==='Marca' && valor) ? (logoMarcaHtml_(valor,14)+' ') : '';
+  btn.innerHTML = logoBtn + (valor ? (labelBase+': '+valor) : labelBase) + ' <span class="material-symbols-outlined" style="font-size:14px;">expand_more</span>';
+  btn.classList.toggle('on', !!valor);
+  window[aplicarFnName]();
+}
+function fdropHtml_(id, labelBase){
+  return '<div class="fdrop"><button type="button" class="fdrop-btn" id="'+id+'Btn" onclick="toggleFdrop_(\''+id+'Menu\')">'+labelBase+' <span class="material-symbols-outlined" style="font-size:14px;">expand_more</span></button><div class="fdrop-menu" id="'+id+'Menu"></div></div><input type="hidden" id="'+id+'" value="">';
+}
+document.addEventListener('click', function(ev){
+  if(ev.target.closest && ev.target.closest('.fdrop')) return;
+  document.querySelectorAll('.fdrop-menu.show').forEach(function(m){ m.classList.remove('show'); });
+});
+
+// ============================================================
 // DASHBOARD
 // ============================================================
 function pintarDashboard_(res){
   pintarBadgeBandeja_(res.eventosPendientesRevision||0);
   var html = '<div class="kpi-grid">'+
-    kpiCardClick_(res.urgentes,'Casos urgentes','var(--danger)', "verListaFiltrada_('Casos urgentes',{prioridad:'Alta',soloAbiertos:true})")+
-    kpiCardClick_(res.abiertos,'Casos abiertos','var(--text)', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
-    kpiCardClick_(res.vencidos,'Vencidos (SLA)','var(--danger)', "verListaFiltrada_('Casos vencidos (SLA)',{soloVencidos:true})")+
-    kpiCardClick_(res.nuevosSinAsignar,'Nuevos sin asignar','var(--caso)', "verListaFiltrada_('Nuevos sin asignar',{estado:'nuevo',soloSinAsignar:true})")+
-    kpiCardClick_(res.resueltosSemana,'Resueltos esta semana','var(--ok)', "verListaFiltrada_('Resueltos / cerrados',{soloResueltos:true})")+
-    kpiCardClick_(res.eventosPendientesRevision,'En bandeja de entrada','var(--purple)', "setView('bandeja')")+
+    kpiCardClick_(res.urgentes,'Casos urgentes','var(--danger)','var(--danger-soft)','priority_high', "verListaFiltrada_('Casos urgentes',{prioridad:'Alta',soloAbiertos:true})")+
+    kpiCardClick_(res.abiertos,'Casos abiertos','var(--caso-deep)','var(--pending-soft)','folder_open', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
+    kpiCardClick_(res.vencidos,'Vencidos (SLA)','var(--danger)','var(--danger-soft)','schedule', "verListaFiltrada_('Casos vencidos (SLA)',{soloVencidos:true})")+
+    kpiCardClick_(res.nuevosSinAsignar,'Nuevos sin asignar','var(--caso)','var(--caso-soft)','person_add', "verListaFiltrada_('Nuevos sin asignar',{estado:'nuevo',soloSinAsignar:true})")+
+    kpiCardClick_(res.resueltosSemana,'Resueltos esta semana','var(--ok)','var(--ok-soft)','task_alt', "verListaFiltrada_('Resueltos / cerrados',{soloResueltos:true})")+
+    kpiCardClick_(res.eventosPendientesRevision,'En bandeja de entrada','var(--purple)','var(--purple-soft)','inbox', "setView('bandeja')")+
   '</div>';
   if(res.eventosPendientesRevision>0){
     html += '<div class="alert-box purple"><span class="material-symbols-outlined">inbox</span><div>Hay <b>'+res.eventosPendientesRevision+' evento(s)</b> esperando revisión en la <a href="#" onclick="setView(\'bandeja\');return false;" style="color:var(--purple);font-weight:700;text-decoration:underline;">Bandeja de entrada</a> antes de convertirse en caso.</div></div>';
   }
+  html += '<div class="detail-grid">'+
+    '<div class="panel"><div class="panel-head"><h3>Casos por estado</h3></div><div style="padding:16px;height:230px;"><canvas id="chartDashEstado"></canvas></div></div>'+
+    '<div class="panel"><div class="panel-head"><h3>Resueltos vs. abiertos</h3></div><div style="padding:16px;height:230px;"><canvas id="chartDashResueltos"></canvas></div></div>'+
+  '</div>';
   document.getElementById('content').innerHTML = html;
+  pintarGraficosDashboard_();
+}
+function pintarGraficosDashboard_(){
+  var cache = leerCache_('reporteDashboard');
+  if(cache) dibujarGraficosDashboard_(cache);
+  gasGet('reporte').then(function(res){
+    if(!res.ok || window._vistaActual!=='dashboard') return;
+    guardarCache_('reporteDashboard', res);
+    dibujarGraficosDashboard_(res);
+  });
+}
+function dibujarGraficosDashboard_(res){
+  if(document.getElementById('chartDashEstado')) dibujarBarras_('chartDashEstado', res.porEstado||[]);
+  if(document.getElementById('chartDashResueltos')){
+    var c = coloresGrafico_();
+    dibujarDonut_('chartDashResueltos', ['Resueltos/cerrados','Abiertos'], [res.resueltos, res.abiertos], [c.ok, c.caso]);
+  }
 }
 function renderDashboard(){
   var cache = leerCache_('dashboard');
@@ -683,11 +873,19 @@ function renderDashboard(){
     if(window._vistaActual==='dashboard') pintarDashboard_(res);
   }).catch(function(){ marcarLive_(false); });
 }
-function kpiCard_(num, label, color){
-  return '<div class="kpi-card"><div class="kpi-num" style="color:'+color+';">'+(num!==undefined?num:'—')+'</div><div class="kpi-label">'+label+'</div></div>';
+function kpiCard_(num, label, color, soft, icon){
+  soft = soft || 'var(--pending-soft)'; icon = icon || 'insights';
+  return '<div class="kpi-card"><div class="kpi-topbar" style="background:'+color+';"></div>'+
+    '<div class="kpi-icon" style="background:'+soft+';color:'+color+';"><span class="material-symbols-outlined">'+icon+'</span></div>'+
+    '<div class="kpi-num" style="color:'+color+';">'+(num!==undefined?num:'—')+'</div><div class="kpi-label">'+label+'</div></div>';
 }
-function kpiCardClick_(num, label, color, onclickJs){
-  return '<div class="kpi-card" style="cursor:pointer;transition:transform .12s,box-shadow .15s;" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'var(--shadow-2)\';" onmouseout="this.style.transform=\'\';this.style.boxShadow=\'\';" onclick="'+onclickJs.replace(/"/g,'&quot;')+'"><div class="kpi-num" style="color:'+color+';">'+(num!==undefined?num:'—')+'</div><div class="kpi-label">'+label+'</div></div>';
+function kpiCardClick_(num, label, color, soft, icon, onclickJs){
+  return '<div class="kpi-card" style="cursor:pointer;" onclick="'+onclickJs.replace(/"/g,'&quot;')+'">'+
+    '<div class="kpi-topbar" style="background:'+color+';"></div>'+
+    '<div class="kpi-icon" style="background:'+soft+';color:'+color+';"><span class="material-symbols-outlined">'+icon+'</span></div>'+
+    '<div class="kpi-num" style="color:'+color+';">'+(num!==undefined?num:'—')+'</div>'+
+    '<div class="kpi-label">'+label+'</div>'+
+  '</div>';
 }
 // Modal genérico: lista de casos que cumplen ciertos filtros — usado por
 // los KPIs clickeables del Dashboard y de Reportes ("apretar y ver la lista").
@@ -733,15 +931,14 @@ function parseFechaGC_(str){
 }
 function renderBandeja(){
   var html =
-    '<div class="chip-row"><span class="clabel">Marca</span><div class="chip-row" id="bfMarcaChips" style="margin-bottom:0;"></div></div>'+
-    '<div class="chip-row"><span class="clabel">Sucursal</span><div class="chip-row" id="bfSucursalChips" style="margin-bottom:0;"></div></div>'+
-    '<div class="chip-row"><span class="clabel">De dónde viene</span><div class="chip-row" id="bfFuenteChips" style="margin-bottom:0;"></div></div>'+
-    '<input type="hidden" id="bfMarca" value=""><input type="hidden" id="bfSucursal" value=""><input type="hidden" id="bfFuente" value="">'+
     '<div class="filter-bar">'+
-    '<span class="flabel">Desde</span><input id="bfDesde" type="date" onchange="pintarTablaBandeja_()">'+
-    '<span class="flabel">Hasta</span><input id="bfHasta" type="date" onchange="pintarTablaBandeja_()">'+
-    '<input id="bfBusqueda" type="text" placeholder="Buscar cliente, VIN, motivo..." style="min-width:200px;" oninput="pintarTablaBandeja_()">'+
-    '<button class="fclear" onclick="limpiarFiltrosBandeja_()">Limpiar filtros</button>'+
+    fdropHtml_('bfMarca','Marca')+
+    fdropHtml_('bfSucursal','Sucursal')+
+    fdropHtml_('bfFuente','De dónde viene')+
+    '<input id="bfDesde" type="date" title="Desde" onchange="pintarTablaBandeja_()">'+
+    '<input id="bfHasta" type="date" title="Hasta" onchange="pintarTablaBandeja_()">'+
+    '<input id="bfBusqueda" type="text" placeholder="Buscar..." style="min-width:120px;flex:1;" oninput="pintarTablaBandeja_()">'+
+    '<button class="fclear" onclick="limpiarFiltrosBandeja_()">Limpiar</button>'+
   '</div><div class="updating-pill" id="bandejaUpdating"><span class="spin"></span>Actualizando…</div>'+
   '<div class="panel"><div class="table-wrap" id="tablaBandeja"><div class="empty-state">Cargando…</div></div></div>';
   document.getElementById('content').innerHTML = html;
@@ -760,9 +957,9 @@ function renderBandeja(){
   });
 }
 function poblarSelectsBandeja_(eventos){
-  pintarChipsFiltro_('bfMarcaChips', 'bfMarca', eventos.map(function(e){return (e.datosNormalizados||{}).marca;}), 'pintarTablaBandeja_');
-  pintarChipsFiltro_('bfSucursalChips', 'bfSucursal', eventos.map(function(e){return (e.datosNormalizados||{}).sucursal;}), 'pintarTablaBandeja_');
-  pintarChipsFiltro_('bfFuenteChips', 'bfFuente', eventos.map(function(e){return e.fuente;}), 'pintarTablaBandeja_');
+  pintarDropdownFiltro_('bfMarcaBtn','bfMarcaMenu','bfMarca','Marca', eventos.map(function(e){return (e.datosNormalizados||{}).marca;}), 'pintarTablaBandeja_');
+  pintarDropdownFiltro_('bfSucursalBtn','bfSucursalMenu','bfSucursal','Sucursal', eventos.map(function(e){return (e.datosNormalizados||{}).sucursal;}), 'pintarTablaBandeja_');
+  pintarDropdownFiltro_('bfFuenteBtn','bfFuenteMenu','bfFuente','De dónde viene', eventos.map(function(e){return e.fuente;}), 'pintarTablaBandeja_');
 }
 function limpiarFiltrosBandeja_(){
   ['bfFuente','bfMarca','bfSucursal','bfDesde','bfHasta','bfBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
@@ -839,20 +1036,19 @@ function descartarEvento_(id, ev){
 var filtroCasos_ = {};
 function renderCasos(){
   var html =
-    '<div class="chip-row"><span class="clabel">Marca</span><div class="chip-row" id="fMarcaChips" style="margin-bottom:0;"></div></div>'+
-    '<div class="chip-row"><span class="clabel">Sucursal</span><div class="chip-row" id="fSucursalChips" style="margin-bottom:0;"></div></div>'+
-    '<div class="chip-row"><span class="clabel">Fuente</span><div class="chip-row" id="fFuenteChips" style="margin-bottom:0;"></div></div>'+
-    '<input type="hidden" id="fMarca" value=""><input type="hidden" id="fSucursal" value=""><input type="hidden" id="fFuente" value="">'+
     '<div class="filter-bar">'+
-    '<select id="fEstado" onchange="aplicarFiltrosCasos_()"><option value="">Todos los estados</option>'+
+    fdropHtml_('fMarca','Marca')+
+    fdropHtml_('fSucursal','Sucursal')+
+    fdropHtml_('fFuente','Fuente')+
+    '<select id="fEstado" onchange="aplicarFiltrosCasos_()"><option value="">Estado</option>'+
       ['nuevo','analisis','esperando','derivado','resuelto','cerrado'].map(function(e){return '<option value="'+e+'">'+e+'</option>';}).join('')+
     '</select>'+
-    '<select id="fPrioridad" onchange="aplicarFiltrosCasos_()"><option value="">Toda prioridad</option><option>Alta</option><option>Media</option><option>Baja</option></select>'+
-    '<span class="flabel">Desde</span><input id="fDesde" type="date" onchange="aplicarFiltrosCasos_()">'+
-    '<span class="flabel">Hasta</span><input id="fHasta" type="date" onchange="aplicarFiltrosCasos_()">'+
-    '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-dim);"><input type="checkbox" id="fDefensa" onchange="aplicarFiltrosCasos_()"> ⚖️ Solo Defensa del Consumidor</label>'+
-    '<input id="fBusqueda" type="text" placeholder="Buscar por cliente, VIN..." style="min-width:180px;" oninput="aplicarFiltrosCasos_()">'+
-    '<button class="fclear" onclick="limpiarFiltrosCasos_()">Limpiar filtros</button>'+
+    '<select id="fPrioridad" onchange="aplicarFiltrosCasos_()"><option value="">Prioridad</option><option>Alta</option><option>Media</option><option>Baja</option></select>'+
+    '<input id="fDesde" type="date" title="Desde" onchange="aplicarFiltrosCasos_()">'+
+    '<input id="fHasta" type="date" title="Hasta" onchange="aplicarFiltrosCasos_()">'+
+    '<label style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-dim);white-space:nowrap;"><input type="checkbox" id="fDefensa" onchange="aplicarFiltrosCasos_()"> ⚖️ Defensa</label>'+
+    '<input id="fBusqueda" type="text" placeholder="Buscar..." style="min-width:120px;flex:1;" oninput="aplicarFiltrosCasos_()">'+
+    '<button class="fclear" onclick="limpiarFiltrosCasos_()">Limpiar</button>'+
   '</div><div class="updating-pill" id="casosUpdating"><span class="spin"></span>Actualizando…</div>'+
   '<div class="panel"><div class="table-wrap" id="tablaCasos"><div class="empty-state">Cargando…</div></div></div>';
   document.getElementById('content').innerHTML = html;
@@ -874,9 +1070,9 @@ function cargarYPintarCasos_(){
   });
 }
 function poblarSelectsCasos_(casos){
-  pintarChipsFiltro_('fMarcaChips', 'fMarca', casos.map(function(c){return c.marca;}), 'aplicarFiltrosCasos_');
-  pintarChipsFiltro_('fSucursalChips', 'fSucursal', casos.map(function(c){return c.sucursal;}), 'aplicarFiltrosCasos_');
-  pintarChipsFiltro_('fFuenteChips', 'fFuente', casos.map(function(c){return c.fuente;}), 'aplicarFiltrosCasos_');
+  pintarDropdownFiltro_('fMarcaBtn','fMarcaMenu','fMarca','Marca', casos.map(function(c){return c.marca;}), 'aplicarFiltrosCasos_');
+  pintarDropdownFiltro_('fSucursalBtn','fSucursalMenu','fSucursal','Sucursal', casos.map(function(c){return c.sucursal;}), 'aplicarFiltrosCasos_');
+  pintarDropdownFiltro_('fFuenteBtn','fFuenteMenu','fFuente','Fuente', casos.map(function(c){return c.fuente;}), 'aplicarFiltrosCasos_');
 }
 function limpiarFiltrosCasos_(){
   ['fEstado','fPrioridad','fFuente','fMarca','fSucursal','fDesde','fHasta','fBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
@@ -914,19 +1110,151 @@ function pintarTablaCasos_(){
   if(casos.length===0){ document.getElementById('tablaCasos').innerHTML = '<div class="empty-state">No hay casos que coincidan.</div>'; return; }
   var filas = casos.map(function(c){
     var esDefensa = String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true;
+    var prioColor = {Alta:'var(--danger)',Media:'var(--warn)',Baja:'var(--text-faint)'}[c.prioridad]||'var(--text-faint)';
     return '<tr onclick="setView(\'detalle\',\''+c.id+'\')">'+
-      '<td class="mono" style="color:var(--caso);font-weight:700;">'+c.id+(esDefensa?' ⚖️':'')+'</td>'+
-      '<td>'+(c.cliente||'—')+'</td>'+
-      '<td>'+(c.marca||'—')+'</td>'+
+      '<td class="mono" style="color:var(--caso);font-weight:700;white-space:nowrap;">'+c.id+(esDefensa?' ⚖️':'')+'</td>'+
+      '<td><div style="font-weight:650;color:var(--text);">'+(c.cliente||'—')+'</div>'+
+        '<div style="font-size:10.5px;color:var(--text-faint);margin-top:1px;">'+(c.dominio?('<span class="mono">'+c.dominio+'</span> · '):'')+(c.motivo||c.tipoCaso||'')+'</div></td>'+
+      '<td><div>'+marcaConLogo_(c.marca,15)+'</div>'+(c.modelo?'<div style="font-size:10.5px;color:var(--text-faint);">'+c.modelo+'</div>':'')+'</td>'+
       '<td>'+(c.sucursal||'—')+'</td>'+
       '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
-      '<td><span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span></td>'+
+      '<td><span class="prio prio-'+c.prioridad+'" style="display:inline-flex;align-items:center;gap:5px;"><i style="width:6px;height:6px;border-radius:50%;background:'+prioColor+';display:inline-block;"></i>'+c.prioridad+'</span></td>'+
       '<td>'+(c.responsable||'<span style="color:var(--text-faint);">Sin asignar</span>')+'</td>'+
-      '<td style="white-space:nowrap;">'+(c.fechaCreacion||'—')+'</td>'+
+      '<td style="white-space:nowrap;font-size:11.5px;color:var(--text-dim);">'+(c.fechaCreacion||'—')+'</td>'+
     '</tr>';
   }).join('');
   document.getElementById('tablaCasos').innerHTML =
     '<table class="tbl"><thead><tr><th>Caso</th><th>Cliente</th><th>Marca</th><th>Sucursal</th><th>Estado</th><th>Prioridad</th><th>Responsable</th><th>Creado</th></tr></thead><tbody>'+filas+'</tbody></table>';
+}
+
+// ============================================================
+// CALENDARIO — vista mensual de los casos (creación o vencimiento de
+// SLA), en vez de tener que abrirlos uno por uno desde la lista.
+// ============================================================
+var MESES_ES_ = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+var DIAS_ES_ = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+function renderCalendario(){
+  var hoy = new Date();
+  if(window._calAnio===undefined){ window._calAnio = hoy.getFullYear(); window._calMes = hoy.getMonth(); }
+  if(window._calTipo===undefined) window._calTipo = 'creacion';
+  document.getElementById('content').innerHTML =
+    '<div class="cal-toolbar">'+
+      '<button class="cal-nav-btn" onclick="navCalMes_(-1)"><span class="material-symbols-outlined" style="font-size:18px;">chevron_left</span></button>'+
+      '<div class="cal-mes-label" id="calMesLabel"></div>'+
+      '<button class="cal-nav-btn" onclick="navCalMes_(1)"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>'+
+      '<button class="cal-today-btn" onclick="irAHoyCal_()">Hoy</button>'+
+      fdropHtml_('cfMarca','Marca')+
+      fdropHtml_('cfSucursal','Sucursal')+
+      '<div class="cal-toggle" id="calToggleTipo">'+
+        '<button data-v="creacion" onclick="setCalTipo_(\'creacion\')">Por creación</button>'+
+        '<button data-v="sla" onclick="setCalTipo_(\'sla\')">Por vencimiento SLA</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="panel" style="padding:12px;"><div id="calGridWrap"><div class="empty-state">Cargando…</div></div></div>'+
+    '<div class="cal-legend">'+
+      '<span><i style="background:var(--danger);"></i>Prioridad alta</span>'+
+      '<span><i style="background:var(--warn);"></i>Prioridad media</span>'+
+      '<span><i style="background:var(--text-faint);"></i>Prioridad baja</span>'+
+    '</div>';
+  var cache = leerCache_('casos');
+  if(cache){ window._casosCache = cache; poblarSelectsCalendario_(cache); pintarCalendario_(); }
+  gasGet('casos').then(function(res){
+    if(!res.ok) return;
+    var casos = res.casos || res || [];
+    guardarCache_('casos', casos);
+    if(window._vistaActual!=='calendario') return;
+    window._casosCache = casos;
+    poblarSelectsCalendario_(casos);
+    pintarCalendario_();
+  });
+}
+function poblarSelectsCalendario_(casos){
+  pintarDropdownFiltro_('cfMarcaBtn','cfMarcaMenu','cfMarca','Marca', casos.map(function(c){return c.marca;}), 'pintarCalendario_');
+  pintarDropdownFiltro_('cfSucursalBtn','cfSucursalMenu','cfSucursal','Sucursal', casos.map(function(c){return c.sucursal;}), 'pintarCalendario_');
+}
+function setCalTipo_(tipo){
+  window._calTipo = tipo;
+  Array.from(document.getElementById('calToggleTipo').children).forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-v')===tipo); });
+  pintarCalendario_();
+}
+function navCalMes_(delta){
+  window._calMes += delta;
+  if(window._calMes<0){ window._calMes=11; window._calAnio--; }
+  if(window._calMes>11){ window._calMes=0; window._calAnio++; }
+  pintarCalendario_();
+}
+function irAHoyCal_(){
+  var hoy = new Date();
+  window._calAnio = hoy.getFullYear(); window._calMes = hoy.getMonth();
+  pintarCalendario_();
+}
+function pintarCalendario_(){
+  var wrap = document.getElementById('calGridWrap');
+  if(!wrap) return; // ya no estamos en esta vista
+  document.getElementById('calMesLabel').textContent = MESES_ES_[window._calMes]+' '+window._calAnio;
+  Array.from(document.getElementById('calToggleTipo').children).forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-v')===window._calTipo); });
+
+  var marca = document.getElementById('cfMarca').value;
+  var sucursal = document.getElementById('cfSucursal').value;
+  var casos = (window._casosCache||[]).filter(function(c){
+    if(marca && c.marca!==marca) return false;
+    if(sucursal && c.sucursal!==sucursal) return false;
+    return true;
+  });
+
+  // Agrupamos por fecha (clave YYYY-M-D) según el tipo elegido.
+  var porFecha = {};
+  casos.forEach(function(c){
+    var campo = window._calTipo==='sla' ? c.slaVencimiento : c.fechaCreacion;
+    var f = parseFechaGC_(campo);
+    if(!f) return;
+    var clave = f.getFullYear()+'-'+f.getMonth()+'-'+f.getDate();
+    (porFecha[clave] = porFecha[clave]||[]).push(c);
+  });
+
+  var primerDia = new Date(window._calAnio, window._calMes, 1);
+  var offsetLunes = (primerDia.getDay()+6)%7; // que la semana arranque en lunes
+  var inicioGrilla = new Date(window._calAnio, window._calMes, 1-offsetLunes);
+  var hoy = new Date();
+
+  var html = DIAS_ES_.map(function(d){ return '<div class="cal-weekday">'+d+'</div>'; }).join('');
+  for(var i=0;i<42;i++){
+    var d = new Date(inicioGrilla.getFullYear(), inicioGrilla.getMonth(), inicioGrilla.getDate()+i);
+    var esOtroMes = d.getMonth()!==window._calMes;
+    var esHoy = d.toDateString()===hoy.toDateString();
+    var clave = d.getFullYear()+'-'+d.getMonth()+'-'+d.getDate();
+    var casosDia = (porFecha[clave]||[]).slice().sort(function(a,b){ return ({Alta:0,Media:1,Baja:2}[a.prioridad]||3) - ({Alta:0,Media:1,Baja:2}[b.prioridad]||3); });
+    var visibles = casosDia.slice(0,3);
+    var resto = casosDia.length - visibles.length;
+    html += '<div class="cal-day'+(esOtroMes?' otro-mes':'')+(esHoy?' hoy':'')+'">'+
+      '<div class="cal-daynum">'+d.getDate()+'</div>'+
+      visibles.map(function(c){
+        return '<div class="cal-case-chip prio-'+c.prioridad+'" title="'+c.id+' — '+(c.cliente||'')+' — '+(c.motivo||c.tipoCaso||'')+'" onclick="setView(\'detalle\',\''+c.id+'\')">'+c.id+' · '+(c.cliente||'—')+'</div>';
+      }).join('')+
+      (resto>0 ? '<div class="cal-mas" onclick="verDiaCalendario_(\''+clave+'\')">+'+resto+' más</div>' : '')+
+    '</div>';
+  }
+  wrap.innerHTML = '<div class="cal-grid">'+html+'</div>';
+  window._calPorFecha = porFecha;
+}
+function verDiaCalendario_(clave){
+  var casos = (window._calPorFecha||{})[clave]||[];
+  var partes = clave.split('-');
+  var fechaLegible = partes[2]+'/'+(Number(partes[1])+1)+'/'+partes[0];
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('modalListaFiltrada').classList.add('show');
+  document.getElementById('listaFiltradaTitulo').textContent = 'Casos del '+fechaLegible;
+  document.getElementById('listaFiltradaBody').innerHTML = '<table class="tbl"><thead><tr><th>Caso</th><th>Cliente</th><th>Marca</th><th>Estado</th><th>Prioridad</th><th>Responsable</th></tr></thead><tbody>'+
+    casos.map(function(c){
+      return '<tr onclick="cerrarModalListaFiltrada_();setView(\'detalle\',\''+c.id+'\')">'+
+        '<td class="mono" style="color:var(--caso);font-weight:700;">'+c.id+'</td>'+
+        '<td>'+(c.cliente||'—')+'</td><td>'+(c.marca||'—')+'</td>'+
+        '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
+        '<td><span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span></td>'+
+        '<td>'+(c.responsable||'<span style="color:var(--text-faint);">Sin asignar</span>')+'</td>'+
+      '</tr>';
+    }).join('')+
+  '</tbody></table>';
 }
 
 // ============================================================
@@ -939,7 +1267,7 @@ function renderDetalle(id){
     var esDefensa = String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true;
     document.getElementById('topbarSub').textContent = c.cliente+' · '+c.id;
     var html = '<div class="detail-header">'+
-      '<div class="dh-top"><div><div class="dh-id">'+c.id+'</div><div class="dh-title">'+(c.motivo||c.tipoCaso||'Caso')+' — '+(c.marca||'')+' '+(c.modelo||'')+'</div></div>'+
+      '<div class="dh-top"><div><div class="dh-id">'+c.id+'</div><div class="dh-title" style="display:flex;align-items:center;gap:8px;">'+(c.motivo||c.tipoCaso||'Caso')+' — '+logoMarcaHtml_(c.marca,18)+' '+(c.marca||'')+' '+(c.modelo||'')+'</div></div>'+
         '<div style="display:flex;gap:8px;align-items:center;">'+
           (esDefensa ? '<span class="pill" style="background:var(--danger-soft);color:var(--danger);font-size:11px;padding:5px 11px;">⚖️ Defensa del Consumidor</span>' : '')+
           '<span class="pill pill-'+c.estado+'" style="font-size:12px;padding:5px 12px;">'+c.estado+'</span>'+
@@ -1292,10 +1620,10 @@ function renderDefensaConsumidor(){
   gasGet('reporteDefensaConsumidor').then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     var html = '<div class="kpi-grid">'+
-      kpiCard_(res.activos,'Expedientes activos','var(--purple)')+
-      kpiCard_(res.resueltosEsteAnio,'Resueltos este año','var(--ok)')+
-      kpiCard_(res.tiempoPromedioDias!==null?res.tiempoPromedioDias+'d':'—','Tiempo prom. resolución','var(--caso)')+
-      kpiCard_(res.reincidencias,'Reincidencias detectadas','var(--danger)')+
+      kpiCard_(res.activos,'Expedientes activos','var(--purple)','var(--purple-soft)','balance')+
+      kpiCard_(res.resueltosEsteAnio,'Resueltos este año','var(--ok)','var(--ok-soft)','task_alt')+
+      kpiCard_(res.tiempoPromedioDias!==null?res.tiempoPromedioDias+'d':'—','Tiempo prom. resolución','var(--caso)','var(--caso-soft)','schedule')+
+      kpiCard_(res.reincidencias,'Reincidencias detectadas','var(--danger)','var(--danger-soft)','warning')+
     '</div>';
     html += '<div class="panel"><div class="panel-head"><h3>Expedientes</h3></div>';
     if(!res.expedientes || res.expedientes.length===0){
@@ -1325,13 +1653,14 @@ function renderDefensaConsumidor(){
 function renderReportes(){
   gasGet('reporte').then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
+    window._reporteCache = res;
     var html = '<div class="kpi-grid">'+
-      kpiCardClick_(res.total,'Casos totales','var(--text)', "setView('casos')")+
-      kpiCard_(res.tasaResolucion+'%','Tasa de resolución','var(--ok)')+
-      kpiCardClick_(res.resueltos,'Resueltos / cerrados','var(--ok)', "verListaFiltrada_('Casos resueltos o cerrados',{soloResueltos:true})")+
-      kpiCardClick_(res.abiertos,'Todavía abiertos','var(--warn)', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
-      kpiCardClick_(res.defensaConsumidor,'Defensa del Consumidor','var(--danger)', "setView('defensa')")+
-      kpiCard_(res.tiempoPromedioResolucionDias!==null ? res.tiempoPromedioResolucionDias+'d' : '—','Tiempo prom. de resolución','var(--purple)')+
+      kpiCardClick_(res.total,'Casos totales','var(--caso-deep)','var(--caso-soft)','folder_open', "setView('casos')")+
+      kpiCard_(res.tasaResolucion+'%','Tasa de resolución','var(--ok)','var(--ok-soft)','trending_up')+
+      kpiCardClick_(res.resueltos,'Resueltos / cerrados','var(--ok)','var(--ok-soft)','task_alt', "verListaFiltrada_('Casos resueltos o cerrados',{soloResueltos:true})")+
+      kpiCardClick_(res.abiertos,'Todavía abiertos','var(--warn)','var(--warn-soft)','pending', "verListaFiltrada_('Casos abiertos',{soloAbiertos:true})")+
+      kpiCardClick_(res.defensaConsumidor,'Defensa del Consumidor','var(--danger)','var(--danger-soft)','balance', "setView('defensa')")+
+      kpiCard_(res.tiempoPromedioResolucionDias!==null ? res.tiempoPromedioResolucionDias+'d' : '—','Tiempo prom. de resolución','var(--purple)','var(--purple-soft)','schedule')+
     '</div>';
 
     html += '<div class="detail-grid">';
@@ -1341,7 +1670,7 @@ function renderReportes(){
         return '<tr>'+
           '<td><b>'+(g.cliente||g.valor)+'</b></td>'+
           '<td>'+(g.tipo==='vin' ? g.valor : '—')+'</td>'+
-          '<td>'+(g.marca||'—')+'</td>'+
+          '<td>'+marcaConLogo_(g.marca,14)+'</td>'+
           '<td style="text-align:center;"><span class="pill" style="background:var(--danger-soft);color:var(--danger);">'+g.casos.length+' casos</span></td>'+
           '<td style="font-size:11px;color:var(--text-faint);">'+g.casos.map(function(c){return c.id;}).join(', ')+'</td>'+
         '</tr>';
@@ -1358,12 +1687,16 @@ function renderReportes(){
     html += '</div></div>';
 
     document.getElementById('content').innerHTML = html;
-    dibujarDonut_('chartResueltos', ['Resueltos/cerrados','Abiertos'], [res.resueltos, res.abiertos], ['#3FBF88','#E8B23D']);
-    dibujarBarras_('chartFuente', res.porFuente);
-    dibujarBarras_('chartSector', res.porSector);
-    dibujarBarras_('chartMarca', res.porMarca);
-    dibujarBarras_('chartTipo', res.porTipoCaso);
+    pintarGraficosReportes_(res);
   });
+}
+function pintarGraficosReportes_(res){
+  var c = coloresGrafico_();
+  if(document.getElementById('chartResueltos')) dibujarDonut_('chartResueltos', ['Resueltos/cerrados','Abiertos'], [res.resueltos, res.abiertos], [c.ok, c.caso]);
+  if(document.getElementById('chartFuente')) dibujarBarras_('chartFuente', res.porFuente);
+  if(document.getElementById('chartSector')) dibujarBarras_('chartSector', res.porSector);
+  if(document.getElementById('chartMarca')) dibujarBarras_('chartMarca', res.porMarca);
+  if(document.getElementById('chartTipo')) dibujarBarras_('chartTipo', res.porTipoCaso);
 }
 function panelChart_(canvasId, titulo, lista){
   if(!lista || lista.length===0) return '';
@@ -1374,7 +1707,7 @@ function coloresGrafico_(){
   var css = getComputedStyle(document.body);
   return {
     caso: css.getPropertyValue('--caso').trim(), grid: css.getPropertyValue('--hairline').trim(),
-    texto: css.getPropertyValue('--text-dim').trim()
+    texto: css.getPropertyValue('--text-dim').trim(), ok: css.getPropertyValue('--ok').trim()
   };
 }
 function dibujarBarras_(canvasId, lista){
@@ -1741,6 +2074,15 @@ function toggleCreacionAutomaticaUI_(){
     pintarConfig_();
     showToast(nuevo ? 'Creación automática activada' : 'Creación automática apagada');
   });
+}
+
+// No registramos Service Worker (mismo criterio que Planning ahora): evita
+// versiones viejas cacheadas en el navegador de alguien. Si quedó uno de
+// una prueba anterior, lo desinstala una sola vez.
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(reg){ reg.unregister(); });
+  }).catch(function(){});
 }
 </script>
 </body>
