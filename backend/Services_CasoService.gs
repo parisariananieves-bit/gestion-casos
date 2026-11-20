@@ -30,6 +30,7 @@ function svcCasoObtener_(id){
   if(!caso) return null;
   caso.seguimientos = dbSeguimientosPorCaso_(id);
   caso.timelineVin = caso.dominio ? dbTimelinePorVin_(caso.dominio) : [];
+  caso.actas = svcActasPorCaso_(id); // minutas en las que se trató este caso (Etapa 5)
   return caso;
 }
 
@@ -68,6 +69,15 @@ function svcCasoCambiarEstado_(id, nuevoEstado, autor, comentario){
     campos.cerradoMotivo = comentario || '';
     campos.proximaAccion = nuevoEstado==='cerrado' ? 'Archivado' : 'Cerrado — conforme';
   }
+  // Reapertura (Etapa 4 — indicador "casos reabiertos"): si ya estaba
+  // resuelto/cerrado y pasa a cualquier otro estado, queda marcado para
+  // siempre como "reabierto alguna vez" — no se vuelve a desmarcar, es un
+  // indicador histórico, no el estado actual.
+  var eraCerrado = caso.estado==='resuelto' || caso.estado==='cerrado';
+  var sigueCerrado = nuevoEstado==='resuelto' || nuevoEstado==='cerrado';
+  if(eraCerrado && !sigueCerrado){
+    campos.reabierto = true;
+  }
   dbCasosActualizarCampos_(id, campos);
   dbSeguimientosAgregar_({
     id: utilNuevoIdSeguimiento_(), casoId: id, fecha: utilAhoraTexto_(), autor: autor||'Sistema',
@@ -78,6 +88,13 @@ function svcCasoCambiarEstado_(id, nuevoEstado, autor, comentario){
     dbTimelineAgregar_({
       id: utilNuevoIdTimeline_(), vin: caso.dominio, fecha: utilAhoraTexto_(),
       tipoEvento: 'Cambio de estado', descripcion: nuevoEstado, casoRelacionado: id, fuente: 'Manual'
+    });
+  }
+  if(eraCerrado && !sigueCerrado){
+    dbSeguimientosAgregar_({
+      id: utilNuevoIdSeguimiento_(), casoId: id, fecha: utilAhoraTexto_(), autor: 'Sistema',
+      tipo: 'sistema', texto: '♻️ Caso reabierto — estaba '+caso.estado+' y pasó a '+nuevoEstado+'.',
+      visibleParaReportante: false
     });
   }
   return responseOk_({});

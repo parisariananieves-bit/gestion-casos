@@ -1,8 +1,8 @@
 /**
  * Controllers_Api_Dashboard.gs
  */
-function apiObtenerResumenDashboard(){
-  return svcDashboardResumen_();
+function apiObtenerResumenDashboard(params){
+  return svcDashboardResumen_(params||{});
 }
 function apiObtenerConfig(){
   return svcConfigObtener_();

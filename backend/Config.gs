@@ -23,7 +23,8 @@ var HOJAS_GC = {
   USUARIOS: 'Usuarios',
   AUDITORIAS: 'Auditorias', // placeholder — se completa en una etapa futura
   ANALISIS_CAUSA_RAIZ: 'AnalisisCausaRaiz',
-  ACTAS: 'Actas'
+  ACTAS: 'Actas',
+  COMPROMISOS: 'Compromisos'
 };
 
 // Análisis de causa raíz (5 Porqués) — uno por caso, editable.
@@ -45,7 +46,9 @@ var COLUMNAS_ANALISIS_CAUSA_RAIZ = [
   {k:'estadoPlan', h:'Estado del plan'} // pendiente | en curso | completado
 ];
 
-// Actas de reunión — módulo aparte, se pueden vincular a uno o más casos.
+// Minutas de reunión (Etapa 5 — antes "Actas", ampliado). Se pueden
+// vincular a uno o más casos reales (por ID, nunca texto libre) y cada
+// caso tratado tiene sus propios compromisos en la hoja Compromisos.
 var COLUMNAS_ACTAS = [
   {k:'id', h:'ID'},
   {k:'fecha', h:'Fecha'},
@@ -54,7 +57,31 @@ var COLUMNAS_ACTAS = [
   {k:'temas', h:'Temas tratados'},
   {k:'casosVinculados', h:'Casos vinculados (separados por coma)'},
   {k:'proximosPasos', h:'Próximos pasos'},
-  {k:'creadoPor', h:'Creado por'}
+  {k:'creadoPor', h:'Creado por'},
+  // --- Agregado (Etapa 5) ---
+  {k:'hora', h:'Hora'},
+  {k:'responsableReunion', h:'Responsable de la reunión'},
+  {k:'objetivo', h:'Objetivo / tema principal'}
+];
+
+// Compromisos (Etapa 5) — uno por cada caso tratado en una minuta. Es lo
+// que convierte "se habló de este caso" en algo con dueño y fecha límite,
+// y lo que alimenta la vista de seguimiento de compromisos.
+var COLUMNAS_COMPROMISOS = [
+  {k:'id', h:'ID'},
+  {k:'actaId', h:'Acta ID'},
+  {k:'casoId', h:'Caso ID'},
+  {k:'resumen', h:'Resumen de la situación'},
+  {k:'problema', h:'Problema identificado'},
+  {k:'analisis', h:'Análisis realizado'},
+  {k:'decision', h:'Decisión tomada'},
+  {k:'accion', h:'Acción acordada'},
+  {k:'responsableCompromiso', h:'Responsable del compromiso'},
+  {k:'fechaLimite', h:'Fecha límite'},
+  {k:'observaciones', h:'Observaciones'},
+  {k:'estado', h:'Estado'},          // pendiente | cumplido  ("vencido" se calcula, no se guarda)
+  {k:'fechaCreacion', h:'Fecha de creación'},
+  {k:'fechaCumplido', h:'Fecha de cumplimiento'}
 ];
 
 // Columnas de la hoja Casos — el orden acá DEBE coincidir con el orden real
@@ -95,7 +122,9 @@ var COLUMNAS_CASOS = [
   {k:'solucionEsperada', h:'Solución esperada (cliente)'},
   {k:'evidencias', h:'Evidencias (JSON)'},               // [{nombre,tipo,tamano,driveId,url,fecha}]
   {k:'tokenSeguimiento', h:'Token de seguimiento'},        // para el link seguro de "agregar info"
-  {k:'fechaPrimerContacto', h:'Fecha Primer Contacto'}     // se completa en la 1ra asignación/novedad
+  {k:'fechaPrimerContacto', h:'Fecha Primer Contacto'},    // se completa en la 1ra asignación/novedad
+  // --- Agregado: Dashboard ejecutivo (Etapa 4) — casos reabiertos ---
+  {k:'reabierto', h:'Reabierto alguna vez', bool:true}
 ];
 
 // Columnas de la hoja Eventos — todo lo que entra al sistema pasa por acá
@@ -160,6 +189,7 @@ var CONFIG_KEYS = {
   CONTADOR_TIMELINE: 'CONTADOR_TIMELINE',
   CONTADOR_ANALISIS: 'CONTADOR_ANALISIS',
   CONTADOR_ACTAS: 'CONTADOR_ACTAS',
+  CONTADOR_COMPROMISOS: 'CONTADOR_COMPROMISOS',
   SLA_HORAS_ALTA: 'SLA_HORAS_ALTA',
   SLA_HORAS_MEDIA: 'SLA_HORAS_MEDIA',
   SLA_HORAS_BAJA: 'SLA_HORAS_BAJA',

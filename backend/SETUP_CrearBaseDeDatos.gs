@@ -16,12 +16,14 @@ function crearBaseDeDatosGestionCasos(){
   getHojaConfiguracion_();
   getHojaCatalogos_();
   getHojaUsuarios_GC();
+  getHojaActas_();
+  getHojaCompromisos_();
 
   dbConfigInicializar_();
 
   // Orden prolijo de pestañas
   var orden = [HOJAS_GC.CASOS, HOJAS_GC.EVENTOS, HOJAS_GC.TIMELINE, HOJAS_GC.SEGUIMIENTOS,
-    HOJAS_GC.CATALOGOS, HOJAS_GC.CONFIGURACION, HOJAS_GC.USUARIOS];
+    HOJAS_GC.CATALOGOS, HOJAS_GC.CONFIGURACION, HOJAS_GC.USUARIOS, HOJAS_GC.ACTAS, HOJAS_GC.COMPROMISOS];
   orden.forEach(function(nombre, i){
     var sh = ss.getSheetByName(nombre);
     if(sh){ ss.setActiveSheet(sh); ss.moveActiveSheet(i+1); }

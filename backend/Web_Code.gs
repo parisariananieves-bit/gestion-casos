@@ -15,13 +15,15 @@ function doGet(e){
     else if(action==='buscarCliente') result = apiBuscarClienteCaso(e.parameter);
     else if(action==='timelinePorVin') result = apiTimelinePorVin(e.parameter);
     else if(action==='eventosPendientes') result = apiEventosPendientes(e.parameter);
-    else if(action==='dashboard') result = apiObtenerResumenDashboard();
+    else if(action==='dashboard') result = apiObtenerResumenDashboard(e.parameter);
     else if(action==='config') result = apiObtenerConfig();
     else if(action==='usuariosActivos') result = apiUsuariosActivosParaAsignar();
     else if(action==='reporte') result = apiObtenerReporte(e.parameter);
     else if(action==='reporteDefensaConsumidor') result = apiObtenerReporteDefensaConsumidor();
     else if(action==='analisisCausaRaiz') result = apiObtenerAnalisisCausaRaiz(e.parameter);
     else if(action==='actas') result = apiListarActas();
+    else if(action==='acta') result = apiObtenerActa(e.parameter);
+    else if(action==='compromisos') result = apiListarCompromisos(e.parameter);
     else result = responseOk_({mensaje:'API Gestión de Casos funcionando'});
   }catch(err){
     result = responseError_(err);
@@ -46,6 +48,7 @@ function doPost(e){
     else if(action==='toggleDefensaConsumidor') result = apiToggleDefensaConsumidor(p);
     else if(action==='guardarAnalisisCausaRaiz') result = apiGuardarAnalisisCausaRaiz(p);
     else if(action==='crearActa') result = apiCrearActa(p);
+    else if(action==='marcarCompromisoCumplido') result = apiMarcarCompromisoCumplido(p);
     else if(action==='confirmarEventoComoCaso') result = apiConfirmarEventoComoCaso(p);
     else if(action==='descartarEvento') result = apiDescartarEvento(p);
     else if(action==='actualizarConfig') result = apiActualizarConfig(p);

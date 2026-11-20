@@ -134,6 +134,23 @@ function svcReporteResumen_(filtros){
   });
   var tiempoPromedioPrimerContactoHoras = contadosPrimerContacto ? Math.round((horasPrimerContactoTotal/contadosPrimerContacto)*10)/10 : null;
 
+  // --- Agregado: Dashboard ejecutivo (Etapa 4) — más dimensiones sobre
+  // los mismos casos, nada de datos ficticios ni tablas nuevas. ---
+  var enGestion = casos.filter(function(c){ return c.estado==='analisis'; }).length;
+  var pendientesRespuesta = casos.filter(function(c){ return c.estado==='esperando'; }).length;
+  var reabiertos = casos.filter(function(c){ return c.reabierto===true || String(c.reabierto)==='true'; }).length;
+
+  // Evolución mensual: últimos 12 meses con al menos un caso, en orden
+  // cronológico (clave 'AAAA-MM' para que ordene bien como texto).
+  var porMes = {};
+  casos.forEach(function(c){
+    var f = parseFechaTextoGC_(c.fechaCreacion);
+    if(!f) return;
+    var clave = f.getFullYear()+'-'+String(f.getMonth()+1).padStart(2,'0');
+    porMes[clave] = (porMes[clave]||0)+1;
+  });
+  var evolucionMensual = Object.keys(porMes).sort().slice(-12).map(function(k){ return {mes:k, cantidad:porMes[k]}; });
+
   return responseOk_({
     total: total,
     abiertos: abiertos,
@@ -147,6 +164,14 @@ function svcReporteResumen_(filtros){
     porSucursal: contarPor_(casos, 'sucursal'),
     porTipoCaso: contarPor_(casos, 'tipoCaso'),
     porEstado: contarPor_(casos, 'estado'),
+    porPrioridad: contarPor_(casos, 'prioridad'),
+    porUnidad: contarPor_(casos, 'unidad'),
+    porResponsable: contarPor_(casos.filter(function(c){return c.responsable;}), 'responsable'),
+    porMotivo: contarPor_(casos.filter(function(c){return c.motivo;}), 'motivo').slice(0,10),
+    evolucionMensual: evolucionMensual,
+    enGestion: enGestion,
+    pendientesRespuesta: pendientesRespuesta,
+    reabiertos: reabiertos,
     recurrentes: recurrentes,
     reclamos: {
       totalFormulario: reclamosFormulario.length,

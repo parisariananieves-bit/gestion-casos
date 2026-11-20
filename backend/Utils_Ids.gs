@@ -37,3 +37,7 @@ function utilNuevoIdActa_(){
 function utilNuevoTokenSeguimiento_(){
   return Utilities.getUuid().replace(/-/g,'');
 }
+function utilNuevoIdCompromiso_(){
+  var n = dbConfigSiguienteContador_(CONFIG_KEYS.CONTADOR_COMPROMISOS);
+  return 'CO-' + n;
+}
