@@ -1155,10 +1155,17 @@ function renderBandeja(){
     pintarTablaBandeja_();
   });
 }
+// Los desplegables de filtro muestran SIEMPRE el catálogo completo (todas
+// las marcas/sucursales/fuentes configuradas), no solo las que ya tienen
+// algún caso cargado — así se puede filtrar por una marca o sucursal
+// aunque todavía no haya ningún caso de esa categoría.
 function poblarSelectsBandeja_(eventos){
-  pintarDropdownFiltro_('bfMarcaBtn','bfMarcaMenu','bfMarca','Marca', eventos.map(function(e){return (e.datosNormalizados||{}).marca;}), 'pintarTablaBandeja_');
-  pintarDropdownFiltro_('bfSucursalBtn','bfSucursalMenu','bfSucursal','Sucursal', eventos.map(function(e){return (e.datosNormalizados||{}).sucursal;}), 'pintarTablaBandeja_');
-  pintarDropdownFiltro_('bfFuenteBtn','bfFuenteMenu','bfFuente','De dónde viene', eventos.map(function(e){return e.fuente;}), 'pintarTablaBandeja_');
+  configCacheada_().then(function(cfg){
+    var cat = (cfg.ok && cfg.catalogos) || {};
+    pintarDropdownFiltro_('bfMarcaBtn','bfMarcaMenu','bfMarca','Marca', (cat.Marca||[]).concat(eventos.map(function(e){return (e.datosNormalizados||{}).marca;})), 'pintarTablaBandeja_');
+    pintarDropdownFiltro_('bfSucursalBtn','bfSucursalMenu','bfSucursal','Sucursal', (cat.Sucursal||[]).concat(eventos.map(function(e){return (e.datosNormalizados||{}).sucursal;})), 'pintarTablaBandeja_');
+    pintarDropdownFiltro_('bfFuenteBtn','bfFuenteMenu','bfFuente','De dónde viene', (cat.Fuente||[]).concat(eventos.map(function(e){return e.fuente;})), 'pintarTablaBandeja_');
+  });
 }
 function limpiarFiltrosBandeja_(){
   ['bfFuente','bfMarca','bfSucursal','bfDesde','bfHasta','bfBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
@@ -1302,10 +1309,13 @@ function cargarYPintarCasos_(){
   });
 }
 function poblarSelectsCasos_(casos){
-  pintarDropdownFiltro_('fMarcaBtn','fMarcaMenu','fMarca','Marca', casos.map(function(c){return c.marca;}), 'aplicarFiltrosCasos_');
-  pintarDropdownFiltro_('fSucursalBtn','fSucursalMenu','fSucursal','Sucursal', casos.map(function(c){return c.sucursal;}), 'aplicarFiltrosCasos_');
-  pintarDropdownFiltro_('fUnidadBtn','fUnidadMenu','fUnidad','Tipo de operación', casos.map(function(c){return c.unidad;}), 'aplicarFiltrosCasos_');
-  pintarDropdownFiltro_('fFuenteBtn','fFuenteMenu','fFuente','Fuente', casos.map(function(c){return c.fuente;}), 'aplicarFiltrosCasos_');
+  configCacheada_().then(function(cfg){
+    var cat = (cfg.ok && cfg.catalogos) || {};
+    pintarDropdownFiltro_('fMarcaBtn','fMarcaMenu','fMarca','Marca', (cat.Marca||[]).concat(casos.map(function(c){return c.marca;})), 'aplicarFiltrosCasos_');
+    pintarDropdownFiltro_('fSucursalBtn','fSucursalMenu','fSucursal','Sucursal', (cat.Sucursal||[]).concat(casos.map(function(c){return c.sucursal;})), 'aplicarFiltrosCasos_');
+    pintarDropdownFiltro_('fUnidadBtn','fUnidadMenu','fUnidad','Tipo de operación', (cat['Unidad de Negocio']||[]).concat(casos.map(function(c){return c.unidad;})), 'aplicarFiltrosCasos_');
+    pintarDropdownFiltro_('fFuenteBtn','fFuenteMenu','fFuente','Fuente', (cat.Fuente||[]).concat(casos.map(function(c){return c.fuente;})), 'aplicarFiltrosCasos_');
+  });
 }
 function limpiarFiltrosCasos_(resetQuickView){
   ['fEstado','fPrioridad','fFuente','fMarca','fSucursal','fUnidad','fDesde','fHasta','fBusqueda'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
@@ -1409,8 +1419,11 @@ function renderCalendario(){
   });
 }
 function poblarSelectsCalendario_(casos){
-  pintarDropdownFiltro_('cfMarcaBtn','cfMarcaMenu','cfMarca','Marca', casos.map(function(c){return c.marca;}), 'pintarCalendario_');
-  pintarDropdownFiltro_('cfSucursalBtn','cfSucursalMenu','cfSucursal','Sucursal', casos.map(function(c){return c.sucursal;}), 'pintarCalendario_');
+  configCacheada_().then(function(cfg){
+    var cat = (cfg.ok && cfg.catalogos) || {};
+    pintarDropdownFiltro_('cfMarcaBtn','cfMarcaMenu','cfMarca','Marca', (cat.Marca||[]).concat(casos.map(function(c){return c.marca;})), 'pintarCalendario_');
+    pintarDropdownFiltro_('cfSucursalBtn','cfSucursalMenu','cfSucursal','Sucursal', (cat.Sucursal||[]).concat(casos.map(function(c){return c.sucursal;})), 'pintarCalendario_');
+  });
 }
 function setCalTipo_(tipo){
   window._calTipo = tipo;
