@@ -417,6 +417,7 @@ table.tbl tr:hover td{background:var(--panel-2);}
     <button class="nav-item" id="navCasos" onclick="setView('casos')" title="Casos"><span class="material-symbols-outlined">folder_open</span><span class="nav-label">Casos</span></button>
     <button class="nav-item" id="navCalendario" onclick="setView('calendario')" title="Calendario"><span class="material-symbols-outlined">calendar_month</span><span class="nav-label">Calendario</span></button>
     <button class="nav-item" id="navReportar" onclick="setView('reportar')" title="Reportar un caso"><span class="material-symbols-outlined">add_circle</span><span class="nav-label">Reportar un caso</span></button>
+    <button class="nav-item" id="navFormularioPublico" onclick="copiarLinkFormularioPublico_()" title="Copiar el link del formulario público para compartir por WhatsApp"><span class="material-symbols-outlined">share</span><span class="nav-label">Formulario de reclamos</span></button>
     <button class="nav-item" id="navReportes" onclick="setView('reportes')" title="Reportes"><span class="material-symbols-outlined">bar_chart</span><span class="nav-label">Reportes</span></button>
     <button class="nav-item" id="navDefensa" onclick="setView('defensa')" title="Defensa del Consumidor"><span class="material-symbols-outlined">balance</span><span class="nav-label">Defensa del Consumidor</span></button>
     <button class="nav-item" id="navActas" onclick="setView('actas')" title="Actas de reunión"><span class="material-symbols-outlined">description</span><span class="nav-label">Actas de reunión</span></button>
@@ -1258,6 +1259,63 @@ function verDiaCalendario_(clave){
 }
 
 // ============================================================
+// EVIDENCIAS DEL CLIENTE — sección de solo lectura (no se puede editar ni
+// borrar desde el expediente, punto 6 de la especificación de reclamos).
+// Fotos con preview, videos reproducibles si el formato lo permite, y PDFs
+// / otros documentos para descargar. Los archivos viven en Drive, en una
+// carpeta privada por caso — nunca con un link "público".
+// ============================================================
+function renderEvidenciasCliente_(c){
+  var evidencias = [];
+  try{ evidencias = JSON.parse(c.evidencias||'[]'); }catch(e){}
+  if(!evidencias.length) return '';
+  var items = evidencias.map(function(ev){
+    var esImagen = String(ev.tipo||'').indexOf('image')===0;
+    var esVideo = String(ev.tipo||'').indexOf('video')===0;
+    var esPdf = ev.tipo==='application/pdf';
+    var preview = esImagen
+      ? '<a href="'+ev.url+'" target="_blank" rel="noopener"><img src="'+ev.url+'" style="width:100%;height:92px;object-fit:cover;border-radius:10px;display:block;" onerror="this.parentElement.innerHTML=\'<span class=&quot;material-symbols-outlined&quot; style=&quot;font-size:28px;color:var(--text-faint);&quot;>image</span>\';"></a>'
+      : esVideo
+        ? '<video controls style="width:100%;height:92px;border-radius:10px;background:#000;object-fit:contain;" preload="metadata"><source src="'+ev.url+'" type="'+ev.tipo+'"></video>'
+        : '<a href="'+ev.url+'" target="_blank" rel="noopener" style="width:100%;height:92px;border-radius:10px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;"><span class="material-symbols-outlined" style="font-size:28px;color:var(--text-faint);">'+(esPdf?'picture_as_pdf':'description')+'</span></a>';
+    return '<div style="border:1px solid var(--hairline);border-radius:12px;padding:8px;">'+
+      preview+
+      '<div style="font-size:11px;margin-top:6px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+(ev.nombre||'')+'">'+(ev.nombre||'archivo')+'</div>'+
+      '<a href="'+ev.url+'" target="_blank" rel="noopener" style="font-size:10.5px;color:var(--caso-bright);">Abrir / descargar</a>'+
+    '</div>';
+  }).join('');
+  return '<div class="panel"><div class="panel-head"><h3>📎 Evidencias del cliente ('+evidencias.length+')</h3></div>'+
+    '<div style="padding:14px 17px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;">'+items+'</div>'+
+    '<div style="padding:0 17px 14px;font-size:10.5px;color:var(--text-faint);">Evidencias originales adjuntadas por el cliente — no se pueden modificar desde acá.</div>'+
+  '</div>';
+}
+// Link del formulario público de reclamos — la misma página estática
+// (reclamo.html) vive en este mismo dominio de Vercel, así que no hay
+// ninguna integración de WhatsApp que configurar: solo se copia el link
+// para pegarlo a mano donde haga falta (WhatsApp, firma de mail, etc.).
+function copiarLinkFormularioPublico_(){
+  var link = window.location.origin + '/reclamo.html';
+  var hacerCopia = function(){
+    if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(link);
+    var ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); return Promise.resolve();
+  };
+  hacerCopia().then(function(){ alert('Link del formulario de reclamos copiado:\n\n'+link+'\n\nPodés pegarlo en WhatsApp, en la firma de mail o donde lo necesites.'); })
+    .catch(function(){ prompt('Copiá este link del formulario de reclamos:', link); });
+}
+function copiarLinkSeguimiento_(idCaso, token){
+  var base = window.location.origin + '/seguimiento.html';
+  var link = base + '?id=' + encodeURIComponent(idCaso) + '&token=' + encodeURIComponent(token);
+  var hacerCopia = function(){
+    if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(link);
+    var ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta); return Promise.resolve();
+  };
+  hacerCopia().then(function(){ alert('Link de seguimiento copiado — pegalo en WhatsApp o mail para el cliente.'); })
+    .catch(function(){ prompt('Copiá este link para compartir con el cliente:', link); });
+}
+
+// ============================================================
 // DETALLE DE CASO
 // ============================================================
 function renderDetalle(id){
@@ -1279,7 +1337,8 @@ function renderDetalle(id){
         infoItem_('Prioridad', '<span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span>')+
         infoItem_('SLA vence', c.slaVencimiento||'—')+
       '</div>'+
-      (c.descripcion ? '<div style="margin-top:12px;font-size:12.8px;color:var(--text-dim);">'+c.descripcion+'</div>' : '')+
+      (c.descripcion ? '<div style="margin-top:12px;font-size:12.8px;color:var(--text-dim);"><b>Descripción del cliente:</b> '+c.descripcion+'</div>' : '')+
+      (c.solucionEsperada ? '<div style="margin-top:8px;font-size:12.8px;color:var(--text-dim);"><b>Solución que espera el cliente:</b> '+c.solucionEsperada+'</div>' : '')+
       '<div class="action-row">'+
         estadoBotones_(c)+
         '<button class="btn btn-ghost btn-sm" style="'+(esDefensa?'border-color:var(--danger);color:var(--danger);':'')+'" onclick="toggleDefensaConsumidorUI_(\''+c.id+'\','+(!esDefensa)+')">'+(esDefensa?'⚖️ Quitar Defensa del Consumidor':'⚖️ Marcar Defensa del Consumidor')+'</button>'+
@@ -1288,10 +1347,12 @@ function renderDetalle(id){
         '<button class="btn btn-ghost btn-sm" style="border-color:var(--purple);color:var(--purple);" onclick="derivarCasoUI_(\''+c.id+'\')" title="Deriva el caso a esa persona y lo marca para seguimiento conjunto con Calidad">Derivar</button>'+
         '<select id="selPrioridad" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);"><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>'+
         '<button class="btn btn-ghost btn-sm" onclick="cambiarPrioridadUI_(\''+c.id+'\')">Cambiar prioridad</button>'+
+        (c.tokenSeguimiento ? '<button class="btn btn-ghost btn-sm" onclick="copiarLinkSeguimiento_(\''+c.id+'\',\''+c.tokenSeguimiento+'\')" title="Link para que el cliente agregue más información sin crear un reclamo nuevo"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">link</span> Copiar link de seguimiento</button>' : '')+
       '</div>'+
     '</div>';
 
     html += '<div class="detail-grid"><div>';
+    html += renderEvidenciasCliente_(c);
     html += '<div class="panel"><div class="panel-head"><h3>Novedades</h3></div><div class="timeline" id="timelineCaso">'+renderTimelineSeguimientos_(c.seguimientos||[])+'</div></div>';
     html += '<div class="panel"><div class="panel-head"><h3>🔍 Análisis de causa raíz (5 Porqués)</h3><button class="btn btn-ghost btn-sm" style="width:auto;" onclick="toggleAnalisisCausaRaiz_(\''+c.id+'\')" id="btnToggleAnalisis">Ver / completar</button></div><div id="panelAnalisisCausaRaiz" class="hidden" style="padding:16px 17px;"></div></div>';
     if(c.timelineVin && c.timelineVin.length){
@@ -1663,6 +1724,22 @@ function renderReportes(){
       kpiCard_(res.tiempoPromedioResolucionDias!==null ? res.tiempoPromedioResolucionDias+'d' : '—','Tiempo prom. de resolución','var(--purple)','var(--purple-soft)','schedule')+
     '</div>';
 
+    // --- Agregado: indicadores de reclamos ingresados por el formulario
+    // web (punto 11 de la especificación) — misma grilla de KPIs, mismos
+    // componentes, solo una fila más. ---
+    if(res.reclamos){
+      var rc = res.reclamos;
+      html += '<div class="panel-head" style="margin:18px 0 10px;"><h3>📋 Reclamos por formulario web</h3></div>';
+      html += '<div class="kpi-grid">'+
+        kpiCardClick_(rc.totalFormulario,'Reclamos por formulario','var(--caso-deep)','var(--caso-soft)','how_to_reg', "verListaFiltrada_('Reclamos por formulario web',{fuente:'Formulario web'})")+
+        kpiCard_(rc.conEvidencias,'Con evidencias adjuntas','var(--purple)','var(--purple-soft)','attach_file')+
+        kpiCard_(rc.tiempoPromedioPrimerContactoHoras!==null ? rc.tiempoPromedioPrimerContactoHoras+'h' : '—','Tiempo hasta 1er contacto','var(--info)','var(--info-soft)','support_agent')+
+        kpiCardClick_(rc.pendientesAsignacion,'Pendientes de asignación','var(--warn)','var(--warn-soft)','assignment_late', "verListaFiltrada_('Pendientes de asignación',{soloSinAsignar:true})")+
+        kpiCardClick_(rc.vencidos,'Vencidos (SLA)','var(--danger)','var(--danger-soft)','timer_off', "verListaFiltrada_('Vencidos',{soloVencidos:true})")+
+        kpiCard_(rc.cerrados,'Cerrados','var(--ok)','var(--ok-soft)','task_alt')+
+      '</div>';
+    }
+
     html += '<div class="detail-grid">';
     html += '<div>';
     html += tablaReporte_('Casos recurrentes — mismo cliente/vehículo con 2 o más casos', 'Estos son los que conviene tratar con urgencia — algo se está repitiendo.',
@@ -1683,7 +1760,11 @@ function renderReportes(){
     html += panelChart_('chartFuente','Por fuente', res.porFuente);
     html += panelChart_('chartSector','Por sector', res.porSector);
     html += panelChart_('chartMarca','Por marca', res.porMarca);
+    html += panelChart_('chartSucursal','Por sucursal', res.porSucursal);
     html += panelChart_('chartTipo','Por tipo de caso', res.porTipoCaso);
+    if(res.reclamos && res.reclamos.porMarca && res.reclamos.porMarca.length){
+      html += panelChart_('chartReclamosMarca','Reclamos por formulario — por marca', res.reclamos.porMarca);
+    }
     html += '</div></div>';
 
     document.getElementById('content').innerHTML = html;
@@ -1696,7 +1777,9 @@ function pintarGraficosReportes_(res){
   if(document.getElementById('chartFuente')) dibujarBarras_('chartFuente', res.porFuente);
   if(document.getElementById('chartSector')) dibujarBarras_('chartSector', res.porSector);
   if(document.getElementById('chartMarca')) dibujarBarras_('chartMarca', res.porMarca);
+  if(document.getElementById('chartSucursal')) dibujarBarras_('chartSucursal', res.porSucursal);
   if(document.getElementById('chartTipo')) dibujarBarras_('chartTipo', res.porTipoCaso);
+  if(res.reclamos && document.getElementById('chartReclamosMarca')) dibujarBarras_('chartReclamosMarca', res.reclamos.porMarca);
 }
 function panelChart_(canvasId, titulo, lista){
   if(!lista || lista.length===0) return '';
