@@ -903,6 +903,7 @@ var TITULOS = {
 };
 
 function setView(v, param){
+  if(v==='detalle' && window._vistaActual && window._vistaActual!=='detalle') window._volverA = window._vistaActual;
   window._vistaActual = v; window._vistaActualParam = param;
   VISTAS.forEach(function(x){
     var nav = document.getElementById('nav'+x.charAt(0).toUpperCase()+x.slice(1));
@@ -2435,7 +2436,8 @@ function renderDetalle(id){
     var c = res.caso;
     var esDefensa = String(c.defensaConsumidor)==='true'||c.defensaConsumidor===true;
     document.getElementById('topbarSub').textContent = c.cliente+' · '+c.id;
-    var html = '<div class="detail-header dh-'+(c.prioridad||'').toLowerCase()+'">'+
+    var html = '<button class="btn btn-ghost btn-sm" style="width:auto;margin-bottom:12px;" onclick="volverDeDetalle_()"><span class="material-symbols-outlined" style="font-size:17px;vertical-align:-4px;">arrow_back</span> Volver</button>'+
+      '<div class="detail-header dh-'+(c.prioridad||'').toLowerCase()+'">'+
       '<div class="dh-top"><div><div class="dh-id">'+c.id+'</div><div class="dh-title" style="display:flex;align-items:center;gap:8px;">'+(c.motivo||c.tipoCaso||'Caso')+' — '+logoMarcaHtml_(c.marca,18)+' '+(c.marca||'')+' '+(c.modelo||'')+'</div></div>'+
         '<div style="display:flex;gap:8px;align-items:center;">'+
           (esDefensa ? '<span class="pill" style="background:var(--danger-soft);color:var(--danger);font-size:11px;padding:5px 11px;">⚖️ Defensa del Consumidor</span>' : '')+
@@ -2458,6 +2460,7 @@ function renderDetalle(id){
         '<button class="btn btn-ghost btn-sm" style="border-color:var(--purple);color:var(--purple);" onclick="derivarCasoUI_(\''+c.id+'\')" title="Deriva el caso a esa persona y lo marca para seguimiento conjunto con Calidad">Derivar</button>'+
         '<select id="selPrioridad" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);"><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>'+
         '<button class="btn btn-ghost btn-sm" onclick="cambiarPrioridadUI_(\''+c.id+'\')">Cambiar prioridad</button>'+
+        (esCalidad_() ? '<button class="btn btn-ghost btn-sm" style="border-color:var(--danger);color:var(--danger);margin-left:auto;" onclick="eliminarCasoUI_(\''+c.id+'\')" title="Borra el caso y sus novedades (por ejemplo, un duplicado). No se puede deshacer."><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">delete</span> Eliminar caso</button>' : '')+
         (c.tokenSeguimiento ? '<button class="btn btn-ghost btn-sm" onclick="copiarLinkSeguimiento_(\''+c.id+'\',\''+c.tokenSeguimiento+'\')" title="Link para que el cliente agregue más información sin crear un reclamo nuevo"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">link</span> Copiar link de seguimiento</button>' : '')+
       '</div>'+
       '<div class="pp-box"><label><span class="material-symbols-outlined" style="font-size:17px;">event_upcoming</span>Próximo paso</label>'+
@@ -2475,7 +2478,7 @@ function renderDetalle(id){
     html += renderReunionesCaso_(c.actas||[]);
     if(c.timelineVin && c.timelineVin.length){
       html += '<div class="panel"><div class="panel-head"><h3>Historial del vehículo (todos los casos)</h3></div><div class="timeline">'+
-        c.timelineVin.map(function(t){ return '<div class="t-item"><div class="t-dot sistema"></div><div class="t-when">'+t.fecha+'</div><div><div class="t-what">'+t.tipoEvento+' — '+t.descripcion+'</div><div class="t-who">'+t.casoRelacionado+' · '+t.fuente+'</div></div></div>'; }).join('')+
+        c.timelineVin.map(function(t){ return '<div class="t-item"><div class="t-dot sistema"></div><div class="t-when">'+fmtFechaGC_(t.fecha)+'</div><div><div class="t-what">'+t.tipoEvento+' — '+t.descripcion+'</div><div class="t-who">'+t.casoRelacionado+' · '+t.fuente+'</div></div></div>'; }).join('')+
       '</div></div>';
     }
     html += '</div><div>';
@@ -2570,10 +2573,24 @@ function estadoBotones_(c){
     estados.map(function(e){ return '<option value="'+e+'"'+(e===c.estado?' selected':'')+'>'+e+'</option>'; }).join('')+
     '</select><button class="btn btn-dark btn-sm" onclick="cambiarEstadoUI_(\''+c.id+'\')">Cambiar estado</button>';
 }
+function esCalidad_(){ var s = sesionActual(); return !!(s && s.rol==='calidad'); }
+function volverDeDetalle_(){ setView(window._volverA || 'casos'); }
+function eliminarCasoUI_(id){
+  if(!confirm('¿Eliminar el caso '+id+'?\n\nSe borra el caso y todas sus novedades. No se puede deshacer.\nUsalo para duplicados o cargas por error.')) return;
+  var s = sesionActual();
+  gasPost('eliminarCaso', {id:id, autor:s?s.nombre:''}).then(function(res){
+    if(!res.ok){ showToast(res.error||'No se pudo eliminar'); return; }
+    window._casosCache = (window._casosCache||[]).filter(function(c){ return c.id!==id; });
+    guardarCache_('casos', window._casosCache);
+    showToast('Caso '+id+' eliminado');
+    setView(window._volverA && window._volverA!=='detalle' ? window._volverA : 'casos');
+    actualizarBadgeBandeja_();
+  });
+}
 function renderTimelineSeguimientos_(seguimientos){
   if(!seguimientos.length) return '<div class="empty-state" style="padding:24px;">Todavía no hay novedades.</div>';
   return seguimientos.map(function(s){
-    return '<div class="t-item"><div class="t-dot '+s.tipo+'"></div><div class="t-when">'+s.fecha+'</div><div><div class="t-what">'+s.texto+'</div><div class="t-who">'+s.autor+'</div></div></div>';
+    return '<div class="t-item"><div class="t-dot '+s.tipo+'"></div><div class="t-when">'+fmtFechaGC_(s.fecha)+'</div><div><div class="t-what">'+s.texto+'</div><div class="t-who">'+s.autor+'</div></div></div>';
   }).join('');
 }
 // Cacheado en memoria durante la sesión — no cambia tan seguido como para
