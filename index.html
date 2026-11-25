@@ -132,7 +132,7 @@ input,select,textarea{font-family:inherit;}
    vez del panel ancho fijo de antes. */
 #app{display:flex; min-height:100vh;}
 .sidebar{position:fixed; left:0; top:0; bottom:0; width:60px; background:linear-gradient(180deg, var(--ink-soft) 0%, var(--ink) 100%); color:#fff; display:flex; flex-direction:column; padding:14px 0 12px; overflow:hidden; box-shadow:4px 0 24px rgba(0,0,0,.18); z-index:65; transition:width .16s ease;}
-.sidebar:hover, .sidebar.pinned{width:206px; overflow:visible; box-shadow:6px 0 24px rgba(0,0,0,.4);}
+.sidebar:hover, .sidebar.pinned{width:226px; overflow:visible; box-shadow:6px 0 24px rgba(0,0,0,.4);}
 .sidebar-pin{position:absolute; top:13px; right:9px; background:none; border:none; color:#8E92A0; cursor:pointer; padding:3px; border-radius:6px; opacity:0; transition:opacity .12s,color .12s;}
 .sidebar-pin .material-symbols-outlined{font-size:15px; display:block;}
 .sidebar-pin:hover{color:#fff;}
@@ -144,15 +144,18 @@ input,select,textarea{font-family:inherit;}
 .brand small{display:block; font-size:8.7px; color:#8E92A0; letter-spacing:.08em; text-transform:uppercase;}
 .nav-label,.user-chip .info{opacity:0; max-width:0; overflow:hidden; transition:opacity .08s ease, max-width .16s ease; white-space:nowrap;}
 .sidebar:hover .nav-label, .sidebar.pinned .nav-label,
-.sidebar:hover .user-chip .info, .sidebar.pinned .user-chip .info{opacity:1; max-width:150px;}
-.nav-item{display:flex; align-items:center; gap:11px; padding:8px 18px; border-radius:0; color:#B8BAC5; font-size:12.6px; font-weight:550; margin-bottom:1px; transition:background .16s,color .16s; width:100%; text-align:left; background:none; border:none; position:relative;}
+.sidebar:hover .user-chip .info, .sidebar.pinned .user-chip .info{opacity:1; max-width:170px;}
+.nav-item{display:flex; align-items:center; gap:9px; padding:8px 14px; border-radius:0; color:#B8BAC5; font-size:12.6px; font-weight:550; margin-bottom:1px; transition:background .16s,color .16s; width:100%; text-align:left; background:none; border:none; position:relative;}
 .sidebar:not(:hover):not(.pinned):not(.open) .nav-item{justify-content:center; padding-left:0; padding-right:0;}
 .nav-item .material-symbols-outlined{font-size:17px; flex-shrink:0;}
 .nav-item:hover{background:rgba(255,255,255,.06); color:#fff;}
 .nav-item.active{background:var(--caso-soft); color:var(--caso-bright);}
 .nav-item .badge-count{margin-left:auto; background:rgba(255,255,255,.12); color:#fff; font-size:9.5px; padding:1px 6px; border-radius:20px; font-weight:650;}
 .nav-item.active .badge-count{background:rgba(255,255,255,.2);}
-.sidebar-scroll{overflow-y:auto; overflow-x:hidden; flex:1; min-height:0; padding:0 6px;}
+/* Menú colapsado: el contador va como globito sobre el ícono, no al costado
+   (que se salía del ancho del menú). Al expandir vuelve a su lugar. */
+.sidebar:not(:hover):not(.pinned):not(.open) .nav-item .badge-count{position:absolute; top:3px; right:5px; margin:0; min-width:17px; text-align:center; font-size:9px; line-height:1.35; padding:0 4px; background:var(--danger); color:#fff; box-shadow:0 0 0 2px var(--ink);}
+.sidebar-scroll{overflow-y:auto; overflow-x:hidden; flex:1; min-height:0; padding:0 4px;}
 .sidebar-scroll::-webkit-scrollbar{width:4px;}
 .sidebar-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18); border-radius:10px;}
 .sidebar-foot{margin-top:auto; border-top:1px solid rgba(255,255,255,.08); padding-top:9px;}
@@ -173,7 +176,7 @@ input,select,textarea{font-family:inherit;}
 .sidebar-overlay{display:none;}
 
 .main{flex:1; min-width:0; margin-left:60px; transition:margin-left .16s ease;}
-.sidebar:hover ~ .main, .sidebar.pinned ~ .main{margin-left:206px;}
+.sidebar:hover ~ .main, .sidebar.pinned ~ .main{margin-left:226px;}
 .topbar{height:var(--topbar-h); border-bottom:1px solid var(--hairline); background:rgba(255,255,255,.86); backdrop-filter:blur(10px); display:flex; align-items:center; padding:0 22px; gap:14px; position:sticky; top:0; z-index:20; box-shadow:0 1px 0 rgba(15,17,22,.03);}
 .topbar h1{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
 .topbar .sub{font-size:11.5px; color:var(--text-faint); font-weight:600;}
@@ -544,6 +547,44 @@ table.tbl tr.r-nueva td:first-child{padding-left:20px;}
 .modal-body{padding:16px 22px 22px;}
 .modal.modal-wide{width:min(760px,95vw);}
 
+
+/* --- Etapa 8 --- */
+/* Contador del menú colapsado: globito pegado al ícono (centrado), sin el hueco del texto oculto */
+.sidebar:not(:hover):not(.pinned):not(.open) .nav-item{gap:0;}
+.sidebar:not(:hover):not(.pinned):not(.open) .nav-item .badge-count{left:calc(50% + 3px); right:auto; top:1px;}
+.nav-item .nav-label{flex:0 1 auto; min-width:0;}
+.nav-item .badge-count{flex-shrink:0; min-width:18px; text-align:center; line-height:1.5;}
+.bj-bar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:10px 14px; margin-bottom:12px; border-radius:var(--radius-m); background:var(--caso-soft); border:1.5px solid var(--caso);}
+.bj-bar b{color:var(--caso-deep); font-size:13px;}
+.bj-bar .sp{flex:1;}
+.bj-prog{font-size:12px; color:var(--text-dim); font-weight:600;}
+.tbl input.bj-chk{width:16px; height:16px; cursor:pointer; accent-color:var(--caso);}
+.rep-chip{display:inline-flex; align-items:center; gap:3px; margin-left:6px; padding:1px 7px; border-radius:20px; background:var(--warn-soft,rgba(245,166,35,.16)); color:var(--warn,#b7791f); font-size:10.5px; font-weight:700; white-space:nowrap; cursor:help;}
+.rep-chip.abierto{background:rgba(229,72,77,.12); color:var(--danger);}
+.pp-chip{display:inline-flex; align-items:center; gap:4px; font-size:11px; color:var(--text-dim); font-weight:600;}
+.pp-chip .material-symbols-outlined{font-size:14px;}
+.pp-chip.venc{color:var(--danger); font-weight:700;}
+.pp-box{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:14px; padding:10px 12px; border:1.5px dashed var(--hairline); border-radius:var(--radius-m); background:var(--panel-2);}
+.pp-box label{font-size:12px; font-weight:700; color:var(--text-dim); display:flex; align-items:center; gap:5px;}
+.pp-box input[type=text]{flex:1; min-width:200px; padding:8px 11px; border:1.5px solid var(--hairline); border-radius:9px; font-size:12.5px; background:var(--panel); color:var(--text); font-family:inherit;}
+.pp-box input[type=date]{padding:7px 10px; border:1.5px solid var(--hairline); border-radius:9px; font-size:12.5px; background:var(--panel); color:var(--text); font-family:inherit;}
+.kb-carga{display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; scrollbar-width:thin;}
+.kb-carga .cg{display:flex; align-items:center; gap:7px; padding:5px 10px 5px 6px; border-radius:20px; background:var(--panel); border:1px solid var(--hairline); font-size:11.5px; white-space:nowrap; cursor:pointer; flex-shrink:0;}
+.kb-carga .cg:hover{border-color:var(--caso);}
+.kb-carga .cg .n{font-weight:800; color:var(--text);} .kb-carga .cg .r{color:var(--danger); font-weight:700;}
+.kb-persona .carga{margin-left:auto; text-align:right; font-size:11px; color:var(--text-faint); white-space:nowrap;}
+.kb-persona .carga b{color:var(--text); font-size:13px;} .kb-persona .carga.alta b{color:var(--danger);}
+.kb-persona .carga.baja b{color:var(--ok,#1a9d5b);}
+.kb-card .pp-chip{margin-top:6px;}
+@media (max-width:700px){
+  .kb-board{grid-auto-columns:84%; scroll-snap-type:x mandatory; gap:10px;}
+  .kb-col{scroll-snap-align:start; max-height:none;}
+  .kb-card{padding:12px;}
+  .kb-act,.kb-mover{min-height:34px;}
+  .casos-toolbar{gap:8px;}
+  .bj-bar .btn{flex:1;}
+  .tbl{font-size:12px;}
+}
 @media print{ .sidebar,.topbar,.action-row,.comment-box{display:none !important;} }
 
 /* Minutas de reunión / Compromisos — Etapa 5 */
@@ -927,7 +968,7 @@ setInterval(function(){
 
 function pintarBadgeBandeja_(n){
   var badge = document.getElementById('badgeBandeja');
-  if(n>0){ badge.textContent = n; badge.classList.remove('hidden'); }
+  if(n>0){ badge.textContent = n>99 ? '99+' : n; badge.title = n+' evento(s) esperando revisión'; badge.classList.remove('hidden'); }
   else badge.classList.add('hidden');
 }
 function actualizarBadgeBandeja_(){
@@ -1195,13 +1236,25 @@ function cerrarModalListaFiltrada_(){
 // BANDEJA DE ENTRADA — con filtros (fuente, marca, sucursal, fecha) y
 // caché instantánea + refresco silencioso, mismo criterio que Casos.
 // ============================================================
+// Las fechas llegan de dos maneras según cómo las guardó la planilla: como
+// texto "dd/MM/yyyy HH:mm" o como fecha real, que viaja en ISO
+// ("2026-11-20T18:30:00.000Z"). Se aceptan las dos — sin esto, antigüedad,
+// vencidos y estancados quedaban en blanco para los casos con fecha real.
 function parseFechaGC_(str){
   if(!str) return null;
-  var partes = String(str).split(' ');
+  if(str instanceof Date) return isNaN(str.getTime()) ? null : str;
+  var t = String(str).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(t)){ var d = new Date(t.replace(' ','T')); return isNaN(d.getTime()) ? null : d; }
+  var partes = t.split(' ');
   var f = (partes[0]||'').split('/');
   var h = (partes[1]||'0:0').split(':');
   if(f.length!==3) return null;
   return new Date(Number(f[2]), Number(f[1])-1, Number(f[0]), Number(h[0]||0), Number(h[1]||0));
+}
+function fmtFechaGC_(v){
+  var d = parseFechaGC_(v); if(!d) return v ? String(v) : '—';
+  var p = function(n){ return String(n).padStart(2,'0'); };
+  return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes());
 }
 function antiguedadTexto_(fechaCreacion){
   var f = parseFechaGC_(fechaCreacion);
@@ -1297,16 +1350,22 @@ document.addEventListener('click', function(e){
   if(menu && menu.classList.contains('open') && !e.target.closest('.saved-views-wrap')) menu.classList.remove('open');
 });
 function renderBandeja(){
+  window._bjSel = {};
   var html =
-    '<div class="filter-bar">'+
+    '<div class="casos-toolbar">'+
+      '<input id="bfBusqueda" type="text" placeholder="Buscar cliente, VIN, motivo…" style="min-width:200px;flex:1;padding:8px 12px;border:1.5px solid var(--hairline);border-radius:10px;font-size:12.5px;background:var(--panel);color:var(--text);" oninput="pintarTablaBandeja_()">'+
+      '<button class="btn-filtros" id="btnFiltrosB" onclick="toggleFiltrosBandeja_()"><span class="material-symbols-outlined">tune</span>Filtros<span class="n hidden" id="nFiltrosB">0</span></button>'+
+      '<button class="btn-filtros" onclick="seleccionarRepetidos_()" title="Marca los eventos que se repiten por VIN o cliente para resolverlos juntos"><span class="material-symbols-outlined">content_copy</span>Seleccionar repetidos</button>'+
+    '</div>'+
+    '<div class="filtros-panel hidden" id="panelFiltrosB"><div class="filter-bar">'+
     fdropHtml_('bfMarca','Marca')+
     fdropHtml_('bfSucursal','Sucursal')+
     fdropHtml_('bfFuente','De dónde viene')+
     '<input id="bfDesde" type="date" title="Desde" onchange="pintarTablaBandeja_()">'+
     '<input id="bfHasta" type="date" title="Hasta" onchange="pintarTablaBandeja_()">'+
-    '<input id="bfBusqueda" type="text" placeholder="Buscar..." style="min-width:120px;flex:1;" oninput="pintarTablaBandeja_()">'+
     '<button class="fclear" onclick="limpiarFiltrosBandeja_()">Limpiar</button>'+
-  '</div><div class="updating-pill" id="bandejaUpdating"><span class="spin"></span>Actualizando…</div>'+
+  '</div></div><div class="updating-pill" id="bandejaUpdating"><span class="spin"></span>Actualizando…</div>'+
+  '<div id="bjBar"></div>'+
   '<div class="panel"><div class="table-wrap" id="tablaBandeja"><div class="empty-state">Cargando…</div></div></div>';
   document.getElementById('content').innerHTML = html;
   var cache = leerCache_('eventosPendientes');
@@ -1323,6 +1382,7 @@ function renderBandeja(){
     pintarTablaBandeja_();
   });
 }
+function toggleFiltrosBandeja_(){ var p = document.getElementById('panelFiltrosB'); if(p) p.classList.toggle('hidden'); }
 // Los desplegables de filtro muestran SIEMPRE el catálogo completo (todas
 // las marcas/sucursales/fuentes configuradas), no solo las que ya tienen
 // algún caso cargado — así se puede filtrar por una marca o sucursal
@@ -1340,14 +1400,34 @@ function limpiarFiltrosBandeja_(){
   if(window._eventosCache) poblarSelectsBandeja_(window._eventosCache);
   pintarTablaBandeja_();
 }
+// Clave para detectar eventos repetidos: mismo VIN/patente; si no tiene, mismo cliente.
+function claveRepetido_(e){
+  var d = e.datosNormalizados||{};
+  var v = String(d.vin||'').replace(/\s+/g,'').toUpperCase();
+  if(v.length>=5) return 'v:'+v;
+  var c = String(d.cliente||'').trim().toLowerCase();
+  return c ? 'c:'+c : '';
+}
+function casosAbiertosPorVin_(){
+  var m = {};
+  (window._casosCache||leerCache_('casos')||[]).forEach(function(c){
+    if(!estaAbierto_(c)) return;
+    var v = String(c.vin||'').replace(/\s+/g,'').toUpperCase();
+    if(v.length>=5 && !m[v]) m[v] = c.id;
+  });
+  return m;
+}
 function pintarTablaBandeja_(){
   var eventos = window._eventosCache || [];
+  var sel = window._bjSel = window._bjSel || {};
   var fuente = document.getElementById('bfFuente').value;
   var marca = document.getElementById('bfMarca').value;
   var sucursal = document.getElementById('bfSucursal').value;
   var desde = document.getElementById('bfDesde').value ? new Date(document.getElementById('bfDesde').value+'T00:00:00') : null;
   var hasta = document.getElementById('bfHasta').value ? new Date(document.getElementById('bfHasta').value+'T23:59:59') : null;
   var q = (document.getElementById('bfBusqueda').value||'').toLowerCase();
+  var nf = [fuente,marca,sucursal,document.getElementById('bfDesde').value,document.getElementById('bfHasta').value].filter(Boolean).length;
+  var nEl = document.getElementById('nFiltrosB'); if(nEl){ nEl.textContent = nf; nEl.classList.toggle('hidden', !nf); document.getElementById('btnFiltrosB').classList.toggle('on', nf>0); }
   var filtrados = eventos.filter(function(e){
     var d = e.datosNormalizados||{};
     if(fuente && e.fuente!==fuente) return false;
@@ -1364,27 +1444,96 @@ function pintarTablaBandeja_(){
   });
   // Más reciente primero — igual criterio que Planning.
   filtrados.sort(function(a,b){ return (parseFechaGC_(b.fechaRecepcion)||0) - (parseFechaGC_(a.fechaRecepcion)||0); });
+  window._bjVisibles = filtrados.map(function(e){ return e.id; });
   var cont = document.getElementById('tablaBandeja');
+  pintarBarraBandeja_();
   if(filtrados.length===0){ cont.innerHTML = '<div class="empty-state">'+(eventos.length===0?'✓ No hay eventos esperando revisión.':'No hay eventos que coincidan con los filtros.')+'</div>'; return; }
+  var conteo = {}; eventos.forEach(function(e){ var k = claveRepetido_(e); if(k) conteo[k] = (conteo[k]||0)+1; });
+  var abiertos = casosAbiertosPorVin_();
+  var todosMarcados = filtrados.every(function(e){ return sel[e.id]; });
   var filas = filtrados.map(function(e){
     var d = e.datosNormalizados||{};
     var fRecepcion = parseFechaGC_(e.fechaRecepcion);
     var horasEsperando = fRecepcion ? (Date.now()-fRecepcion.getTime())/(1000*60*60) : 0;
     var esNueva = horasEsperando < 2; // recién llegó, todavía nadie la vio
+    var k = claveRepetido_(e), n = k ? conteo[k] : 1;
+    var vinK = String(d.vin||'').replace(/\s+/g,'').toUpperCase();
+    var chips = '';
+    if(n>1) chips += '<span class="rep-chip" title="Hay '+n+' eventos de este '+(k.charAt(0)==='v'?'vehículo':'cliente')+' en la Bandeja">×'+n+' repetido</span>';
+    if(abiertos[vinK]) chips += '<span class="rep-chip abierto" title="Este vehículo ya tiene un caso abierto. Al convertir, se suma ahí en vez de abrir otro.">ya tiene caso '+abiertos[vinK]+'</span>';
     return '<tr class="'+claseFilaPrioridad_(d.prioridadSugerida, esNueva)+'">'+
+      '<td style="width:30px;"><input type="checkbox" class="bj-chk" '+(sel[e.id]?'checked ':'')+'onchange="bjMarcar_(\''+e.id+'\',this.checked)"></td>'+
       '<td class="mono" style="color:var(--text-faint);">'+e.id+'</td>'+
-      '<td>'+(d.cliente||'—')+'</td>'+
+      '<td>'+(d.cliente||'—')+chips+'</td>'+
       '<td>'+(d.marca||'—')+' '+(d.modelo||'')+'</td>'+
       '<td>'+(d.vin||'—')+'</td>'+
       '<td>'+(d.sucursal||'—')+'</td>'+
       '<td><span class="pill pill-nuevo">'+(e.fuente||'Manual')+'</span></td>'+
       '<td>'+(d.motivo||'—')+'</td>'+
-      '<td style="white-space:nowrap;">'+(horasEsperando>24?'<span class="venc-chip" title="Esperando revisión hace más de 24 h"><span class="material-symbols-outlined">schedule</span>'+e.fechaRecepcion+'</span>':e.fechaRecepcion)+'</td>'+
+      '<td style="white-space:nowrap;">'+(horasEsperando>24?'<span class="venc-chip" title="Esperando revisión hace más de 24 h"><span class="material-symbols-outlined">schedule</span>'+fmtFechaGC_(e.fechaRecepcion)+'</span>':fmtFechaGC_(e.fechaRecepcion))+'</td>'+
       '<td style="white-space:nowrap;"><button class="btn btn-primary btn-sm" style="width:auto;" onclick="confirmarEvento_(\''+e.id+'\', event)">Convertir en caso</button> '+
         '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="descartarEvento_(\''+e.id+'\', event)">Descartar</button></td>'+
     '</tr>';
   }).join('');
-  cont.innerHTML = '<table class="tbl"><thead><tr><th>Evento</th><th>Cliente</th><th>Vehículo</th><th>VIN</th><th>Sucursal</th><th>Fuente</th><th>Motivo</th><th>Recibido</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>';
+  cont.innerHTML = '<table class="tbl"><thead><tr><th><input type="checkbox" class="bj-chk" title="Marcar todos los que se ven" '+(todosMarcados?'checked ':'')+'onchange="bjMarcarTodos_(this.checked)"></th><th>Evento</th><th>Cliente</th><th>Vehículo</th><th>VIN</th><th>Sucursal</th><th>Fuente</th><th>Motivo</th><th>Recibido</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>';
+}
+function bjIds_(){ var sel = window._bjSel||{}; return Object.keys(sel).filter(function(k){ return sel[k]; }); }
+function bjMarcar_(id, on){ window._bjSel[id] = !!on; pintarBarraBandeja_(); }
+function bjMarcarTodos_(on){ (window._bjVisibles||[]).forEach(function(id){ window._bjSel[id] = !!on; }); pintarTablaBandeja_(); }
+function seleccionarRepetidos_(){
+  var eventos = window._eventosCache||[], conteo = {};
+  eventos.forEach(function(e){ var k = claveRepetido_(e); if(k) conteo[k] = (conteo[k]||0)+1; });
+  var n = 0;
+  eventos.forEach(function(e){ var k = claveRepetido_(e); if(k && conteo[k]>1){ window._bjSel[e.id] = true; n++; } });
+  if(!n) showToast('No hay eventos repetidos en la Bandeja');
+  pintarTablaBandeja_();
+}
+function pintarBarraBandeja_(){
+  var cont = document.getElementById('bjBar'); if(!cont) return;
+  var ids = bjIds_();
+  if(!ids.length){ cont.innerHTML = ''; return; }
+  cont.innerHTML = '<div class="bj-bar"><b>'+ids.length+' seleccionado'+(ids.length>1?'s':'')+'</b><span class="bj-prog" id="bjProg"></span><span class="sp"></span>'+
+    '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="bjLimpiar_()">Quitar selección</button>'+
+    '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="bjProcesar_(\'descartar\')">Descartar</button>'+
+    '<button class="btn btn-primary btn-sm" style="width:auto;" onclick="bjProcesar_(\'convertir\')">Convertir en caso</button></div>';
+}
+function bjLimpiar_(){ window._bjSel = {}; pintarTablaBandeja_(); }
+// Procesa de a lotes chicos: cada evento escribe varias filas y Apps Script
+// corta a los 6 minutos, así que no mandamos todo junto.
+function bjProcesar_(accion){
+  var ids = bjIds_(); if(!ids.length) return;
+  if(accion==='descartar' && !confirm('¿Descartar '+ids.length+' evento(s)? No se van a crear casos.')) return;
+  if(accion==='convertir' && ids.length>1 && !confirm('Se van a procesar '+ids.length+' eventos. Si un vehículo ya tiene un caso abierto, el evento se suma a ese caso en vez de crear uno nuevo. ¿Seguimos?')) return;
+  var s = sesionActual(), LOTE = 15, total = ids.length, hechos = 0, creados = 0, fusionados = 0, errores = [];
+  var prog = document.getElementById('bjProg');
+  document.querySelectorAll('#bjBar .btn').forEach(function(b){ b.disabled = true; });
+  function paso(){
+    if(!ids.length) return fin();
+    var lote = ids.splice(0, LOTE);
+    var req = accion==='convertir'
+      ? gasPost('confirmarEventosLote', {idEventos:lote, usuario:s?s.nombre:''})
+      : gasPost('descartarEventosLote', {idEventos:lote, motivo:'Descartado en lote desde la Bandeja de entrada.'});
+    req.then(function(res){
+      if(!res.ok){ errores.push(res.error||'Error'); } else {
+        creados += res.creados||0; fusionados += res.fusionados||0;
+        (res.errores||[]).forEach(function(x){ errores.push(x); });
+      }
+      hechos += lote.length;
+      if(prog) prog.textContent = hechos+' de '+total+'…';
+      paso();
+    }).catch(function(){ errores.push('Se cortó la conexión'); fin(); });
+  }
+  function fin(){
+    guardarCache_('eventosPendientes', null); guardarCache_('casos', null);
+    window._bjSel = {};
+    var msg = accion==='convertir'
+      ? (creados+' caso(s) creado(s)'+(fusionados?', '+fusionados+' sumado(s) a casos abiertos':''))
+      : (total-errores.length)+' evento(s) descartado(s)';
+    if(errores.length) msg += ' · '+errores.length+' con error';
+    showToast(msg);
+    renderBandeja(); actualizarBadgeBandeja_();
+  }
+  paso();
 }
 function confirmarEvento_(id, ev){
   ev.stopPropagation();
@@ -1420,6 +1569,34 @@ function umbralEstancado_(){
   try{ var v = Number(localStorage.getItem('gc_umbral_estancado')); if(v>0) return v; }catch(e){}
   return UMBRAL_ESTANCADO_DEFAULT_;
 }
+function proximoPasoVencido_(c){
+  if(!c.proximoPasoFecha || !estaAbierto_(c)) return false;
+  var f = parseFechaGC_(c.proximoPasoFecha); if(!f) return false;
+  var hoy = new Date(); hoy.setHours(0,0,0,0);
+  return f < hoy;
+}
+function proximoPasoChip_(c){
+  if(!c.proximoPasoTexto && !c.proximoPasoFecha) return '';
+  var f = parseFechaGC_(c.proximoPasoFecha);
+  var fTxt = f ? ('0'+f.getDate()).slice(-2)+'/'+('0'+(f.getMonth()+1)).slice(-2) : '';
+  var venc = proximoPasoVencido_(c);
+  return '<div class="pp-chip'+(venc?' venc':'')+'" title="Próximo paso'+(venc?' (vencido)':'')+': '+String(c.proximoPasoTexto||'').replace(/"/g,'&quot;')+'"><span class="material-symbols-outlined">'+(venc?'event_busy':'event_upcoming')+'</span>'+(fTxt?fTxt+' · ':'')+String(c.proximoPasoTexto||'Próximo paso').slice(0,38)+'</div>';
+}
+function ppFechaISO_(v){
+  var f = parseFechaGC_(v); if(!f) return '';
+  return f.getFullYear()+'-'+('0'+(f.getMonth()+1)).slice(-2)+'-'+('0'+f.getDate()).slice(-2);
+}
+function guardarProximoPaso_(id){
+  var texto = document.getElementById('ppTexto').value.trim(), fecha = document.getElementById('ppFecha').value, s = sesionActual();
+  if(texto && !fecha){ showToast('Poné una fecha para el próximo paso'); return; }
+  gasPost('fijarProximoPaso', {id:id, texto:texto, fecha:fecha, autor:s?s.nombre:''}).then(function(res){
+    if(!res.ok){ showToast(res.error); return; }
+    var c = casoEnCache_(id);
+    if(c){ c.proximoPasoTexto = texto; c.proximoPasoFecha = fecha ? fecha.split('-').reverse().join('/') : ''; guardarCache_('casos', window._casosCache); }
+    showToast(texto ? 'Próximo paso guardado' : 'Próximo paso quitado');
+    renderDetalle(id);
+  });
+}
 function estaAbierto_(c){ return c.estado!=='resuelto' && c.estado!=='cerrado'; }
 function diasAbierto_(c){
   var f = parseFechaGC_(c.fechaCreacion);
@@ -1439,6 +1616,7 @@ var QUICK_VIEWS_CASOS_ = [
   {id:'pendientes', label:'Pendientes de asignación', test:function(c){ return c.estado==='nuevo' && !c.responsable; }},
   {id:'estancados', label:'Estancados', test:esEstancado_},
   {id:'vencidos', label:'Vencidos', test:slaVencido_},
+  {id:'proximoPaso', label:'Próximo paso vencido', test:proximoPasoVencido_},
   {id:'criticos', label:'Críticos', test:function(c){ return (c.prioridad==='Alta' || esEstancado_(c)) && estaAbierto_(c); }},
   {id:'cerrados', label:'Cerrados', test:function(c){ return !estaAbierto_(c); }}
 ];
@@ -1549,7 +1727,7 @@ function pintarTablaCasos_(){
     if(desde && fecha && fecha<desde) return false;
     if(hasta && fecha && fecha>hasta) return false;
     if(q){
-      var texto = ((c.cliente||'')+' '+(c.dominio||'')+' '+(c.motivo||'')+' '+(c.id||'')).toLowerCase();
+      var texto = ((c.cliente||'')+' '+(c.dominio||'')+' '+(c.motivo||'')+' '+(c.id||'')+' '+(c.responsable||'')+' '+(c.vin||'')).toLowerCase();
       if(texto.indexOf(q)===-1) return false;
     }
     return true;
@@ -1569,14 +1747,14 @@ function pintarTablaCasos_(){
     return '<tr class="'+claseFilaPrioridad_(prioridadEfectiva_(c), c.estado==='nuevo')+'" onclick="setView(\'detalle\',\''+c.id+'\')">'+
       '<td class="mono" style="color:var(--caso);font-weight:700;white-space:nowrap;">'+c.id+(esDefensa?' ⚖️':'')+'</td>'+
       '<td><div style="font-weight:650;color:var(--text);">'+(c.cliente||'—')+'</div>'+
-        '<div style="font-size:10.5px;color:var(--text-faint);margin-top:1px;">'+(c.dominio?('<span class="mono">'+c.dominio+'</span> · '):'')+(c.motivo||c.tipoCaso||'')+'</div></td>'+
+        '<div style="font-size:10.5px;color:var(--text-faint);margin-top:1px;">'+(c.dominio?('<span class="mono">'+c.dominio+'</span> · '):'')+(c.motivo||c.tipoCaso||'')+'</div>'+proximoPasoChip_(c)+'</td>'+
       '<td><div>'+marcaConLogo_(c.marca,15)+'</div>'+(c.modelo?'<div style="font-size:10.5px;color:var(--text-faint);">'+c.modelo+'</div>':'')+'</td>'+
       '<td>'+(c.sucursal||'—')+'</td>'+
       '<td style="font-size:11.5px;color:var(--text-dim);">'+(c.unidad||'<span style="color:var(--text-faint);">—</span>')+'</td>'+
       '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
       '<td><span class="prio prio-'+c.prioridad+'" style="display:inline-flex;align-items:center;gap:5px;"><i style="width:6px;height:6px;border-radius:50%;background:'+prioColor+';display:inline-block;"></i>'+c.prioridad+'</span></td>'+
       '<td>'+(c.responsable||'<span style="color:var(--text-faint);">Sin asignar</span>')+'</td>'+
-      '<td style="white-space:nowrap;font-size:11.5px;color:var(--text-dim);">'+(c.fechaCreacion||'—')+'</td>'+
+      '<td style="white-space:nowrap;font-size:11.5px;color:var(--text-dim);">'+fmtFechaGC_(c.fechaCreacion)+'</td>'+
       '<td style="font-size:11.5px;color:var(--text-dim);">'+antiguedadConSLA_(c)+'</td>'+
     '</tr>';
   }).join('');
@@ -1643,7 +1821,11 @@ function pintarKanban_(casos){
   KB_COLUMNAS_.forEach(function(col){ porEstado[col.id] = []; });
   casos.forEach(function(c){ (porEstado[c.estado] || (porEstado[c.estado]=[])).push(c); });
   var LIM = 12;
-  var html = '<div class="kb-hint">Arrastrá una tarjeta a otra columna para cambiar su estado. Si la soltás en <b>Derivados</b>, te pide a quién.</div><div class="kb-board">' +
+  var cg = cargaPorPersona_();
+  var carga = Object.keys(cg).sort(function(a,b){ return cg[b].n-cg[a].n; }).map(function(n){
+    return '<div class="cg" title="Ver los casos de '+n+'" onclick="irACasosDe_(\''+n.replace(/'/g,"\\'")+'\')"><span class="kb-av">'+inicialesDe_(n)+'</span><span>'+n.split(' ')[0]+'</span><span class="n">'+cg[n].n+'</span>'+(cg[n].rojo?'<span class="r">'+cg[n].rojo+' ⚠</span>':'')+'</div>';
+  }).join('');
+  var html = (carga ? '<div class="kb-carga" title="Casos abiertos por persona">'+carga+'</div>' : '')+'<div class="kb-hint">Arrastrá una tarjeta a otra columna para cambiar su estado. Si la soltás en <b>Derivados</b>, te pide a quién.</div><div class="kb-board">' +
     KB_COLUMNAS_.map(function(col){
       var lista = (porEstado[col.id]||[]).slice();
       lista.sort(function(a,b){
@@ -1678,12 +1860,16 @@ function kbCard_(c){
     '<div class="kb-top"><span class="kb-id" onclick="setView(\'detalle\',\''+c.id+'\')">'+c.id+(esDefensa?' ⚖️':'')+'</span><span class="prio prio-'+pe+'">'+pe+(est && c.prioridad!=='Alta'?' ↑':'')+'</span></div>'+
     '<div class="kb-cli">'+(c.cliente||'—')+'</div>'+
     '<div class="kb-sub">'+(c.dominio?c.dominio+' · ':'')+(c.motivo||c.tipoCaso||'')+'</div>'+
-    '<div class="kb-meta">'+meta.join('<span>·</span>')+'</div>'+
+    '<div class="kb-meta">'+meta.join('<span>·</span>')+'</div>'+proximoPasoChip_(c)+
     '<div class="kb-foot">'+
       '<div class="kb-resp"><span class="kb-av'+(c.responsable?'':' vacio')+'">'+inicialesDe_(c.responsable)+'</span><span class="nm">'+(c.responsable||'Sin asignar')+'</span></div>'+
       '<button class="kb-act" title="Asignar o derivar a una persona" onclick="abrirDerivar_(\''+c.id+'\')"><span class="material-symbols-outlined">person_add</span>Derivar</button>'+
       '<select class="kb-mover" title="Mover a otro estado" onchange="moverCasoEstado_(\''+c.id+'\',this.value)">'+estadosOpt+'</select>'+
     '</div></div>';
+}
+function irACasosDe_(nombre){
+  var b = document.getElementById('fBusqueda');
+  if(b){ b.value = nombre; pintarTablaCasos_(); }
 }
 function kbDragStart_(ev, id){
   ev.dataTransfer.setData('text/plain', id);
@@ -1714,15 +1900,29 @@ function moverCasoEstado_(id, estado){
 // Selector de persona: asignar (el responsable lo trabaja) o derivar
 // (queda "derivado", seguimiento conjunto con Calidad). Mismas acciones del
 // backend que ya usa el detalle del caso.
+// Casos abiertos por persona (con cuántos están estancados/vencidos)
+function cargaPorPersona_(){
+  var m = {};
+  (window._casosCache||[]).forEach(function(c){
+    if(!c.responsable || !estaAbierto_(c)) return;
+    var r = m[c.responsable] = m[c.responsable] || {n:0, rojo:0};
+    r.n++; if(esEstancado_(c) || slaVencido_(c) || proximoPasoVencido_(c)) r.rojo++;
+  });
+  return m;
+}
 function abrirDerivar_(id){
   var c = casoEnCache_(id);
   usuariosActivosCacheados_().then(function(usuarios){
     window._derivarSel = c && c.responsable ? c.responsable : '';
+    var carga = cargaPorPersona_(), nums = usuarios.map(function(u){ return (carga[u.nombre]||{n:0}).n; });
+    var maxN = Math.max.apply(null, nums.concat([0])), minN = Math.min.apply(null, nums.concat([0]));
+    usuarios = usuarios.slice().sort(function(a,b){ return ((carga[a.nombre]||{n:0}).n) - ((carga[b.nombre]||{n:0}).n); });
     var back = document.createElement('div'); back.className = 'kb-modal-back'; back.id = 'modalDerivar';
     back.onclick = function(e){ if(e.target===back) cerrarDerivar_(); };
     back.innerHTML = '<div class="kb-modal"><h3>Derivar '+id+'</h3><div class="sub">'+(c?(c.cliente||'')+' · '+(c.motivo||c.tipoCaso||''):'')+'<br>Elegí quién lo trata.</div>'+
       '<div class="lista">'+(usuarios.length ? usuarios.map(function(u,i){
-        return '<div class="kb-persona'+(u.nombre===window._derivarSel?' sel':'')+'" data-n="'+i+'" onclick="elegirPersonaDerivar_('+i+')"><span class="kb-av">'+inicialesDe_(u.nombre)+'</span><div><div class="nm">'+u.nombre+'</div><div class="sc">'+(u.sector||u.rol||'')+'</div></div></div>';
+        return '<div class="kb-persona'+(u.nombre===window._derivarSel?' sel':'')+'" data-n="'+i+'" onclick="elegirPersonaDerivar_('+i+')"><span class="kb-av">'+inicialesDe_(u.nombre)+'</span><div><div class="nm">'+u.nombre+'</div><div class="sc">'+(u.sector||u.rol||'')+'</div></div>'+
+          (function(){ var r = carga[u.nombre]||{n:0,rojo:0}; var cl = r.n>=maxN && maxN>2 ? ' alta' : (r.n===minN ? ' baja' : ''); return '<div class="carga'+cl+'"><b>'+r.n+'</b> abiertos'+(r.rojo?'<br><span style="color:var(--danger);">'+r.rojo+' con atraso</span>':'')+'</div>'; })()+'</div>';
       }).join('') : '<div class="empty-state">Todavía no hay usuarios activos. Creálos en Equipo.</div>')+'</div>'+
       '<div class="pie"><button class="btn btn-ghost btn-sm" onclick="cerrarDerivar_()">Cancelar</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="confirmarDerivar_(\''+id+'\',false)">Solo asignar</button>'+
@@ -2049,13 +2249,14 @@ function renderCalendario(){
       '<div class="cal-mes-label" id="calMesLabel"></div>'+
       '<button class="cal-nav-btn" onclick="navCalMes_(1)"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>'+
       '<button class="cal-today-btn" onclick="irAHoyCal_()">Hoy</button>'+
-      fdropHtml_('cfMarca','Marca')+
-      fdropHtml_('cfSucursal','Sucursal')+
+      '<button class="btn-filtros" id="btnFiltrosC" onclick="document.getElementById(\'panelFiltrosC\').classList.toggle(\'hidden\')"><span class="material-symbols-outlined">tune</span>Filtros<span class="n hidden" id="nFiltrosC">0</span></button>'+
       '<div class="cal-toggle" id="calToggleTipo">'+
         '<button data-v="creacion" onclick="setCalTipo_(\'creacion\')">Por creación</button>'+
         '<button data-v="sla" onclick="setCalTipo_(\'sla\')">Por vencimiento SLA</button>'+
+        '<button data-v="pp" onclick="setCalTipo_(\'pp\')">Por próximo paso</button>'+
       '</div>'+
     '</div>'+
+    '<div class="filtros-panel hidden" id="panelFiltrosC"><div class="filter-bar">'+fdropHtml_('cfMarca','Marca')+fdropHtml_('cfSucursal','Sucursal')+'</div></div>'+
     '<div class="panel" style="padding:12px;"><div id="calGridWrap"><div class="empty-state">Cargando…</div></div></div>'+
     '<div class="cal-legend">'+
       '<span><i style="background:var(--danger);"></i>Prioridad alta</span>'+
@@ -2105,6 +2306,8 @@ function pintarCalendario_(){
 
   var marca = document.getElementById('cfMarca').value;
   var sucursal = document.getElementById('cfSucursal').value;
+  var nfc = (marca?1:0)+(sucursal?1:0), nc = document.getElementById('nFiltrosC');
+  if(nc){ nc.textContent = nfc; nc.classList.toggle('hidden', !nfc); document.getElementById('btnFiltrosC').classList.toggle('on', nfc>0); }
   var casos = (window._casosCache||[]).filter(function(c){
     if(marca && c.marca!==marca) return false;
     if(sucursal && c.sucursal!==sucursal) return false;
@@ -2114,7 +2317,7 @@ function pintarCalendario_(){
   // Agrupamos por fecha (clave YYYY-M-D) según el tipo elegido.
   var porFecha = {};
   casos.forEach(function(c){
-    var campo = window._calTipo==='sla' ? c.slaVencimiento : c.fechaCreacion;
+    var campo = window._calTipo==='sla' ? c.slaVencimiento : (window._calTipo==='pp' ? c.proximoPasoFecha : c.fechaCreacion);
     var f = parseFechaGC_(campo);
     if(!f) return;
     var clave = f.getFullYear()+'-'+f.getMonth()+'-'+f.getDate();
@@ -2243,7 +2446,7 @@ function renderDetalle(id){
         infoItem_('VIN / Dominio', c.dominio||'—')+infoItem_('Sucursal', c.sucursal||'—')+infoItem_('Sector', c.sector||'—')+
         infoItem_('Fuente', c.fuente)+infoItem_('Responsable', c.responsable||'Sin asignar')+
         infoItem_('Prioridad', '<span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span>')+
-        infoItem_('SLA vence', c.slaVencimiento||'—')+
+        infoItem_('SLA vence', fmtFechaGC_(c.slaVencimiento))+
       '</div>'+
       (c.descripcion ? '<div style="margin-top:12px;font-size:12.8px;color:var(--text-dim);"><b>Descripción del cliente:</b> '+c.descripcion+'</div>' : '')+
       (c.solucionEsperada ? '<div style="margin-top:8px;font-size:12.8px;color:var(--text-dim);"><b>Solución que espera el cliente:</b> '+c.solucionEsperada+'</div>' : '')+
@@ -2256,6 +2459,12 @@ function renderDetalle(id){
         '<select id="selPrioridad" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);"><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>'+
         '<button class="btn btn-ghost btn-sm" onclick="cambiarPrioridadUI_(\''+c.id+'\')">Cambiar prioridad</button>'+
         (c.tokenSeguimiento ? '<button class="btn btn-ghost btn-sm" onclick="copiarLinkSeguimiento_(\''+c.id+'\',\''+c.tokenSeguimiento+'\')" title="Link para que el cliente agregue más información sin crear un reclamo nuevo"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">link</span> Copiar link de seguimiento</button>' : '')+
+      '</div>'+
+      '<div class="pp-box"><label><span class="material-symbols-outlined" style="font-size:17px;">event_upcoming</span>Próximo paso</label>'+
+        '<input type="text" id="ppTexto" placeholder="Ej: llamar al cliente con la respuesta de posventa" value="'+String(c.proximoPasoTexto||'').replace(/"/g,'&quot;')+'">'+
+        '<input type="date" id="ppFecha" value="'+ppFechaISO_(c.proximoPasoFecha)+'">'+
+        '<button class="btn btn-ghost btn-sm" onclick="guardarProximoPaso_(\''+c.id+'\')">Guardar</button>'+
+        (proximoPasoVencido_(c)?'<span class="venc-chip" style="font-size:11.5px;"><span class="material-symbols-outlined">event_busy</span>Vencido</span>':'')+
       '</div>'+
     '</div>';
 
@@ -2513,7 +2722,7 @@ function ejecutarBusqueda_(){
               '<span class="vc-id">'+c.id+(esDefensa?' ⚖️':'')+'</span>'+
               '<span class="pill pill-'+c.estado+'">'+c.estado+'</span>'+
               '<span class="vc-motivo">'+(c.motivo||c.tipoCaso||'—')+'</span>'+
-              '<span class="vc-fecha">'+(c.fechaCreacion||'—')+'</span>'+
+              '<span class="vc-fecha">'+fmtFechaGC_(c.fechaCreacion)+'</span>'+
             '</div>';
           }).join('')+
         '</div>'+
@@ -2643,7 +2852,7 @@ function renderDefensaConsumidor(){
             '<td>'+(c.marca||'—')+'</td>'+
             '<td><span class="pill pill-'+c.estado+'">'+c.estado+'</span></td>'+
             '<td><span class="prio prio-'+c.prioridad+'">'+c.prioridad+'</span></td>'+
-            '<td style="white-space:nowrap;">'+(c.fechaCreacion||'—')+'</td>'+
+            '<td style="white-space:nowrap;">'+fmtFechaGC_(c.fechaCreacion)+'</td>'+
           '</tr>';
         }).join('')+
       '</tbody></table>';
