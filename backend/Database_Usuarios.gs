@@ -47,11 +47,58 @@ function dbUsuariosBuscar_(usuario){
   return dbUsuariosListar_().find(function(x){ return String(x.usuario).trim().toLowerCase()===u; }) || null;
 }
 
+// Login con las MISMAS credenciales que el Planning de Entregas.
+// 1) Se prueba primero con los usuarios de esta planilla (rápido).
+// 2) Si no coincide y hay ID_PLANNING_USUARIOS configurado (Config.gs), se
+//    prueba contra la hoja "Usuarios" del Planning (mismo hash SHA-256+salt).
+//    Si coincide, se crea/actualiza la persona acá (conserva el rol que ya
+//    tenía en Gestión de Casos) para que aparezca en Equipo, en las
+//    asignaciones y en los mails.
 function dbUsuariosVerificar_(usuario, password){
+  var local = dbUsuariosVerificarLocal_(usuario, password);
+  if(local) return local;
+  return dbUsuariosVerificarPlanning_(usuario, password);
+}
+
+function dbUsuariosVerificarLocal_(usuario, password){
   var u = dbUsuariosBuscar_(usuario);
   if(!u || !u.activo) return null;
   var hash = hashPassword_GC(password, u.salt);
   return hash===u.passwordHash ? u : null;
+}
+
+function dbUsuariosVerificarPlanning_(usuario, password){
+  try{
+    if(typeof ID_PLANNING_USUARIOS === 'undefined' || !ID_PLANNING_USUARIOS) return null;
+    var hojaP = SpreadsheetApp.openById(ID_PLANNING_USUARIOS).getSheetByName('Usuarios');
+    if(!hojaP || hojaP.getLastRow()<2) return null;
+    var ident = String(usuario||'').trim().toLowerCase();
+    var filas = hojaP.getRange(2,1,hojaP.getLastRow()-1,14).getValues();
+    // Columnas de Planning: 0 Nombre, 1 Usuario, 2 Hash, 3 Salt, 4 Rol, 5 Activo, 8 Email, 13 Sector
+    var f = filas.filter(function(r){
+      return String(r[1]||'').trim().toLowerCase()===ident || (r[8] && String(r[8]).trim().toLowerCase()===ident);
+    })[0];
+    if(!f) return null;
+    var activo = (f[5]===true || f[5]==='TRUE' || f[5]===1);
+    if(!activo) return null;
+    if(hashPassword_GC(password, f[3]) !== f[2]) return null;
+
+    var usuarioNorm = String(f[1]||'').trim().toLowerCase();
+    var existente = dbUsuariosBuscar_(usuarioNorm);
+    var hoja = getHojaUsuarios_GC();
+    if(existente){
+      hoja.getRange(existente.fila, 3, 1, 2).setValues([[f[2], f[3]]]);   // hash y salt al día
+      hoja.getRange(existente.fila, 8).setValue(true);
+      if(!existente.email && f[8]) hoja.getRange(existente.fila, 7).setValue(f[8]);
+    } else {
+      var rolP = String(f[4]||'').toLowerCase();
+      var rol = (rolP==='calidad' || rolP==='maestro') ? 'calidad' : 'sector';
+      hoja.appendRow([f[0], usuarioNorm, f[2], f[3], rol, f[13]||'', f[8]||'', true]);
+    }
+    return dbUsuariosBuscar_(usuarioNorm);
+  }catch(err){
+    return null; // si Planning no se puede leer, el login local sigue funcionando
+  }
 }
 
 function dbUsuariosCrear_(datos){

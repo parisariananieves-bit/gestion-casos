@@ -200,8 +200,8 @@ var CONFIG_KEYS = {
   // --- Agregado: reclamos por formulario público ---
   EMAILS_EQUIPO_CALIDAD: 'EMAILS_EQUIPO_CALIDAD',       // lista separada por coma, se notifica un reclamo nuevo
   DRIVE_CARPETA_RECLAMOS_ID: 'DRIVE_CARPETA_RECLAMOS_ID', // se completa sola la primera vez (caché)
-  URL_FORMULARIO_PUBLICO: 'URL_FORMULARIO_PUBLICO',     // ej: https://gestion-casos.vercel.app/reclamo.html
-  URL_SEGUIMIENTO_PUBLICO: 'URL_SEGUIMIENTO_PUBLICO'    // ej: https://gestion-casos.vercel.app/seguimiento.html
+  URL_FORMULARIO_PUBLICO: 'URL_FORMULARIO_PUBLICO',     // ej: https://tu-dominio.vercel.app/reclamo
+  URL_SEGUIMIENTO_PUBLICO: 'URL_SEGUIMIENTO_PUBLICO'    // ej: https://tu-dominio.vercel.app/seguimiento
 };
 
 // Tamaño máximo por archivo adjunto del formulario público (bytes) y
@@ -218,3 +218,9 @@ var RECLAMO_MAX_ARCHIVOS = 8;
 function getSS_GC(){
   return SpreadsheetApp.getActiveSpreadsheet();
 }
+
+// ID de la planilla del Planning de Entregas (la que tiene la hoja "Usuarios").
+// Se saca de su URL: https://docs.google.com/spreadsheets/d/ESTE_ID/edit
+// Con esto se puede entrar a Gestión de Casos con el mismo usuario y
+// contraseña del Planning. Dejalo vacío para usar solo los usuarios de acá.
+var ID_PLANNING_USUARIOS = '';
