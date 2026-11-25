@@ -60,9 +60,39 @@ function recibirEvento(payload){
     return responseOk_({ id: idEvento, casoGenerado: null, evaluacion: evaluacion, requiereRevisionManual: true });
   }
 
+  // No duplicar: si este mismo vehículo YA tiene un caso abierto (no
+  // resuelto/cerrado), el evento nuevo no abre un caso paralelo — se suma
+  // como novedad al que ya está en curso. Pasa, por ejemplo, cuando una
+  // misma alerta de Planning llega más de una vez, o cuando aparece un
+  // segundo síntoma del mismo auto mientras el caso anterior sigue abierto.
+  var casoAbiertoCoincidente = buscarCasoAbiertoPorVin_(datosNormalizados.vin);
+  if(casoAbiertoCoincidente){
+    dbSeguimientosAgregar_({
+      id: utilNuevoIdSeguimiento_(), casoId: casoAbiertoCoincidente.id, fecha: utilAhoraTexto_(), autor: 'Sistema',
+      tipo: 'sistema',
+      texto: '🔁 Nuevo evento recibido de "'+(payload.fuente||'Manual')+'" para este mismo vehículo — se sumó acá en vez de abrir un caso nuevo.'+
+        (datosNormalizados.motivo ? ' Motivo: '+datosNormalizados.motivo : '') + (datosNormalizados.descripcion ? ' — '+datosNormalizados.descripcion : ''),
+      visibleParaReportante: false
+    });
+    dbEventosMarcarProcesado_(idEvento, casoAbiertoCoincidente.id, 'Fusionado con caso abierto existente ('+casoAbiertoCoincidente.id+') — mismo vehículo, no se duplicó.');
+    return responseOk_({ id: idEvento, casoGenerado: casoAbiertoCoincidente.id, fusionadoConCasoExistente: true });
+  }
+
   var idCaso = crearCasoDesdeEvento_(datosNormalizados, evaluacion, idEvento);
   dbEventosMarcarProcesado_(idEvento, idCaso, '');
   return responseOk_({ id: idEvento, casoGenerado: idCaso });
+}
+
+// Un caso "abierto" para el mismo VIN/dominio — no cuenta a los ya
+// resueltos/cerrados, porque ahí sí corresponde un caso nuevo (es un
+// problema distinto, en otro momento). Reusa dbCasosBuscarPorVin_, que ya
+// filtra por coincidencia exacta de dominio.
+function buscarCasoAbiertoPorVin_(vin){
+  if(!vin) return null;
+  var abiertos = dbCasosBuscarPorVin_(vin).filter(function(c){
+    return c.estado!=='resuelto' && c.estado!=='cerrado';
+  });
+  return abiertos.length ? abiertos[0] : null;
 }
 
 function normalizarPayloadEvento_(payload){
