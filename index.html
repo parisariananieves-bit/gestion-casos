@@ -2439,13 +2439,41 @@ function copiarLinkFormularioPublico_(){
 // Link para el equipo (supervisor, sector derivado): muestra TODO el historial
 // del caso y deja comentar con nombre. No es el link del cliente.
 function copiarLinkEquipo_(idCaso){
+  showToast('Generando el link…');
   gasPost('linksSeguimientoCaso', {id:idCaso}).then(function(res){
-    if(!res.ok){ showToast(res.error||'No se pudo generar el link'); return; }
+    if(!res || !res.ok){
+      showToast((res && res.error) ? res.error : 'No se pudo generar el link. Revisá que el backend esté actualizado (Apps Script → nueva versión).');
+      return;
+    }
     var link = window.location.origin+'/seguimiento?id='+encodeURIComponent(idCaso)+'&token='+encodeURIComponent(res.token)+'&clave='+encodeURIComponent(res.clave);
-    var fin = function(){ showToast('Link de equipo copiado — muestra todo lo que se hizo en el caso. No se lo pases al cliente.'); };
-    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(fin, function(){ prompt('Copiá este link para el equipo:', link); }); }
-    else { prompt('Copiá este link para el equipo:', link); }
-  });
+    mostrarLinkModal_('Link para equipo', link, 'Muestra TODO lo que se hizo en el caso y deja comentar con nombre. Pasalo solo a gente interna, no al cliente.');
+  }).catch(function(){ showToast('No se pudo conectar con el servidor para generar el link.'); });
+}
+// Muestra el link en una ventana con botón "Copiar": copiar desde un clic directo
+// funciona siempre (después de esperar al servidor, el navegador a veces bloquea el copiado automático).
+function mostrarLinkModal_(titulo, link, aviso){
+  var viejo = document.getElementById('linkModalGC'); if(viejo) viejo.remove();
+  var esc = function(t){ return String(t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); };
+  var d = document.createElement('div'); d.id = 'linkModalGC';
+  d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  d.innerHTML = '<div style="background:var(--panel);color:var(--text);border:1px solid var(--hairline);border-radius:18px;max-width:520px;width:100%;padding:22px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><b style="font-size:16px;">'+esc(titulo)+'</b><button id="lmX" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1;">×</button></div>'+
+    '<p style="font-size:12.5px;color:var(--text-dim);margin-bottom:14px;">'+esc(aviso||'')+'</p>'+
+    '<input id="lmInput" readonly value="'+esc(link)+'" style="width:100%;padding:11px 12px;border:1.5px solid var(--hairline);border-radius:10px;background:var(--panel-2);color:var(--text);font-size:12.5px;font-family:inherit;">'+
+    '<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;">'+
+      '<a class="btn btn-ghost btn-sm" href="'+esc(link)+'" target="_blank" rel="noopener" style="text-decoration:none;">Abrir</a>'+
+      '<button class="btn btn-primary btn-sm" id="lmCopiar" style="width:auto;">Copiar link</button>'+
+    '</div></div>';
+  document.body.appendChild(d);
+  var inp = document.getElementById('lmInput'); inp.focus(); inp.select();
+  var cerrar = function(){ d.remove(); };
+  document.getElementById('lmX').onclick = cerrar;
+  d.addEventListener('click', function(e){ if(e.target===d) cerrar(); });
+  document.getElementById('lmCopiar').onclick = function(){
+    var btn = this, ok = function(){ btn.textContent = '¡Copiado!'; setTimeout(cerrar, 900); };
+    var viejoCopiar = function(){ inp.focus(); inp.select(); try{ if(document.execCommand('copy')) ok(); else btn.textContent = 'Seleccioná y copiá con Ctrl+C'; }catch(e){ btn.textContent = 'Seleccioná y copiá con Ctrl+C'; } };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(ok, viejoCopiar); } else viejoCopiar();
+  };
 }
 function copiarLinkSeguimiento_(idCaso, token){
   var base = window.location.origin + '/seguimiento';
