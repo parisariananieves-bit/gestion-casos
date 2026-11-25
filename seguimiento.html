@@ -39,6 +39,12 @@ input,textarea{font-family:inherit; font-size:14.5px;}
 .datos div b{display:block; font-size:11px; color:var(--ink-faint); font-weight:600; margin-bottom:1px;}
 .datos .full{grid-column:1 / -1;}
 .badge-eq{display:inline-flex; align-items:center; gap:5px; background:#0B0D12; color:#fff; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:20px; margin-bottom:10px;}
+.estado-banner{display:flex; align-items:center; gap:14px; border-radius:16px; padding:16px 16px; margin:4px 0 16px;}
+.estado-banner .ic{width:44px; height:44px; border-radius:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:rgba(255,255,255,.7);}
+.estado-banner .ic .material-symbols-outlined{font-size:24px;}
+.estado-banner .tt{font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px; line-height:1.2;}
+.estado-banner .ss{font-size:13px; margin-top:2px; opacity:.85;}
+.eb-azul{background:#EFF4FF; color:#1D4ED8;} .eb-ambar{background:#FFF5E0; color:#9A5B00;} .eb-violeta{background:#F1ECFF; color:#5B3DC4;} .eb-verde{background:#E8F7EF; color:#0B7A43;} .eb-gris{background:#EEF0F5; color:#4A5068;}
 .wrap{max-width:560px; margin:0 auto; padding:28px 18px 60px;}
 .card{background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); padding:22px 20px; margin-bottom:16px;}
 .pill{display:inline-flex; align-items:center; gap:6px; background:var(--blue-soft); color:var(--blue-deep); font-weight:700; font-size:12px; padding:5px 12px; border-radius:20px;}
@@ -89,8 +95,14 @@ input,textarea{font-family:inherit; font-size:14.5px;}
         <div><div class="num" id="casoNum">—</div><div style="font-size:12px;color:var(--ink-dim);" id="casoMeta">—</div></div>
         <span class="pill" id="casoEstado">—</span>
       </div>
-      <div id="datosEquipo" style="display:none;"></div>
+      <div id="estadoBanner" style="display:none;"></div>
+      <div id="datosCliente" class="datos" style="display:none;margin-top:0;margin-bottom:14px;"></div>
       <p id="txtIntro" style="color:var(--ink-dim);font-size:13.5px;">Podés agregar un comentario o adjuntar más fotos, videos o documentos sobre este reclamo. Esto se suma al mismo expediente — no genera un reclamo nuevo.</p>
+    </div>
+
+    <div class="card" id="cardDatos" style="display:none;">
+      <h2 id="datosTitulo">Tu reclamo</h2>
+      <div id="datosBody"></div>
     </div>
 
     <div class="card" id="cardHistorial" style="display:none;">
@@ -155,22 +167,55 @@ function gasPost(action, params){
     pintarHistorial_(res);
   }).catch(mostrarInvalido_);
 })();
+function dato_(label, valor, full){
+  if(valor===undefined || valor===null || String(valor).trim()==='') return '';
+  return '<div'+(full?' class="full"':'')+'><b>'+label+'</b>'+esc_(valor)+'</div>';
+}
+var ESTADOS_CLIENTE_ = {
+  nuevo:     {cls:'eb-azul',    ic:'inbox',            t:'Recibimos tu reclamo',        s:'Nuestro equipo lo está revisando.'},
+  analisis:  {cls:'eb-azul',    ic:'manage_search',    t:'Tu caso está siendo procesado', s:'Estamos analizando lo que nos contaste.'},
+  esperando: {cls:'eb-ambar',   ic:'hourglass_top',    t:'Estamos esperando novedades',  s:'Si tenés más información, podés sumarla acá abajo.'},
+  derivado:  {cls:'eb-violeta', ic:'forward_to_inbox', t:'Tu caso fue derivado',         s:'Lo está viendo el área que corresponde.'},
+  resuelto:  {cls:'eb-verde',   ic:'task_alt',         t:'Tu caso fue resuelto',         s:'Si algo quedó pendiente, escribinos acá abajo.'},
+  cerrado:   {cls:'eb-gris',    ic:'check_circle',     t:'Tu caso está cerrado',         s:'Si necesitás retomarlo, dejanos un comentario.'}
+};
+function pintarCliente_(c){
+  var e = ESTADOS_CLIENTE_[c.estado] || ESTADOS_CLIENTE_.analisis;
+  var b = document.getElementById('estadoBanner'); b.style.display = 'flex';
+  b.className = 'estado-banner '+e.cls;
+  b.innerHTML = '<div class="ic"><span class="material-symbols-outlined">'+e.ic+'</span></div><div><div class="tt">'+e.t+'</div><div class="ss">'+e.s+'</div></div>';
+  document.getElementById('casoEstado').style.display = 'none';
+  document.getElementById('casoMeta').textContent = '';
+  var veh = ((c.marca||'')+' '+(c.modelo||'')).trim();
+  var dd = document.getElementById('datosCliente'); dd.style.display = 'grid';
+  dd.innerHTML = dato_('Nombre y apellido', c.cliente, true) + dato_('Vehículo', veh) + dato_('Patente o VIN', c.dominio);
+}
 function pintarHistorial_(res){
-  var equipo = !!res.vistaEquipo, c = res.caso, nov = res.novedades || [];
+  var equipo = !!res.vistaEquipo, c = res.caso, d = c.datosReclamo || {}, nov = res.novedades || [];
+  if(!equipo){ pintarCliente_(c); return; }
   if(equipo){
     document.getElementById('txtIntro').innerHTML = '<span class="badge-eq"><span class="material-symbols-outlined" style="font-size:14px;">group</span>Vista del equipo</span><br>Acá ves todo lo que se hizo en este caso. Podés dejar un comentario para el equipo de Calidad: queda registrado con tu nombre y el cliente no lo ve.';
     document.getElementById('fieldNombre').style.display = 'block';
     document.getElementById('btnEnviar').textContent = 'Guardar comentario';
-    var d = document.getElementById('datosEquipo'); d.style.display = 'block';
-    d.innerHTML = '<div class="datos">'+
-      '<div><b>Cliente</b>'+esc_(c.cliente||'—')+'</div><div><b>Teléfono</b>'+esc_(c.telefono||'—')+'</div>'+
-      '<div><b>Sucursal</b>'+esc_(c.sucursal||'—')+'</div><div><b>Dominio</b>'+esc_(c.dominio||'—')+'</div>'+
-      '<div><b>Responsable</b>'+esc_(c.responsable||'Sin asignar')+'</div><div><b>Prioridad</b>'+esc_(c.prioridad||'—')+'</div>'+
-      (c.proximoPasoTexto ? '<div class="full"><b>Próximo paso'+(c.proximoPasoFecha?' ('+esc_(String(c.proximoPasoFecha).slice(0,10))+')':'')+'</b>'+esc_(c.proximoPasoTexto)+'</div>' : '')+
-      (c.descripcion ? '<div class="full"><b>Qué reportó</b>'+esc_(c.descripcion)+'</div>' : '')+
-    '</div>';
+    document.getElementById('datosTitulo').textContent = 'Datos del caso';
     document.getElementById('histTitulo').textContent = 'Todo lo que se hizo';
   }
+  var gestion = equipo ?
+      dato_('Responsable', c.responsable||'Sin asignar') + dato_('Prioridad', c.prioridad) +
+      (c.proximoPasoTexto ? dato_('Próximo paso'+(c.proximoPasoFecha?' ('+String(c.proximoPasoFecha).slice(0,10)+')':''), c.proximoPasoTexto, true) : '')
+    : '';
+  document.getElementById('cardDatos').style.display = 'block';
+  document.getElementById('datosBody').innerHTML = '<div class="datos">'+
+    dato_(equipo?'Cliente':'Nombre', d.cliente) + dato_('DNI', d.dni) +
+    dato_('Teléfono', d.telefono) + dato_('Correo', d.email) +
+    dato_('Marca', d.marca) + dato_('Modelo', d.modelo) +
+    dato_('Patente o dominio', d.dominio) + dato_('Sucursal', d.sucursal) +
+    dato_('Sector', d.sector) + gestion +
+    dato_('Motivo', d.motivo, true) +
+    dato_(equipo?'Qué reportó':'Lo que nos contaste', d.descripcion, true) +
+    dato_('Solución que esperás', d.solucionEsperada, true) +
+    (d.evidencias ? dato_('Archivos adjuntos', d.evidencias+' archivo(s)') : '') +
+  '</div>';
   if(nov.length){
     document.getElementById('cardHistorial').style.display = 'block';
     document.getElementById('timeline').innerHTML = nov.map(function(n){
