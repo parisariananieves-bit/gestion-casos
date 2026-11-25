@@ -124,7 +124,7 @@ function svcReclamoValidarToken_(idCaso, token, clave){
     return responseError_('El enlace no es válido o ya venció.');
   }
   var equipo = esClaveEquipoValida_(caso, clave);
-  var segs = dbSeguimientosPorCaso_(idCaso).filter(function(x){ return equipo || x.visibleParaReportante; });
+  var segs = equipo ? dbSeguimientosPorCaso_(idCaso) : [];   // el cliente no ve el historial: solo el estado
   var novedades = segs.map(function(x){
     return {
       fecha: x.fecha instanceof Date ? Utilities.formatDate(x.fecha, Session.getScriptTimeZone(), 'dd/MM/yyyy HH:mm') : String(x.fecha||''),
@@ -135,9 +135,20 @@ function svcReclamoValidarToken_(idCaso, token, clave){
   var out = {
     caso: {
       id: caso.id, marca: caso.marca, modelo: caso.modelo, estado: caso.estado,
-      fechaCreacion: caso.fechaCreacion, motivo: caso.motivo
+      fechaCreacion: caso.fechaCreacion, motivo: caso.motivo,
+      cliente: caso.cliente, dominio: caso.dominio   // nombre y patente/VIN para que reconozca su caso
     },
     novedades: novedades, vistaEquipo: equipo
+  };
+  // Lo que el propio cliente cargó en su reclamo (se muestra en su link; el DNI va enmascarado
+  // porque el link suele compartirse por WhatsApp).
+  var dni = String(caso.dni||''), nEvid = 0;
+  try{ nEvid = JSON.parse(caso.evidencias||'[]').length; }catch(e){}
+  if(equipo) out.caso.datosReclamo = {
+    cliente: caso.cliente, dni: dni,
+    telefono: caso.telefono, email: caso.email, marca: caso.marca, modelo: caso.modelo, dominio: caso.dominio,
+    sucursal: caso.sucursal, sector: caso.sector, motivo: caso.motivo, descripcion: caso.descripcion,
+    solucionEsperada: caso.solucionEsperada, evidencias: nEvid
   };
   if(equipo){
     out.caso.cliente = caso.cliente; out.caso.telefono = caso.telefono; out.caso.sucursal = caso.sucursal;
