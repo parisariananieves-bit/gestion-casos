@@ -2406,7 +2406,7 @@ function renderEvidenciasCliente_(c){
 // ninguna integración de WhatsApp que configurar: solo se copia el link
 // para pegarlo a mano donde haga falta (WhatsApp, firma de mail, etc.).
 function copiarLinkFormularioPublico_(){
-  var link = window.location.origin + '/reclamo.html';
+  var link = window.location.origin + '/reclamo';
   var hacerCopia = function(){
     if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(link);
     var ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select();
@@ -2416,7 +2416,7 @@ function copiarLinkFormularioPublico_(){
     .catch(function(){ prompt('Copiá este link del formulario de reclamos:', link); });
 }
 function copiarLinkSeguimiento_(idCaso, token){
-  var base = window.location.origin + '/seguimiento.html';
+  var base = window.location.origin + '/seguimiento';
   var link = base + '?id=' + encodeURIComponent(idCaso) + '&token=' + encodeURIComponent(token);
   var hacerCopia = function(){
     if(navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(link);
