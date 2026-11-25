@@ -73,3 +73,8 @@ function apiDescartarEvento(params){
   if(!params || !params.idEvento) return responseError_('Falta el ID del evento.');
   return svcEventoDescartar_(params.idEvento, params.motivo);
 }
+
+function apiFijarProximoPaso(params){
+  if(!params || !params.id) return responseError_('Faltan datos.');
+  return svcCasoFijarProximoPaso_(params.id, params.texto, params.fecha, params.autor);
+}

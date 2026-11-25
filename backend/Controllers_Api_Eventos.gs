@@ -21,3 +21,12 @@
  *   });
  * }
  */
+
+function apiConfirmarEventosLote(params){
+  if(!params || !params.idEventos || !params.idEventos.length) return responseError_('Faltan datos.');
+  return svcEventosConfirmarLote_(params.idEventos, params.usuario);
+}
+function apiDescartarEventosLote(params){
+  if(!params || !params.idEventos || !params.idEventos.length) return responseError_('Faltan datos.');
+  return svcEventosDescartarLote_(params.idEventos, params.motivo);
+}

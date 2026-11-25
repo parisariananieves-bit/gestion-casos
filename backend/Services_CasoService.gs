@@ -19,10 +19,10 @@ function svcCasosListar_(filtros){
   if(filtros.fuente) casos = casos.filter(function(c){ return c.fuente===filtros.fuente; });
   if(String(filtros.soloAbiertos)==='true') casos = casos.filter(function(c){ return c.estado!=='cerrado' && c.estado!=='resuelto'; });
   if(String(filtros.soloResueltos)==='true') casos = casos.filter(function(c){ return c.estado==='cerrado' || c.estado==='resuelto'; });
-  if(String(filtros.soloVencidos)==='true') casos = casos.filter(function(c){ return c.slaVencimiento && new Date(c.slaVencimiento) < new Date() && c.estado!=='cerrado' && c.estado!=='resuelto'; });
+  if(String(filtros.soloVencidos)==='true') casos = casos.filter(function(c){ var v = utilParseFechaTexto_(c.slaVencimiento); return v && v < new Date() && c.estado!=='cerrado' && c.estado!=='resuelto'; });
   if(String(filtros.soloSinAsignar)==='true') casos = casos.filter(function(c){ return !c.responsable; });
   if(String(filtros.soloDefensaConsumidor)==='true') casos = casos.filter(function(c){ return c.defensaConsumidor===true || String(c.defensaConsumidor)==='true'; });
-  return casos.sort(function(a,b){ return new Date(b.fechaCreacion) - new Date(a.fechaCreacion); });
+  return casos.sort(function(a,b){ return utilFechaMs_(b.fechaCreacion) - utilFechaMs_(a.fechaCreacion); });
 }
 
 function svcCasoObtener_(id){
@@ -119,6 +119,7 @@ function svcCasoAsignar_(id, responsable, autor){
     id: utilNuevoIdSeguimiento_(), casoId: id, fecha: utilAhoraTexto_(), autor: autor||'Sistema',
     tipo: 'asignacion', texto: 'Asignado a '+responsable, visibleParaReportante: false
   });
+  utilNotificarAsignacionCaso_(caso, responsable, 'asignado', autor);
   return responseOk_({});
 }
 
@@ -141,6 +142,7 @@ function svcCasoDerivar_(id, responsable, autor, comentario){
       tipoEvento: 'Caso derivado', descripcion: 'Derivado a '+responsable, casoRelacionado: id, fuente: 'Manual'
     });
   }
+  utilNotificarAsignacionCaso_(caso, responsable, 'derivado', autor);
   return responseOk_({});
 }
 
@@ -193,4 +195,25 @@ function svcCasoBuscarCliente_(query){
     vistos[c.id]=true; return true;
   });
   return responseOk_({casos: todos, esDni: esDni});
+}
+
+// Próximo paso con fecha: qué falta hacer y para cuándo. Se ve en el caso, en
+// el tablero/lista (en rojo si ya venció) y en el resumen diario por mail.
+// fecha viene como "yyyy-MM-dd" (campo de fecha del navegador) o vacía para borrarlo.
+function svcCasoFijarProximoPaso_(id, texto, fecha, autor){
+  var caso = dbCasosBuscarPorId_(id);
+  if(!caso) return responseError_('No se encontró el caso.');
+  var fechaTxt = '';
+  if(fecha){
+    var m = String(fecha).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    fechaTxt = m ? (m[3]+'/'+m[2]+'/'+m[1]) : String(fecha);
+  }
+  dbCasosActualizarCampos_(id, {proximoPasoTexto: texto||'', proximoPasoFecha: fechaTxt});
+  dbSeguimientosAgregar_({
+    id: utilNuevoIdSeguimiento_(), casoId: id, fecha: utilAhoraTexto_(), autor: autor||'Sistema',
+    tipo: 'sistema',
+    texto: texto ? ('📌 Próximo paso'+(fechaTxt?' para el '+fechaTxt:'')+': '+texto) : '📌 Se quitó el próximo paso.',
+    visibleParaReportante: false
+  });
+  return responseOk_({});
 }

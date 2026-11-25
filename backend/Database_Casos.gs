@@ -13,6 +13,17 @@ function getHojaCasos_GC(){
     hoja.getRange(1,1,1,headers.length).setValues([headers]).setFontWeight('bold')
       .setBackground('#0C0D10').setFontColor('#FFFFFF');
     hoja.setFrozenRows(1);
+  } else {
+    // Hojas ya existentes: si se agregaron columnas nuevas al final de
+    // COLUMNAS_CASOS, les pone el encabezado que falta (no toca datos).
+    try{
+      var n = COLUMNAS_CASOS.length;
+      if(hoja.getMaxColumns() < n) hoja.insertColumnsAfter(hoja.getMaxColumns(), n - hoja.getMaxColumns());
+      var enc = hoja.getRange(1,1,1,n).getValues()[0];
+      for(var i=0;i<n;i++){
+        if(!enc[i]) hoja.getRange(1,i+1).setValue(COLUMNAS_CASOS[i].h).setFontWeight('bold').setBackground('#0C0D10').setFontColor('#FFFFFF');
+      }
+    }catch(e){}
   }
   return hoja;
 }

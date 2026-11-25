@@ -56,7 +56,7 @@ function svcReporteDefensaConsumidor_(){
     resueltosEsteAnio: resueltosEsteAnio.length,
     tiempoPromedioDias: tiempoPromedioDias,
     reincidencias: reincidencias,
-    expedientes: casos.sort(function(a,b){ return new Date(b.fechaCreacion)-new Date(a.fechaCreacion); })
+    expedientes: casos.sort(function(a,b){ return utilFechaMs_(b.fechaCreacion)-utilFechaMs_(a.fechaCreacion); })
   });
 }
 
@@ -121,7 +121,7 @@ function svcReporteResumen_(filtros){
     try{ return JSON.parse(c.evidencias||'[]').length>0; }catch(e){ return false; }
   }).length;
   var vencidos = casos.filter(function(c){
-    return c.slaVencimiento && new Date(c.slaVencimiento) < new Date() && c.estado!=='cerrado' && c.estado!=='resuelto';
+    var v = utilParseFechaTexto_(c.slaVencimiento); return v && v < new Date() && c.estado!=='cerrado' && c.estado!=='resuelto';
   }).length;
   var pendientesAsignacion = casos.filter(function(c){ return c.estado==='nuevo' && !c.responsable; }).length;
   var cerrados = casos.filter(function(c){ return c.estado==='cerrado'; }).length;

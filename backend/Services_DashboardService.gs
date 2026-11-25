@@ -7,7 +7,7 @@ function svcDashboardResumen_(filtros){
   var urgentes = abiertos.filter(function(c){ return c.prioridad==='Alta'; });
   var vencidos = abiertos.filter(function(c){
     if(!c.slaVencimiento) return false;
-    return new Date(c.slaVencimiento) < new Date();
+    var v = utilParseFechaTexto_(c.slaVencimiento); return !!v && v < new Date();
   });
   var resueltosSemana = casos.filter(function(c){
     if(!c.cerradoFecha) return false;

@@ -124,7 +124,10 @@ var COLUMNAS_CASOS = [
   {k:'tokenSeguimiento', h:'Token de seguimiento'},        // para el link seguro de "agregar info"
   {k:'fechaPrimerContacto', h:'Fecha Primer Contacto'},    // se completa en la 1ra asignación/novedad
   // --- Agregado: Dashboard ejecutivo (Etapa 4) — casos reabiertos ---
-  {k:'reabierto', h:'Reabierto alguna vez', bool:true}
+  {k:'reabierto', h:'Reabierto alguna vez', bool:true},
+  // --- Agregado: próximo paso con fecha (Etapa 8) — siempre al final ---
+  {k:'proximoPasoTexto', h:'Próximo paso'},
+  {k:'proximoPasoFecha', h:'Próximo paso — fecha'}
 ];
 
 // Columnas de la hoja Eventos — todo lo que entra al sistema pasa por acá
