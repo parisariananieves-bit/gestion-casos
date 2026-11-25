@@ -503,6 +503,27 @@ table.tbl tr.r-nueva td:first-child{padding-left:20px;}
 .info-item{font-size:12.2px;}
 .info-item span{display:block; color:var(--text-faint); font-size:10.3px; text-transform:uppercase; letter-spacing:.05em; font-weight:650; margin-bottom:3px;}
 .info-item b{font-size:12.6px; color:var(--text); font-weight:650;}
+.act-panel{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px; margin-top:18px; padding-top:16px; border-top:1px solid var(--hairline);}
+@media (max-width:980px){ .act-panel{grid-template-columns:1fr;} }
+.act-lbl{font-size:12px; font-weight:600; color:var(--text-dim); margin-bottom:6px;}
+.joined{display:flex; border:1.5px solid var(--hairline); border-radius:10px; overflow:hidden; background:var(--panel-2);}
+.joined select{flex:1; min-width:0; border:none !important; background:transparent !important; padding:10px 11px; font-size:12.5px; color:var(--text); outline:none;}
+.joined button{border:none; border-left:1.5px solid var(--hairline); background:var(--panel); padding:0 15px; font-size:12.5px; font-weight:700; color:var(--text); cursor:pointer; white-space:nowrap; font-family:inherit;}
+.joined button:hover{background:var(--panel-2);}
+.joined button.primary{background:var(--caso); color:#fff; border-left-color:transparent;}
+.joined button.primary:hover{filter:brightness(1.08); background:var(--caso);}
+.act-links{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+.act-links .sp{flex:1;}
+.act-links .material-symbols-outlined,.more summary .material-symbols-outlined{font-size:16px; vertical-align:-3px;}
+.more{position:relative;}
+.more summary{list-style:none; cursor:pointer; display:inline-flex; align-items:center; gap:5px; user-select:none;}
+.more summary::-webkit-details-marker{display:none;}
+.more[open] summary{background:var(--panel-2);}
+.more .menu{position:absolute; right:0; bottom:calc(100% + 6px); min-width:250px; background:var(--panel); border:1px solid var(--hairline); border-radius:12px; box-shadow:0 16px 40px -12px rgba(0,0,0,.35); padding:6px; z-index:30;}
+.more .menu button{display:flex; align-items:center; gap:9px; width:100%; text-align:left; background:none; border:none; padding:10px 12px; border-radius:8px; font-size:13px; color:var(--text); cursor:pointer; font-family:inherit;}
+.more .menu button .material-symbols-outlined{font-size:17px; color:var(--text-dim);}
+.more .menu button:hover{background:var(--panel-2);}
+.more .menu button.danger,.more .menu button.danger .material-symbols-outlined{color:var(--danger);}
 .action-row{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;}
 .action-row select{background:var(--panel-2); color:var(--text); border:1.5px solid var(--hairline);}
 
@@ -2415,6 +2436,17 @@ function copiarLinkFormularioPublico_(){
   hacerCopia().then(function(){ showToast('Link del formulario copiado — pegalo en WhatsApp o donde lo necesites.'); })
     .catch(function(){ prompt('Copiá este link del formulario de reclamos:', link); });
 }
+// Link para el equipo (supervisor, sector derivado): muestra TODO el historial
+// del caso y deja comentar con nombre. No es el link del cliente.
+function copiarLinkEquipo_(idCaso){
+  gasPost('linksSeguimientoCaso', {id:idCaso}).then(function(res){
+    if(!res.ok){ showToast(res.error||'No se pudo generar el link'); return; }
+    var link = window.location.origin+'/seguimiento?id='+encodeURIComponent(idCaso)+'&token='+encodeURIComponent(res.token)+'&clave='+encodeURIComponent(res.clave);
+    var fin = function(){ showToast('Link de equipo copiado — muestra todo lo que se hizo en el caso. No se lo pases al cliente.'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(fin, function(){ prompt('Copiá este link para el equipo:', link); }); }
+    else { prompt('Copiá este link para el equipo:', link); }
+  });
+}
 function copiarLinkSeguimiento_(idCaso, token){
   var base = window.location.origin + '/seguimiento';
   var link = base + '?id=' + encodeURIComponent(idCaso) + '&token=' + encodeURIComponent(token);
@@ -2452,16 +2484,23 @@ function renderDetalle(id){
       '</div>'+
       (c.descripcion ? '<div style="margin-top:12px;font-size:12.8px;color:var(--text-dim);"><b>Descripción del cliente:</b> '+c.descripcion+'</div>' : '')+
       (c.solucionEsperada ? '<div style="margin-top:8px;font-size:12.8px;color:var(--text-dim);"><b>Solución que espera el cliente:</b> '+c.solucionEsperada+'</div>' : '')+
-      '<div class="action-row">'+
-        estadoBotones_(c)+
-        '<button class="btn btn-ghost btn-sm" style="'+(esDefensa?'border-color:var(--danger);color:var(--danger);':'')+'" onclick="toggleDefensaConsumidorUI_(\''+c.id+'\','+(!esDefensa)+')">'+(esDefensa?'⚖️ Quitar Defensa del Consumidor':'⚖️ Marcar Defensa del Consumidor')+'</button>'+
-        '<select id="selResponsable" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);"><option value="">Asignar a...</option></select>'+
-        '<button class="btn btn-ghost btn-sm" onclick="asignarCasoUI_(\''+c.id+'\')">Asignar</button>'+
-        '<button class="btn btn-ghost btn-sm" style="border-color:var(--purple);color:var(--purple);" onclick="derivarCasoUI_(\''+c.id+'\')" title="Deriva el caso a esa persona y lo marca para seguimiento conjunto con Calidad">Derivar</button>'+
-        '<select id="selPrioridad" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);"><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>'+
-        '<button class="btn btn-ghost btn-sm" onclick="cambiarPrioridadUI_(\''+c.id+'\')">Cambiar prioridad</button>'+
-        (esCalidad_() ? '<button class="btn btn-ghost btn-sm" style="border-color:var(--danger);color:var(--danger);margin-left:auto;" onclick="eliminarCasoUI_(\''+c.id+'\')" title="Borra el caso y sus novedades (por ejemplo, un duplicado). No se puede deshacer."><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">delete</span> Eliminar caso</button>' : '')+
-        (c.tokenSeguimiento ? '<button class="btn btn-ghost btn-sm" onclick="copiarLinkSeguimiento_(\''+c.id+'\',\''+c.tokenSeguimiento+'\')" title="Link para que el cliente agregue más información sin crear un reclamo nuevo"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">link</span> Copiar link de seguimiento</button>' : '')+
+      '<div class="act-panel">'+
+        '<div class="act-grp"><div class="act-lbl">Estado</div><div class="joined">'+estadoSelect_(c)+'<button class="primary" onclick="cambiarEstadoUI_(\''+c.id+'\')">Aplicar</button></div></div>'+
+        '<div class="act-grp"><div class="act-lbl">Responsable</div><div class="joined"><select id="selResponsable"><option value="">Asignar a…</option></select>'+
+          '<button onclick="asignarCasoUI_(\''+c.id+'\')">Asignar</button>'+
+          '<button style="color:var(--purple);" onclick="derivarCasoUI_(\''+c.id+'\')" title="Deriva el caso a esa persona y lo marca para seguimiento conjunto con Calidad">Derivar</button></div></div>'+
+        '<div class="act-grp"><div class="act-lbl">Prioridad</div><div class="joined"><select id="selPrioridad"><option value="Alta">Alta</option><option value="Media">Media</option><option value="Baja">Baja</option></select>'+
+          '<button class="primary" onclick="cambiarPrioridadUI_(\''+c.id+'\')">Aplicar</button></div></div>'+
+      '</div>'+
+      '<div class="act-links">'+
+        '<button class="btn btn-ghost btn-sm" onclick="copiarLinkEquipo_(\''+c.id+'\')" title="Link con TODO el historial del caso, para pasárselo a un supervisor o al sector derivado. No es para el cliente."><span class="material-symbols-outlined">group</span> Link para equipo</button>'+
+        (c.tokenSeguimiento ? '<button class="btn btn-ghost btn-sm" onclick="copiarLinkSeguimiento_(\''+c.id+'\',\''+c.tokenSeguimiento+'\')" title="Link para que el cliente agregue más información sin crear un reclamo nuevo"><span class="material-symbols-outlined">link</span> Link para el cliente</button>' : '')+
+        '<span class="sp"></span>'+
+        (esDefensa ? '<span class="pill" style="background:var(--danger-soft);color:var(--danger);font-size:11px;padding:5px 11px;">⚖️ Defensa del Consumidor activa</span>' : '')+
+        '<details class="more"><summary class="btn btn-ghost btn-sm"><span class="material-symbols-outlined">more_horiz</span> Más acciones</summary><div class="menu">'+
+          '<button onclick="toggleDefensaConsumidorUI_(\''+c.id+'\','+(!esDefensa)+')"><span class="material-symbols-outlined">balance</span>'+(esDefensa?'Quitar Defensa del Consumidor':'Marcar Defensa del Consumidor')+'</button>'+
+          (esCalidad_() ? '<button class="danger" onclick="eliminarCasoUI_(\''+c.id+'\')" title="Borra el caso y sus novedades. No se puede deshacer."><span class="material-symbols-outlined">delete</span>Eliminar caso</button>' : '')+
+        '</div></details>'+
       '</div>'+
       '<div class="pp-box"><label><span class="material-symbols-outlined" style="font-size:17px;">event_upcoming</span>Próximo paso</label>'+
         '<input type="text" id="ppTexto" placeholder="Ej: llamar al cliente con la respuesta de posventa" value="'+String(c.proximoPasoTexto||'').replace(/"/g,'&quot;')+'">'+
@@ -2567,12 +2606,17 @@ function renderReunionesCaso_(actas){
     }).join('')+
   '</div></div>';
 }
+function estadoSelect_(c){
+  var estados = ['nuevo','analisis','esperando','derivado','resuelto','cerrado'];
+  return '<select id="selEstado">'+estados.map(function(e){ return '<option value="'+e+'"'+(e===c.estado?' selected':'')+'>'+e+'</option>'; }).join('')+'</select>';
+}
 function estadoBotones_(c){
   var estados = ['nuevo','analisis','esperando','derivado','resuelto','cerrado'];
   return '<select id="selEstado" style="padding:8px 11px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel-2);color:var(--text);">'+
     estados.map(function(e){ return '<option value="'+e+'"'+(e===c.estado?' selected':'')+'>'+e+'</option>'; }).join('')+
     '</select><button class="btn btn-dark btn-sm" onclick="cambiarEstadoUI_(\''+c.id+'\')">Cambiar estado</button>';
 }
+document.addEventListener('click', function(e){ document.querySelectorAll('details.more[open]').forEach(function(d){ if(!d.contains(e.target)) d.removeAttribute('open'); }); });
 function esCalidad_(){ var s = sesionActual(); return !!(s && s.rol==='calidad'); }
 function volverDeDetalle_(){ setView(window._volverA || 'casos'); }
 function eliminarCasoUI_(id){

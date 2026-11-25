@@ -25,6 +25,20 @@ button{font-family:inherit; cursor:pointer;}
 input,textarea{font-family:inherit; font-size:14.5px;}
 .topbar{background:#fff; border-bottom:1px solid var(--line); padding:14px 20px; display:flex; align-items:center; gap:10px;}
 .topbar img{height:28px;}
+.tl{display:flex; flex-direction:column; gap:0; margin-top:4px;}
+.tl-item{display:flex; gap:12px; padding:0 0 16px; position:relative;}
+.tl-item:not(:last-child)::before{content:''; position:absolute; left:5px; top:14px; bottom:-2px; width:2px; background:var(--line);}
+.tl-dot{width:12px; height:12px; border-radius:50%; background:var(--blue); margin-top:5px; flex-shrink:0; border:2px solid #fff; box-shadow:0 0 0 1.5px var(--blue);}
+.tl-item.int .tl-dot{background:#9AA1B5; box-shadow:0 0 0 1.5px #9AA1B5;}
+.tl-when{font-size:11.5px; color:var(--ink-faint);}
+.tl-txt{font-size:14px; color:var(--ink); margin-top:1px; white-space:pre-wrap; word-break:break-word;}
+.tl-who{font-size:11.5px; color:var(--ink-dim); margin-top:1px;}
+.tl-int{font-size:10.5px; font-weight:700; color:#6B7289; background:#EEF0F5; border-radius:6px; padding:1px 6px; margin-left:6px;}
+.card h2{font-family:'Space Grotesk',sans-serif; font-size:16px; font-weight:700; margin-bottom:12px;}
+.datos{display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; margin:14px 0 4px; font-size:13px;}
+.datos div b{display:block; font-size:11px; color:var(--ink-faint); font-weight:600; margin-bottom:1px;}
+.datos .full{grid-column:1 / -1;}
+.badge-eq{display:inline-flex; align-items:center; gap:5px; background:#0B0D12; color:#fff; font-size:11.5px; font-weight:700; padding:4px 10px; border-radius:20px; margin-bottom:10px;}
 .wrap{max-width:560px; margin:0 auto; padding:28px 18px 60px;}
 .card{background:#fff; border:1px solid var(--line); border-radius:20px; box-shadow:var(--shadow); padding:22px 20px; margin-bottom:16px;}
 .pill{display:inline-flex; align-items:center; gap:6px; background:var(--blue-soft); color:var(--blue-deep); font-weight:700; font-size:12px; padding:5px 12px; border-radius:20px;}
@@ -75,12 +89,19 @@ input,textarea{font-family:inherit; font-size:14.5px;}
         <div><div class="num" id="casoNum">—</div><div style="font-size:12px;color:var(--ink-dim);" id="casoMeta">—</div></div>
         <span class="pill" id="casoEstado">—</span>
       </div>
-      <p style="color:var(--ink-dim);font-size:13.5px;">Podés agregar un comentario o adjuntar más fotos, videos o documentos sobre este reclamo. Esto se suma al mismo expediente — no genera un reclamo nuevo.</p>
+      <div id="datosEquipo" style="display:none;"></div>
+      <p id="txtIntro" style="color:var(--ink-dim);font-size:13.5px;">Podés agregar un comentario o adjuntar más fotos, videos o documentos sobre este reclamo. Esto se suma al mismo expediente — no genera un reclamo nuevo.</p>
+    </div>
+
+    <div class="card" id="cardHistorial" style="display:none;">
+      <h2 id="histTitulo">Qué se hizo hasta ahora</h2>
+      <div class="tl" id="timeline"></div>
     </div>
 
     <div class="msg msg-err" id="formError" style="display:none;"></div>
 
     <div class="card">
+      <div class="field" id="fieldNombre" style="display:none;"><label>Tu nombre</label><input id="nombreEquipo" type="text" placeholder="Para saber quién dejó el comentario" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--bg-2);"></div>
       <div class="field"><label>Comentario adicional</label><textarea id="comentario" placeholder="Contanos cualquier novedad..."></textarea></div>
       <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click();">
         <span class="material-symbols-outlined">cloud_upload</span>
@@ -102,7 +123,12 @@ input,textarea{font-family:inherit; font-size:14.5px;}
 </div>
 
 <script>
-var API_URL = null, CASO_ID = null, TOKEN = null, ARCHIVOS_ = [];
+var API_URL = null, CASO_ID = null, TOKEN = null, CLAVE = '', ARCHIVOS_ = [];
+function esc_(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtFecha_(v){
+  var t = String(v||''); var m = t.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  return m ? m[3]+'/'+m[2]+'/'+m[1]+' '+m[4]+':'+m[5] : t;
+}
 var MAX_BYTES = 15*1024*1024;
 var TIPOS_PERMITIDOS = ['image/jpeg','image/jpg','image/png','image/webp','video/mp4','application/pdf'];
 
@@ -115,10 +141,10 @@ function gasPost(action, params){
 
 (function init(){
   var qs = new URLSearchParams(window.location.search);
-  CASO_ID = qs.get('id'); TOKEN = qs.get('token');
+  CASO_ID = qs.get('id'); TOKEN = qs.get('token'); CLAVE = qs.get('clave') || '';
   if(!CASO_ID || !TOKEN){ mostrarInvalido_(); return; }
   cargarConfigBackend().then(function(){
-    return gasPost('reclamoValidarToken', {id:CASO_ID, token:TOKEN});
+    return gasPost('reclamoValidarToken', {id:CASO_ID, token:TOKEN, clave:CLAVE});
   }).then(function(res){
     document.getElementById('loading-screen').style.display = 'none';
     if(!res.ok){ mostrarInvalido_(); return; }
@@ -126,8 +152,33 @@ function gasPost(action, params){
     document.getElementById('casoNum').textContent = res.caso.id;
     document.getElementById('casoMeta').textContent = (res.caso.marca||'')+' '+(res.caso.modelo||'')+' · '+(res.caso.motivo||'');
     document.getElementById('casoEstado').textContent = res.caso.estado;
+    pintarHistorial_(res);
   }).catch(mostrarInvalido_);
 })();
+function pintarHistorial_(res){
+  var equipo = !!res.vistaEquipo, c = res.caso, nov = res.novedades || [];
+  if(equipo){
+    document.getElementById('txtIntro').innerHTML = '<span class="badge-eq"><span class="material-symbols-outlined" style="font-size:14px;">group</span>Vista del equipo</span><br>Acá ves todo lo que se hizo en este caso. Podés dejar un comentario para el equipo de Calidad: queda registrado con tu nombre y el cliente no lo ve.';
+    document.getElementById('fieldNombre').style.display = 'block';
+    document.getElementById('btnEnviar').textContent = 'Guardar comentario';
+    var d = document.getElementById('datosEquipo'); d.style.display = 'block';
+    d.innerHTML = '<div class="datos">'+
+      '<div><b>Cliente</b>'+esc_(c.cliente||'—')+'</div><div><b>Teléfono</b>'+esc_(c.telefono||'—')+'</div>'+
+      '<div><b>Sucursal</b>'+esc_(c.sucursal||'—')+'</div><div><b>Dominio</b>'+esc_(c.dominio||'—')+'</div>'+
+      '<div><b>Responsable</b>'+esc_(c.responsable||'Sin asignar')+'</div><div><b>Prioridad</b>'+esc_(c.prioridad||'—')+'</div>'+
+      (c.proximoPasoTexto ? '<div class="full"><b>Próximo paso'+(c.proximoPasoFecha?' ('+esc_(String(c.proximoPasoFecha).slice(0,10))+')':'')+'</b>'+esc_(c.proximoPasoTexto)+'</div>' : '')+
+      (c.descripcion ? '<div class="full"><b>Qué reportó</b>'+esc_(c.descripcion)+'</div>' : '')+
+    '</div>';
+    document.getElementById('histTitulo').textContent = 'Todo lo que se hizo';
+  }
+  if(nov.length){
+    document.getElementById('cardHistorial').style.display = 'block';
+    document.getElementById('timeline').innerHTML = nov.map(function(n){
+      return '<div class="tl-item'+(n.interno?' int':'')+'"><div class="tl-dot"></div><div><div class="tl-when">'+esc_(fmtFecha_(n.fecha))+'</div>'+
+        '<div class="tl-txt">'+esc_(n.texto)+'</div><div class="tl-who">'+esc_(n.autor)+(equipo && n.interno ? '<span class="tl-int">interno</span>' : '')+'</div></div></div>';
+    }).join('');
+  }
+}
 function mostrarInvalido_(){
   document.getElementById('loading-screen').style.display = 'none';
   document.getElementById('invalid-screen').style.display = 'block';
@@ -159,16 +210,19 @@ function quitarArchivo_(elId){ ARCHIVOS_ = ARCHIVOS_.filter(function(f){ return 
 function enviarSeguimiento_(){
   var err = document.getElementById('formError'); err.style.display='none';
   var comentario = document.getElementById('comentario').value.trim();
+  var nombre = (document.getElementById('nombreEquipo').value||'').trim();
+  if(CLAVE && !nombre){ err.textContent='Poné tu nombre para dejar el comentario.'; err.style.display='block'; return; }
   if(!comentario && !ARCHIVOS_.length){ err.textContent='Escribí un comentario o adjuntá al menos un archivo.'; err.style.display='block'; return; }
   var btn = document.getElementById('btnEnviar'); btn.disabled = true; btn.textContent = 'Enviando…';
   gasPost('reclamoSeguimiento', {
-    id: CASO_ID, token: TOKEN, comentario: comentario,
+    id: CASO_ID, token: TOKEN, clave: CLAVE, nombre: nombre, comentario: comentario,
     archivos: ARCHIVOS_.filter(function(f){return f.base64;}).map(function(f){ return {nombre:f.nombre, tipo:f.tipo, base64:f.base64}; })
   }).then(function(res){
-    if(!res.ok){ err.textContent = res.error||'No pudimos enviar la información.'; err.style.display='block'; btn.disabled=false; btn.textContent='Enviar información'; return; }
+    if(!res.ok){ err.textContent = res.error||'No pudimos enviar la información.'; err.style.display='block'; btn.disabled=false; btn.textContent=(CLAVE?'Guardar comentario':'Enviar información'); return; }
     document.getElementById('estado-screen').style.display = 'none';
     document.getElementById('ok-screen').style.display = 'block';
-  }).catch(function(){ err.textContent='No pudimos conectar con el servidor.'; err.style.display='block'; btn.disabled=false; btn.textContent='Enviar información'; });
+    if(CLAVE){ document.querySelector('#ok-screen h1').textContent = 'Comentario guardado'; document.querySelector('#ok-screen p').textContent = 'Quedó registrado en el caso y le avisamos al responsable.'; }
+  }).catch(function(){ err.textContent='No pudimos conectar con el servidor.'; err.style.display='block'; btn.disabled=false; btn.textContent=(CLAVE?'Guardar comentario':'Enviar información'); });
 }
 </script>
 </body>
