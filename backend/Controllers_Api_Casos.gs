@@ -83,3 +83,8 @@ function apiEliminarCaso(params){
   if(!params || !params.id) return responseError_('Faltan datos.');
   return svcCasoEliminar_(params.id, params.autor);
 }
+
+function apiLinksSeguimientoCaso(params){
+  if(!params || !params.id) return responseError_('Faltan datos.');
+  return svcCasoLinksSeguimiento_(params.id);
+}

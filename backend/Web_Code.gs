@@ -55,6 +55,7 @@ function doPost(e){
     else if(action==='descartarEventosLote') result = apiDescartarEventosLote(p);
     else if(action==='fijarProximoPaso') result = apiFijarProximoPaso(p);
     else if(action==='eliminarCaso') result = apiEliminarCaso(p);
+    else if(action==='linksSeguimientoCaso') result = apiLinksSeguimientoCaso(p);
     else if(action==='actualizarConfig') result = apiActualizarConfig(p);
     else if(action==='agregarCatalogoItem') result = apiAgregarCatalogoItem(p);
     else if(action==='eliminarCatalogoItem') result = apiEliminarCatalogoItem(p);

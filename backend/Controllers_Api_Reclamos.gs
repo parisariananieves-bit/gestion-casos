@@ -16,10 +16,10 @@ function apiReclamoPublicoCrear(params){
 
 function apiReclamoValidarToken(params){
   if(!params || !params.id || !params.token) return responseError_('Faltan datos.');
-  return svcReclamoValidarToken_(params.id, params.token);
+  return svcReclamoValidarToken_(params.id, params.token, params.clave);
 }
 
 function apiReclamoSeguimientoAgregar(params){
   if(!params || !params.id || !params.token) return responseError_('Faltan datos.');
-  return svcReclamoAgregarSeguimiento_(params.id, params.token, params.comentario||'', params.archivos||[]);
+  return svcReclamoAgregarSeguimiento_(params.id, params.token, params.comentario||'', params.archivos||[], params.clave, params.nombre);
 }
