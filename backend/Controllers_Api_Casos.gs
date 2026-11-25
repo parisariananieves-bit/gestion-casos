@@ -78,3 +78,8 @@ function apiFijarProximoPaso(params){
   if(!params || !params.id) return responseError_('Faltan datos.');
   return svcCasoFijarProximoPaso_(params.id, params.texto, params.fecha, params.autor);
 }
+
+function apiEliminarCaso(params){
+  if(!params || !params.id) return responseError_('Faltan datos.');
+  return svcCasoEliminar_(params.id, params.autor);
+}

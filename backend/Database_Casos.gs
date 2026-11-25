@@ -110,3 +110,16 @@ function dbCasosBuscarPorCliente_(nombreOTelOEmail){
            String(c.dni||'')===q;
   });
 }
+
+// Borra el caso (fila) y todas sus novedades. No se puede deshacer.
+function dbCasosEliminar_(id){
+  var fila = dbCasosFilaPorId_(id);
+  if(fila===-1) return false;
+  getHojaCasos_GC().deleteRow(fila);
+  var hs = getHojaSeguimientos_(), last = hs.getLastRow();
+  if(last>=2){
+    var ids = hs.getRange(2,2,last-1,1).getValues();
+    for(var i=ids.length-1;i>=0;i--){ if(String(ids[i][0])===String(id)) hs.deleteRow(i+2); }
+  }
+  return true;
+}

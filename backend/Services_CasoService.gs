@@ -217,3 +217,14 @@ function svcCasoFijarProximoPaso_(id, texto, fecha, autor){
   });
   return responseOk_({});
 }
+
+// Eliminar un caso (duplicados, cargas por error). Solo usuarios de Calidad.
+// Los eventos de la Bandeja que lo habían generado quedan como estaban.
+function svcCasoEliminar_(id, autor){
+  var u = dbUsuariosListar_().find(function(x){ return String(x.nombre).trim().toLowerCase()===String(autor||'').trim().toLowerCase(); });
+  if(!u || u.rol!=='calidad') return responseError_('Solo Calidad puede eliminar casos.');
+  var caso = dbCasosBuscarPorId_(id);
+  if(!caso) return responseError_('No se encontró el caso.');
+  dbCasosEliminar_(id);
+  return responseOk_({id:id});
+}

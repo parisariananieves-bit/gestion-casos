@@ -41,7 +41,7 @@ function svcEventosConfirmarLote_(idEventos, usuario){
       if(!evento){ res.errores.push(id+': no encontrado'); return; }
       if(evento.casoGenerado){ res.errores.push(id+': ya tenía caso'); return; }
       var datos = evento.datosNormalizados || {};
-      var abierto = buscarCasoAbiertoPorVin_(datos.vin);
+      var abierto = buscarCasoDuplicado_(datos, evento.fuente);
       if(abierto){
         dbSeguimientosAgregar_({
           id: utilNuevoIdSeguimiento_(), casoId: abierto.id, fecha: utilAhoraTexto_(), autor: usuario||'Sistema', tipo: 'sistema',

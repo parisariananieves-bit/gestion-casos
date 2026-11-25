@@ -65,12 +65,12 @@ function recibirEvento(payload){
   // como novedad al que ya está en curso. Pasa, por ejemplo, cuando una
   // misma alerta de Planning llega más de una vez, o cuando aparece un
   // segundo síntoma del mismo auto mientras el caso anterior sigue abierto.
-  var casoAbiertoCoincidente = buscarCasoAbiertoPorVin_(datosNormalizados.vin);
+  var casoAbiertoCoincidente = buscarCasoDuplicado_(datosNormalizados, payload.fuente);
   if(casoAbiertoCoincidente){
     dbSeguimientosAgregar_({
       id: utilNuevoIdSeguimiento_(), casoId: casoAbiertoCoincidente.id, fecha: utilAhoraTexto_(), autor: 'Sistema',
       tipo: 'sistema',
-      texto: '🔁 Nuevo evento recibido de "'+(payload.fuente||'Manual')+'" para este mismo vehículo — se sumó acá en vez de abrir un caso nuevo.'+
+      texto: '🔁 Nuevo evento recibido de "'+(payload.fuente||'Manual')+'" para este mismo vehículo — se sumó acá en vez de abrir un caso nuevo (era un duplicado).'+
         (datosNormalizados.motivo ? ' Motivo: '+datosNormalizados.motivo : '') + (datosNormalizados.descripcion ? ' — '+datosNormalizados.descripcion : ''),
       visibleParaReportante: false
     });
@@ -93,6 +93,36 @@ function buscarCasoAbiertoPorVin_(vin){
     return c.estado!=='resuelto' && c.estado!=='cerrado';
   });
   return abiertos.length ? abiertos[0] : null;
+}
+
+// ¿Este evento es un duplicado de un caso que ya existe? Si sí, no se abre
+// otro caso: se suma como novedad al existente. Cuenta como duplicado:
+//  1) mismo origen (el mismo evento/entrega de Planning), en cualquier estado;
+//  2) mismo VIN/dominio con un caso todavía abierto;
+//  3) mismo VIN/dominio o DNI, misma fuente y mismo motivo, en los últimos 14 días
+//     (aunque el anterior ya esté cerrado: es la misma alerta que volvió a llegar).
+function buscarCasoDuplicado_(datos, fuente){
+  var todos = dbCasosListarTodos_();
+  var norm = function(v){ return String(v||'').replace(/\s+/g,'').toUpperCase(); };
+  var vin = norm(datos.vin), dni = norm(datos.dni), origen = String(datos.origenId||'').trim();
+  var motivo = String(datos.motivo||'').trim().toLowerCase();
+  var ahora = Date.now(), ventana = 14*24*60*60*1000;
+  var abierto = function(c){ return c.estado!=='resuelto' && c.estado!=='cerrado'; };
+  var candidatos = todos.filter(function(c){
+    if(origen && String(c.origenId||'').trim()===origen) return true;
+    var mismoVeh = vin && norm(c.dominio)===vin;
+    if(mismoVeh && abierto(c)) return true;
+    var mismaPersona = mismoVeh || (dni && norm(c.dni)===dni);
+    if(mismaPersona && String(c.fuente||'')===String(fuente||'') && String(c.motivo||'').trim().toLowerCase()===motivo){
+      var f = utilParseFechaTexto_(c.fechaCreacion);
+      return !!f && (ahora - f.getTime()) <= ventana;
+    }
+    return false;
+  });
+  if(!candidatos.length) return null;
+  candidatos.sort(function(a,b){ return utilFechaMs_(b.fechaCreacion) - utilFechaMs_(a.fechaCreacion); });
+  var abiertos = candidatos.filter(abierto);
+  return abiertos.length ? abiertos[0] : candidatos[0];
 }
 
 function normalizarPayloadEvento_(payload){
