@@ -60,6 +60,8 @@ function doPost(e){
     else if(action==='eliminarCaso') result = apiEliminarCaso(p);
     else if(action==='linksSeguimientoCaso') result = apiLinksSeguimientoCaso(p);
     else if(action==='mantenimientoEstado') result = apiMantenimientoEstado(p);
+    else if(action==='postventaPrevisualizar') result = apiPostventaPrevisualizar(p);
+    else if(action==='postventaImportar') result = apiPostventaImportar(p);
     else if(action==='archivarCasosViejos') result = apiArchivarCasosViejos(p);
     else if(action==='respaldarPlanilla') result = apiRespaldarPlanilla(p);
     else if(action==='actualizarConfig') result = apiActualizarConfig(p);

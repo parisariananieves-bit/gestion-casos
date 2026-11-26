@@ -102,3 +102,13 @@ function apiRespaldarPlanilla(params){
   if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede hacer esto.');
   return svcRespaldarPlanilla_();
 }
+
+// --- Importar clientes de la planilla de Postventa (solo rol Calidad) ---
+function apiPostventaPrevisualizar(params){
+  if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede hacer esto.');
+  return svcPostventaPrevisualizar_();
+}
+function apiPostventaImportar(params){
+  if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede hacer esto.');
+  return svcPostventaImportar_(params.claves||[]);
+}
