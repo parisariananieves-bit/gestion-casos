@@ -21,5 +21,5 @@ function apiReclamoValidarToken(params){
 
 function apiReclamoSeguimientoAgregar(params){
   if(!params || !params.id || !params.token) return responseError_('Faltan datos.');
-  return svcReclamoAgregarSeguimiento_(params.id, params.token, params.comentario||'', params.archivos||[], params.clave, params.nombre, params.usuario, params.password);
+  return svcReclamoAgregarSeguimiento_(params.id, params.token, params.comentario||'', params.archivos||[], params.clave, params.nombre, params.usuario, params.password, params.puesto);
 }

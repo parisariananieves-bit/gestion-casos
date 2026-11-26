@@ -149,7 +149,8 @@ function svcReclamoValidarToken_(idCaso, token, clave, usuario, password){
       cliente: caso.cliente, dominio: caso.dominio   // nombre y patente/VIN para que reconozca su caso
     },
     novedades: novedades, vistaEquipo: equipo,
-    usuarioEquipo: usuarioEquipo ? usuarioEquipo.nombre : ''
+    usuarioEquipo: usuarioEquipo ? usuarioEquipo.nombre : '',
+    sectorEquipo: usuarioEquipo ? String(usuarioEquipo.sector||'') : ''
   };
   // Lo que el propio cliente cargó en su reclamo (se muestra en su link; el DNI va enmascarado
   // porque el link suele compartirse por WhatsApp).
@@ -182,11 +183,12 @@ function svcCasoLinksSeguimiento_(idCaso){
 // El cliente agrega comentario y/o archivos a un caso YA EXISTENTE a
 // través del link seguro — nunca crea un reclamo nuevo (punto 7 de la
 // especificación).
-function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clave, nombre, usuario, password){
+function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clave, nombre, usuario, password, puesto){
   var validacion = svcReclamoValidarToken_(idCaso, token, clave, usuario, password);
   if(!validacion.ok) return validacion;
   var equipo = !!validacion.vistaEquipo;
-  var autor = equipo ? (String(validacion.usuarioEquipo||'').trim() || 'Equipo') + ' (link de equipo)' : 'Cliente';
+  var puestoTxt = String(puesto || validacion.sectorEquipo || '').trim().slice(0,60);
+  var autor = equipo ? (String(validacion.usuarioEquipo||'').trim() || 'Equipo') + (puestoTxt ? ' — ' + puestoTxt : '') + ' (link de equipo)' : 'Cliente';
   if(!comentario && (!archivos || !archivos.length)) return responseError_('Escribí un comentario o adjuntá al menos un archivo.');
 
   var subida = {evidencias: [], errores: []};
