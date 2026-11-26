@@ -3686,6 +3686,33 @@ function pintarCasosSeleccionadosMinuta_(){
     '</div>';
   }).join('');
 }
+function guardarActaUI_(){
+  var v = function(id){ var e = document.getElementById(id); return e ? String(e.value||'').trim() : ''; };
+  var titulo = v('actaTitulo');
+  if(!titulo){ showToast('Poné un título para la minuta'); var t = document.getElementById('actaTitulo'); if(t) t.focus(); return; }
+  var s = sesionActual();
+  var compromisos = [], solo = [];
+  Object.keys(window._minutaSeleccion||{}).forEach(function(cid){
+    var sel = window._minutaSeleccion[cid];
+    if(sel.soloMencionado){ solo.push(cid); return; }
+    compromisos.push({casoId:cid, resumen:sel.resumen, problema:sel.problema, analisis:sel.analisis, decision:sel.decision, accion:sel.accion,
+      responsableCompromiso:sel.responsableCompromiso, fechaLimite:sel.fechaLimite, observaciones:sel.observaciones});
+  });
+  var btn = document.querySelector('#panelFormActa .btn-primary'); if(btn){ btn.disabled = true; btn.textContent = 'Guardando…'; }
+  var rehabilitar = function(){ if(btn){ btn.disabled = false; btn.textContent = 'Guardar minuta'; } };
+  gasPost('crearActa', {
+    titulo:titulo, fecha:v('actaFecha'), hora:v('actaHora'), responsableReunion:v('actaResponsableReunion'), asistentes:v('actaAsistentes'),
+    objetivo:v('actaObjetivo'), temas:v('actaTemas'), proximosPasos:v('actaProximosPasos'),
+    compromisosPorCaso:compromisos, casosSoloMencionados:solo, autor:s?s.nombre:''
+  }).then(function(res){
+    rehabilitar();
+    if(!res || !res.ok){ showToast((res && res.error) || 'No se pudo guardar la minuta'); return; }
+    showToast('Minuta guardada');
+    window._minutaSeleccion = {};
+    cerrarFormActa_();
+    cargarYPintarActas_();
+  }).catch(function(){ rehabilitar(); showToast('No se pudo conectar con el servidor.'); });
+}
 function cargarYPintarActas_(){
   gasGet('actas').then(function(res){
     if(!res.ok){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">'+res.error+'</div></div>'; return; }
