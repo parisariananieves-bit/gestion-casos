@@ -88,3 +88,17 @@ function apiLinksSeguimientoCaso(params){
   if(!params || !params.id) return responseError_('Faltan datos.');
   return svcCasoLinksSeguimiento_(params.id);
 }
+
+// --- Mantenimiento (solo rol Calidad) ---
+function apiMantenimientoEstado(params){
+  if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede hacer esto.');
+  return responseOk_({paraArchivar: svcArchivoContar_(params.meses||6)});
+}
+function apiArchivarCasosViejos(params){
+  if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede hacer esto.');
+  return svcArchivarCasosViejos_(params.meses||6);
+}
+function apiRespaldarPlanilla(params){
+  if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede hacer esto.');
+  return svcRespaldarPlanilla_();
+}

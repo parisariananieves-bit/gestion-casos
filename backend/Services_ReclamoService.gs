@@ -117,13 +117,23 @@ function esClaveEquipoValida_(caso, clave){
 // Valida el link seguro de seguimiento (caso + token [+ clave de equipo]).
 // Sin clave: datos mínimos + historial visible para el cliente.
 // Con clave: vista completa para el equipo.
-function svcReclamoValidarToken_(idCaso, token, clave){
+function svcReclamoValidarToken_(idCaso, token, clave, usuario, password){
   if(!idCaso || !token) return responseError_('Falta el caso o el token.');
   var caso = dbCasosBuscarPorId_(idCaso);
   if(!caso || !caso.tokenSeguimiento || caso.tokenSeguimiento !== token){
     return responseError_('El enlace no es válido o ya venció.');
   }
   var equipo = esClaveEquipoValida_(caso, clave);
+  var usuarioEquipo = null;
+  if(equipo){
+    // El link de equipo ya no alcanza por sí solo: hay que ingresar con el usuario y contraseña
+    // de Gestión de Casos (los mismos del Planning). Así el comentario queda con el nombre real.
+    if(usuario && password) usuarioEquipo = dbUsuariosVerificar_(usuario, password);
+    if(!usuarioEquipo){
+      if(usuario) Utilities.sleep(600);   // frena probar contraseñas a ciegas
+      return {ok:false, requiereLogin:true, error: usuario ? 'Usuario o contraseña incorrectos.' : 'Este link es del equipo: ingresá con tu usuario de Gestión de Casos.'};
+    }
+  }
   var segs = equipo ? dbSeguimientosPorCaso_(idCaso) : [];   // el cliente no ve el historial: solo el estado
   var novedades = segs.map(function(x){
     return {
@@ -138,7 +148,8 @@ function svcReclamoValidarToken_(idCaso, token, clave){
       fechaCreacion: caso.fechaCreacion, motivo: caso.motivo,
       cliente: caso.cliente, dominio: caso.dominio   // nombre y patente/VIN para que reconozca su caso
     },
-    novedades: novedades, vistaEquipo: equipo
+    novedades: novedades, vistaEquipo: equipo,
+    usuarioEquipo: usuarioEquipo ? usuarioEquipo.nombre : ''
   };
   // Lo que el propio cliente cargó en su reclamo (se muestra en su link; el DNI va enmascarado
   // porque el link suele compartirse por WhatsApp).
@@ -171,11 +182,11 @@ function svcCasoLinksSeguimiento_(idCaso){
 // El cliente agrega comentario y/o archivos a un caso YA EXISTENTE a
 // través del link seguro — nunca crea un reclamo nuevo (punto 7 de la
 // especificación).
-function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clave, nombre){
-  var validacion = svcReclamoValidarToken_(idCaso, token, clave);
+function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clave, nombre, usuario, password){
+  var validacion = svcReclamoValidarToken_(idCaso, token, clave, usuario, password);
   if(!validacion.ok) return validacion;
   var equipo = !!validacion.vistaEquipo;
-  var autor = equipo ? (String(nombre||'').trim() || 'Equipo') + ' (link de equipo)' : 'Cliente';
+  var autor = equipo ? (String(validacion.usuarioEquipo||'').trim() || 'Equipo') + ' (link de equipo)' : 'Cliente';
   if(!comentario && (!archivos || !archivos.length)) return responseError_('Escribí un comentario o adjuntá al menos un archivo.');
 
   var subida = {evidencias: [], errores: []};
