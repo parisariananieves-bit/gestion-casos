@@ -166,7 +166,13 @@ function svcCasoComentar_(id, autor, texto, visibleParaReportante){
     id: utilNuevoIdSeguimiento_(), casoId: id, fecha: utilAhoraTexto_(), autor: autor||'—',
     tipo: 'comentario', texto: texto.trim(), visibleParaReportante: !!visibleParaReportante
   });
-  dbCasosActualizarCampos_(id, {}); // solo para tocar fechaUltimaActualizacion
+  svcRegistrarNovedad_(id, autor||'—', texto.trim());
+  // Si lo comenta otra persona y el caso tiene responsable, se le avisa por mail.
+  try{
+    if(caso.responsable && String(caso.responsable).trim().toLowerCase()!==String(autor||'').trim().toLowerCase()){
+      utilNotificarResponsableNuevaInfoCliente_(caso, autor||'Alguien del equipo', texto.trim());
+    }
+  }catch(e){}
   return responseOk_({});
 }
 

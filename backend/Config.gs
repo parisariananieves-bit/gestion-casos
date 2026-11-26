@@ -145,7 +145,11 @@ var COLUMNAS_CASOS = [
   {k:'reabierto', h:'Reabierto alguna vez', bool:true},
   // --- Agregado: próximo paso con fecha (Etapa 8) — siempre al final ---
   {k:'proximoPasoTexto', h:'Próximo paso'},
-  {k:'proximoPasoFecha', h:'Próximo paso — fecha'}
+  {k:'proximoPasoFecha', h:'Próximo paso — fecha'},
+  // --- Agregado: aviso de novedades (última respuesta/comentario de alguien) — siempre al final ---
+  {k:'novedadFecha', h:'Última novedad — fecha'},
+  {k:'novedadAutor', h:'Última novedad — quién'},
+  {k:'novedadTexto', h:'Última novedad — texto'}
 ];
 
 // Columnas de la hoja Eventos — todo lo que entra al sistema pasa por acá

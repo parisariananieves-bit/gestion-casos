@@ -33,7 +33,7 @@ function utilNotificarEquipoCalidadReclamoNuevo_(caso){
 // Se dispara cuando el cliente agrega información/archivos desde el link
 // de seguimiento — avisa puntualmente al responsable asignado (si hay uno
 // y tiene email registrado en Usuarios), y si no, al equipo general.
-function utilNotificarResponsableNuevaInfoCliente_(caso){
+function utilNotificarResponsableNuevaInfoCliente_(caso, autor, texto){
   var destinatarios = [];
   if(caso.responsable){
     try{
@@ -43,11 +43,13 @@ function utilNotificarResponsableNuevaInfoCliente_(caso){
   }
   if(!destinatarios.length) destinatarios = utilListaEmailsEquipoCalidad_();
   if(!destinatarios.length) return;
-  var asunto = 'El cliente agregó información — '+caso.id;
+  var quien = autor || 'El cliente';
+  var asunto = (autor && autor!=='Cliente' ? 'Nueva respuesta de '+autor : 'El cliente respondió')+' — '+caso.id;
   var cuerpo =
-    'El cliente respondió a la solicitud de información adicional del caso '+caso.id+'.\n\n'+
+    quien+' agregó una respuesta en el caso '+caso.id+'.\n\n'+
     'Cliente: '+caso.cliente+'\n'+
-    'Ingresá al expediente para ver los nuevos archivos/comentarios.';
+    (texto ? 'Dijo: '+String(texto).slice(0,400)+'\n' : '')+
+    '\nIngresá al expediente para verlo completo (comentarios y archivos).';
   try{ MailApp.sendEmail(destinatarios.join(','), asunto, cuerpo); }catch(e){}
 }
 

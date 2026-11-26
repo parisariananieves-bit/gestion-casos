@@ -210,9 +210,10 @@ function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clav
       visibleParaReportante: !equipo
     });
   }
-  dbCasosActualizarCampos_(idCaso, {}); // toca fechaUltimaActualizacion
+  var resumenNov = (comentario && comentario.trim()) ? comentario.trim() : (subida.evidencias.length+' archivo(s) adjunto(s)');
+  svcRegistrarNovedad_(idCaso, equipo ? (nombreTxt + (puestoTxt ? ' — ' + puestoTxt : '')) : 'Cliente', resumenNov);
 
-  utilNotificarResponsableNuevaInfoCliente_(dbCasosBuscarPorId_(idCaso));
+  utilNotificarResponsableNuevaInfoCliente_(dbCasosBuscarPorId_(idCaso), equipo ? (nombreTxt + (puestoTxt ? ' — ' + puestoTxt : '')) : 'Cliente', resumenNov);
 
   return responseOk_({evidenciasGuardadas: subida.evidencias.length, erroresEvidencias: subida.errores});
 }
@@ -229,4 +230,12 @@ function svcReclamoArchivo_(idCaso, token, clave, driveId){
     var blob = DriveApp.getFileById(ev.driveId).getBlob();
     return responseOk_({nombre: ev.nombre, tipo: ev.tipo || blob.getContentType(), base64: Utilities.base64Encode(blob.getBytes())});
   }catch(e){ return responseError_('No se pudo abrir el archivo.'); }
+}
+
+// Deja anotado en el caso quién fue la última persona en responder/comentar y qué dijo.
+// La app lo usa para marcar "respuesta nueva" a quien no lo vio todavía. También toca la última actualización.
+function svcRegistrarNovedad_(idCaso, autor, texto){
+  try{
+    dbCasosActualizarCampos_(idCaso, {novedadFecha: utilAhoraTexto_(), novedadAutor: String(autor||'').slice(0,100), novedadTexto: String(texto||'').slice(0,300)});
+  }catch(e){ dbCasosActualizarCampos_(idCaso, {}); }
 }
