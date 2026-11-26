@@ -218,6 +218,8 @@ input,select,textarea{font-family:inherit;}
   table.tbl{min-width:640px;}
   .info-strip{gap:12px 18px;}
   .cal-day{min-height:64px; padding:4px 3px 3px;}
+  .cal-reu-chip{background:rgba(124,58,237,.16);color:#8B5CF6;border-left:3px solid #8B5CF6;border-radius:6px;padding:2px 6px;margin-top:4px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cal-reu-chip:hover{filter:brightness(1.15);}
   .cal-case-chip{font-size:9px; padding:2px 4px;}
   .cal-toggle{margin-left:0;}
   .cal-mes-label{font-size:14px; min-width:0;}
@@ -2272,6 +2274,7 @@ function renderCalendario(){
       '<button class="cal-nav-btn" onclick="navCalMes_(1)"><span class="material-symbols-outlined" style="font-size:18px;">chevron_right</span></button>'+
       '<button class="cal-today-btn" onclick="irAHoyCal_()">Hoy</button>'+
       '<button class="btn-filtros" id="btnFiltrosC" onclick="document.getElementById(\'panelFiltrosC\').classList.toggle(\'hidden\')"><span class="material-symbols-outlined">tune</span>Filtros<span class="n hidden" id="nFiltrosC">0</span></button>'+
+      '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="abrirFormReunion_()"><span class="material-symbols-outlined" style="font-size:16px;">groups</span> Reunión semanal</button>'+
       '<div class="cal-toggle" id="calToggleTipo">'+
         '<button data-v="creacion" onclick="setCalTipo_(\'creacion\')">Por creación</button>'+
         '<button data-v="sla" onclick="setCalTipo_(\'sla\')">Por vencimiento SLA</button>'+
@@ -2284,7 +2287,9 @@ function renderCalendario(){
       '<span><i style="background:var(--danger);"></i>Prioridad alta</span>'+
       '<span><i style="background:var(--warn);"></i>Prioridad media</span>'+
       '<span><i style="background:var(--text-faint);"></i>Prioridad baja</span>'+
+      '<span><i style="background:#8B5CF6;"></i>Reunión semanal de casos</span>'+
     '</div>';
+  gasGet('reuniones').then(function(r){ if(r && r.ok){ window._reunionesCache = r.reuniones||[]; pintarCalendario_(); } }).catch(function(){});
   var cache = leerCache_('casos');
   if(cache){ window._casosCache = cache; poblarSelectsCalendario_(cache); pintarCalendario_(); }
   gasGet('casos').then(function(res){
@@ -2319,6 +2324,146 @@ function irAHoyCal_(){
   var hoy = new Date();
   window._calAnio = hoy.getFullYear(); window._calMes = hoy.getMonth();
   pintarCalendario_();
+}
+// ============================================================
+// REUNIONES SEMANALES DE CASOS (por unidad de negocio y sucursal)
+// Se ven en el calendario todas las semanas; al tocar una se arma la agenda con los casos
+// de esa unidad y sucursal, y desde ahí se puede crear la minuta con los casos ya cargados.
+// ============================================================
+function gcEscAttr_(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+var DIAS_LARGO_ = ['', 'Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+function reunionPorId_(id){ return (window._reunionesCache||[]).find(function(r){ return r.id===id; }); }
+function casosDeReunion_(r){
+  return (window._casosCache||[]).filter(function(c){ return (!r.unidad || c.unidad===r.unidad) && (!r.sucursal || c.sucursal===r.sucursal); });
+}
+function modalGC_(id, html){
+  var viejo = document.getElementById(id); if(viejo) viejo.remove();
+  var d = document.createElement('div'); d.id = id;
+  d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  d.innerHTML = '<div style="background:var(--panel);color:var(--text);border:1px solid var(--hairline);border-radius:18px;max-width:700px;width:100%;max-height:90vh;overflow:auto;padding:22px;">'+html+'</div>';
+  d.addEventListener('click', function(e){ if(e.target===d) d.remove(); });
+  document.body.appendChild(d);
+  return d;
+}
+function abrirFormReunion_(id){
+  var r = id ? reunionPorId_(id) : null;
+  var casos = window._casosCache||[];
+  var uni = ['Venta Directa','Plan de Ahorro','Postventa / CSI','Venta'];
+  casos.forEach(function(c){ if(c.unidad && uni.indexOf(c.unidad)===-1) uni.push(c.unidad); });
+  var suc = ['San Luis','San Juan','Villa Mercedes','Merlo'];
+  casos.forEach(function(c){ if(c.sucursal && suc.indexOf(c.sucursal)===-1) suc.push(c.sucursal); });
+  var opt = function(arr, sel, todas){ return '<option value="">'+todas+'</option>'+arr.map(function(x){ return '<option'+(x===sel?' selected':'')+'>'+gcEscAttr_(x)+'</option>'; }).join(''); };
+  var inp = 'width:100%;padding:9px 11px;border:1.5px solid var(--hairline);border-radius:9px;background:var(--panel-2);color:var(--text);font-size:13px;font-family:inherit;';
+  var lab = 'font-size:11px;color:var(--text-dim);display:block;';
+  var d = modalGC_('reunionFormGC',
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><b style="font-size:16px;">'+(r?'Editar reunión semanal':'Nueva reunión semanal de casos')+'</b><button id="rfX" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;">×</button></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">'+
+      '<label style="'+lab+'grid-column:1/-1;">Título<input id="rfTitulo" style="'+inp+'" value="'+gcEscAttr_(r?r.titulo:'Reunión semanal de casos')+'"></label>'+
+      '<label style="'+lab+'">Unidad de negocio<select id="rfUnidad" style="'+inp+'">'+opt(uni, r?r.unidad:'', 'Todas las unidades')+'</select></label>'+
+      '<label style="'+lab+'">Sucursal<select id="rfSucursal" style="'+inp+'">'+opt(suc, r?r.sucursal:'', 'Todas las sucursales')+'</select></label>'+
+      '<label style="'+lab+'">Día de la semana<select id="rfDia" style="'+inp+'">'+DIAS_LARGO_.slice(1).map(function(n,i){ return '<option value="'+(i+1)+'"'+((r?r.diaSemana:2)===i+1?' selected':'')+'>'+n+'</option>'; }).join('')+'</select></label>'+
+      '<label style="'+lab+'">Hora<input id="rfHora" type="time" style="'+inp+'" value="'+gcEscAttr_(r?r.hora:'10:00')+'"></label>'+
+      '<label style="'+lab+'">Duración (minutos)<input id="rfDur" type="number" min="15" step="15" style="'+inp+'" value="'+(r?r.duracionMin:60)+'"></label>'+
+      '<label style="'+lab+'">Lugar o link de la videollamada<input id="rfLugar" style="'+inp+'" value="'+gcEscAttr_(r?r.lugar:'')+'" placeholder="Sala de reuniones / link de Meet"></label>'+
+      '<label style="'+lab+'grid-column:1/-1;">Participantes (emails separados por coma)<input id="rfPart" style="'+inp+'" value="'+gcEscAttr_(r?r.participantes:'')+'" placeholder="ana@grupoparis.com, luis@grupoparis.com"></label>'+
+    '</div>'+
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:12.5px;cursor:pointer;"><input type="checkbox" id="rfGoogle" '+((r && r.googleEventId) || !r ? 'checked':'')+'> Crearla también en Google Calendar (con invitación a los participantes)</label>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button class="btn btn-ghost btn-sm" id="rfCancel">Cancelar</button><button class="btn btn-primary btn-sm" id="rfOk" style="width:auto;">Guardar</button></div>');
+  d.querySelector('#rfX').onclick = d.querySelector('#rfCancel').onclick = function(){ d.remove(); };
+  d.querySelector('#rfOk').onclick = function(){
+    var s = sesionActual(), btn = this; btn.disabled = true; btn.textContent = 'Guardando…';
+    gasPost('guardarReunion', {
+      id: r?r.id:'', titulo: d.querySelector('#rfTitulo').value, unidad: d.querySelector('#rfUnidad').value, sucursal: d.querySelector('#rfSucursal').value,
+      diaSemana: d.querySelector('#rfDia').value, hora: d.querySelector('#rfHora').value, duracionMin: d.querySelector('#rfDur').value,
+      lugar: d.querySelector('#rfLugar').value, participantes: d.querySelector('#rfPart').value, googleCalendar: d.querySelector('#rfGoogle').checked, autor: s?s.nombre:''
+    }).then(function(res){
+      btn.disabled = false; btn.textContent = 'Guardar';
+      if(!res.ok){ showToast(res.error||'No se pudo guardar'); return; }
+      var lista = window._reunionesCache||[]; var i = lista.findIndex(function(x){ return x.id===res.reunion.id; });
+      if(i>-1) lista[i] = res.reunion; else lista.push(res.reunion); window._reunionesCache = lista;
+      d.remove(); pintarCalendario_();
+      if(res.calendario==='ok') showToast('Reunión guardada y creada en Google Calendar');
+      else if(res.calendario==='no') showToast('Reunión guardada en el calendario de la app');
+      else showToast('Se guardó en la app, pero no se pudo crear en Google Calendar: '+res.calendario);
+    }).catch(function(){ btn.disabled = false; btn.textContent = 'Guardar'; showToast('No se pudo conectar con el servidor'); });
+  };
+}
+function agendaReunion_(r, fechaISO){
+  var casos = casosDeReunion_(r), hace7 = Date.now()-7*86400000;
+  var abiertos = casos.filter(estaAbierto_);
+  var pr = {Alta:0, Media:1, Baja:2};
+  var orden = function(a,b){ return (pr[a.prioridad]!==undefined?pr[a.prioridad]:3)-(pr[b.prioridad]!==undefined?pr[b.prioridad]:3) || diasAbierto_(b)-diasAbierto_(a); };
+  var fuera = abiertos.filter(slaVencido_).sort(orden);
+  var ppv = abiertos.filter(function(c){ return !slaVencido_(c) && proximoPasoVencido_(c); }).sort(orden);
+  var resto = abiertos.filter(function(c){ return !slaVencido_(c) && !proximoPasoVencido_(c); }).sort(orden);
+  var cerrados = casos.filter(function(c){ var f = parseFechaGC_(c.cerradoFecha); return !estaAbierto_(c) && f && f.getTime()>=hace7; });
+  return {fuera:fuera, ppv:ppv, resto:resto, cerrados:cerrados, todos:abiertos.concat(cerrados)};
+}
+function abrirReunion_(id, fechaISO){
+  var r = reunionPorId_(id); if(!r) return;
+  var ag = agendaReunion_(r, fechaISO);
+  var f = fechaISO.split('-').reverse().join('/');
+  var fila = function(c){
+    return '<div onclick="document.getElementById(\'reunionModalGC\').remove();setView(\'detalle\',\''+c.id+'\')" style="display:flex;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--hairline);font-size:12px;cursor:pointer;">'+
+      '<span class="mono" style="color:var(--caso);font-weight:700;">'+gcEscAttr_(c.id)+'</span><span style="flex:1;">'+gcEscAttr_(c.cliente||'—')+' · '+gcEscAttr_(c.motivo||'')+'</span>'+
+      '<span style="color:var(--text-dim);">'+gcEscAttr_(c.responsable||'Sin asignar')+'</span><span class="prio prio-'+gcEscAttr_(c.prioridad)+'">'+gcEscAttr_(c.prioridad||'')+'</span></div>';
+  };
+  var bloque = function(titulo, color, lista){
+    return lista.length ? '<div style="margin-top:14px;"><div style="font-weight:700;font-size:12.5px;color:'+color+';margin-bottom:4px;">'+titulo+' ('+lista.length+')</div><div style="border:1px solid var(--hairline);border-radius:10px;overflow:hidden;">'+lista.map(fila).join('')+'</div></div>' : '';
+  };
+  var puedeEditar = (typeof esCalidad_==='function') ? esCalidad_() : true;
+  var d = modalGC_('reunionModalGC',
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;"><div><b style="font-size:17px;">'+gcEscAttr_(r.titulo)+'</b>'+
+      '<div style="font-size:12.5px;color:var(--text-dim);margin-top:3px;">'+DIAS_LARGO_[r.diaSemana]+' '+f+' · '+gcEscAttr_(r.hora)+' hs · '+(r.duracionMin||60)+' min'+(r.lugar?' · '+gcEscAttr_(r.lugar):'')+'</div>'+
+      '<div style="font-size:12.5px;margin-top:6px;"><span class="pill" style="background:var(--caso-soft);color:var(--caso);">'+gcEscAttr_(r.unidad||'Todas las unidades')+'</span> <span class="pill" style="background:var(--caso-soft);color:var(--caso);">'+gcEscAttr_(r.sucursal||'Todas las sucursales')+'</span></div></div>'+
+      '<button id="rmX" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;">×</button></div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;font-size:12px;">'+
+      '<div style="flex:1 1 110px;background:var(--panel-2);border-radius:10px;padding:8px 10px;"><b style="font-size:20px;">'+(ag.fuera.length+ag.ppv.length+ag.resto.length)+'</b><br>casos abiertos</div>'+
+      '<div style="flex:1 1 110px;background:var(--panel-2);border-radius:10px;padding:8px 10px;"><b style="font-size:20px;color:var(--danger);">'+ag.fuera.length+'</b><br>fuera de plazo</div>'+
+      '<div style="flex:1 1 110px;background:var(--panel-2);border-radius:10px;padding:8px 10px;"><b style="font-size:20px;color:var(--warn);">'+ag.ppv.length+'</b><br>próximo paso vencido</div>'+
+      '<div style="flex:1 1 110px;background:var(--panel-2);border-radius:10px;padding:8px 10px;"><b style="font-size:20px;color:var(--ok);">'+ag.cerrados.length+'</b><br>cerrados esta semana</div></div>'+
+    bloque('Fuera de plazo', 'var(--danger)', ag.fuera)+bloque('Próximo paso vencido', 'var(--warn)', ag.ppv)+bloque('Resto de los abiertos', 'var(--text)', ag.resto)+bloque('Cerrados en los últimos 7 días', 'var(--ok)', ag.cerrados)+
+    (ag.todos.length ? '' : '<div style="margin-top:16px;color:var(--text-faint);font-size:12.5px;">No hay casos de esta unidad y sucursal para tratar.</div>')+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;margin-top:18px;">'+
+      (puedeEditar ? '<button class="btn btn-ghost btn-sm" id="rmDel" style="color:var(--danger);">Eliminar reunión</button><button class="btn btn-ghost btn-sm" id="rmEdit">Editar</button>' : '')+
+      '<button class="btn btn-ghost btn-sm" id="rmCopy">Copiar agenda</button>'+
+      '<button class="btn btn-primary btn-sm" id="rmActa" style="width:auto;">Crear minuta con estos casos</button></div>');
+  d.querySelector('#rmX').onclick = function(){ d.remove(); };
+  var ed = d.querySelector('#rmEdit'); if(ed) ed.onclick = function(){ d.remove(); abrirFormReunion_(r.id); };
+  var dl = d.querySelector('#rmDel'); if(dl) dl.onclick = function(){
+    if(!confirm('Se borra la reunión semanal (y su evento de Google Calendar si lo tiene). ¿Seguimos?')) return;
+    gasPost('eliminarReunion', {id:r.id}).then(function(res){
+      if(!res.ok){ showToast(res.error||'No se pudo eliminar'); return; }
+      window._reunionesCache = (window._reunionesCache||[]).filter(function(x){ return x.id!==r.id; });
+      d.remove(); pintarCalendario_(); showToast('Reunión eliminada');
+    });
+  };
+  d.querySelector('#rmCopy').onclick = function(){
+    var linea = function(c){ return '- '+c.id+' · '+(c.cliente||'—')+' · '+(c.motivo||'')+' · '+(c.responsable||'Sin asignar'); };
+    var sec = function(t, l){ return l.length ? ['', t+' ('+l.length+'):'].concat(l.map(linea)) : []; };
+    var txt = [r.titulo+' — '+DIAS_LARGO_[r.diaSemana]+' '+f+' '+r.hora+' hs', (r.unidad||'Todas las unidades')+' · '+(r.sucursal||'Todas las sucursales')].concat(sec('Fuera de plazo', ag.fuera), sec('Próximo paso vencido', ag.ppv), sec('Resto de los abiertos', ag.resto), sec('Cerrados esta semana', ag.cerrados)).join('\n');
+    var b = this, ok = function(){ b.textContent = '¡Copiada!'; setTimeout(function(){ b.textContent = 'Copiar agenda'; }, 1200); };
+    var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select();
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(ok, function(){ try{ document.execCommand('copy'); ok(); }catch(e){} }); else { try{ document.execCommand('copy'); ok(); }catch(e){} }
+    ta.remove();
+  };
+  d.querySelector('#rmActa').onclick = function(){ d.remove(); crearMinutaDesdeReunion_(r, fechaISO, ag.todos); };
+}
+function crearMinutaDesdeReunion_(r, fechaISO, casos){
+  setView('actas');
+  setTimeout(function(){
+    abrirFormActa_();
+    document.getElementById('actaTitulo').value = r.titulo+' — '+(r.unidad||'Todas las unidades')+' · '+(r.sucursal||'Todas las sucursales');
+    document.getElementById('actaFecha').value = fechaISO;
+    document.getElementById('actaHora').value = r.hora;
+    document.getElementById('actaAsistentes').value = r.participantes||'';
+    document.getElementById('actaObjetivo').value = 'Seguimiento semanal de casos — '+(r.unidad||'todas las unidades')+', '+(r.sucursal||'todas las sucursales')+'.';
+    window._minutaSeleccion = {};
+    casos.forEach(function(c){
+      window._minutaSeleccion[c.id] = {caso:c, soloMencionado:false, resumen:'', problema:'', analisis:'', decision:'', accion:'', responsableCompromiso:c.responsable||'', fechaLimite:'', observaciones:''};
+    });
+    pintarCasosSeleccionadosMinuta_();
+  }, 250);
 }
 function pintarCalendario_(){
   var wrap = document.getElementById('calGridWrap');
@@ -2360,8 +2505,14 @@ function pintarCalendario_(){
     var casosDia = (porFecha[clave]||[]).slice().sort(function(a,b){ return ({Alta:0,Media:1,Baja:2}[a.prioridad]||3) - ({Alta:0,Media:1,Baja:2}[b.prioridad]||3); });
     var visibles = casosDia.slice(0,3);
     var resto = casosDia.length - visibles.length;
+    var fechaISO = d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);
+    var reunionesDia = (window._reunionesCache||[]).filter(function(r){ return r.activo && r.diaSemana===(d.getDay()||7) && (!sucursal || !r.sucursal || r.sucursal===sucursal); })
+      .sort(function(a,b){ return String(a.hora).localeCompare(String(b.hora)); });
     html += '<div class="cal-day'+(esOtroMes?' otro-mes':'')+(esHoy?' hoy':'')+'">'+
       '<div class="cal-daynum">'+d.getDate()+'</div>'+
+      reunionesDia.map(function(r){
+        return '<div class="cal-reu-chip" title="'+gcEscAttr_(r.titulo+' — '+(r.unidad||'Todas las unidades')+' · '+(r.sucursal||'Todas las sucursales'))+'" onclick="abrirReunion_(\''+r.id+'\',\''+fechaISO+'\')">👥 '+gcEscAttr_(r.hora)+' '+gcEscAttr_(r.titulo)+'</div>';
+      }).join('')+
       visibles.map(function(c){
         return '<div class="cal-case-chip prio-'+c.prioridad+'" title="'+c.id+' — '+(c.cliente||'')+' — '+(c.motivo||c.tipoCaso||'')+'" onclick="setView(\'detalle\',\''+c.id+'\')">'+c.id+' · '+(c.cliente||'—')+'</div>';
       }).join('')+
