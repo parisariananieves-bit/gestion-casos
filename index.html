@@ -1380,6 +1380,7 @@ function renderBandeja(){
       '<input id="bfBusqueda" type="text" placeholder="Buscar cliente, VIN, motivo…" style="min-width:200px;flex:1;padding:8px 12px;border:1.5px solid var(--hairline);border-radius:10px;font-size:12.5px;background:var(--panel);color:var(--text);" oninput="pintarTablaBandeja_()">'+
       '<button class="btn-filtros" id="btnFiltrosB" onclick="toggleFiltrosBandeja_()"><span class="material-symbols-outlined">tune</span>Filtros<span class="n hidden" id="nFiltrosB">0</span></button>'+
       '<button class="btn-filtros" onclick="seleccionarRepetidos_()" title="Marca los eventos que se repiten por VIN o cliente para resolverlos juntos"><span class="material-symbols-outlined">content_copy</span>Seleccionar repetidos</button>'+
+      (esCalidad_() ? '<button class="btn-filtros" onclick="postventaAbrir_()" title="Trae a la Bandeja los clientes de la planilla de Postventa (nota 8 o menos)"><span class="material-symbols-outlined">cloud_download</span>Traer de Postventa</button>' : '')+
     '</div>'+
     '<div class="filtros-panel hidden" id="panelFiltrosB"><div class="filter-bar">'+
     fdropHtml_('bfMarca','Marca')+
@@ -4014,6 +4015,50 @@ function archivarCasosViejosUI_(){
     window._casosCache = null; try{ guardarCache_('casos', []); }catch(e){}
     mantenimientoContar_();
   }).catch(function(){ b.textContent='Archivar ahora'; b.disabled=false; showToast('No se pudo conectar con el servidor.'); });
+}
+
+// ---- Traer clientes de la planilla de Postventa a la Bandeja ----
+function postventaAbrir_(){
+  var c = mantCreds_(); if(!c){ showToast('Volvé a iniciar sesión.'); return; }
+  var d = modalGC_('pvModal','<b style="font-size:16px;">Traer de Postventa</b><div id="pvCuerpo" style="margin-top:12px;font-size:13px;color:var(--text-dim);">Leyendo la planilla…</div>');
+  gasPost('postventaPrevisualizar', c).then(function(res){
+    var b = document.getElementById('pvCuerpo'); if(!b) return;
+    if(!res.ok){ b.innerHTML = '<span style="color:var(--bad,#c0392b);">'+gcEscAttr_(res.error||'No se pudo leer.')+'</span>'; return; }
+    window._pvFilas = res.filas||[];
+    pvPintar_();
+  }).catch(function(){ var b=document.getElementById('pvCuerpo'); if(b) b.textContent='No se pudo conectar con el servidor.'; });
+}
+function pvPintar_(){
+  var b = document.getElementById('pvCuerpo'); if(!b) return;
+  var f = window._pvFilas||[];
+  var nuevas = f.filter(function(x){return !x.yaImportado;});
+  if(!nuevas.length){ b.innerHTML = 'No hay clientes nuevos para traer. Ya está todo importado ('+f.length+' en la planilla).'; return; }
+  var fila = function(x,i){
+    var tag = x.resueltaEnPlanilla ? ' · ya resuelto en planilla' : '';
+    return '<label style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--hairline);cursor:pointer;">'+
+      '<input type="checkbox" class="pvChk" data-i="'+i+'"'+(x.sugerido?' checked':'')+' style="margin-top:3px;">'+
+      '<div style="min-width:0;flex:1;"><div style="color:var(--text);font-weight:600;">'+gcEscAttr_(x.cliente||'(sin nombre)')+' <span style="font-weight:400;color:var(--text-dim);">· '+gcEscAttr_(x.patente||'sin patente')+' · '+gcEscAttr_(x.sucursal)+'</span></div>'+
+      '<div style="font-size:12px;color:var(--text-dim);">'+(x.nota!==null?'Nota '+x.nota+' · ':'')+gcEscAttr_(x.origen)+(x.fecha?' · '+x.fecha:'')+tag+'</div>'+
+      (x.comentario?'<div style="font-size:12.5px;margin-top:3px;">'+gcEscAttr_(x.comentario.length>220?x.comentario.slice(0,220)+'…':x.comentario)+'</div>':'<div style="font-size:12px;color:var(--text-faint);margin-top:3px;">Sin comentario</div>')+
+      '</div></label>';
+  };
+  b.innerHTML = '<div style="margin-bottom:8px;">Hay <b>'+nuevas.length+'</b> cliente'+(nuevas.length===1?'':'s')+' nuevo'+(nuevas.length===1?'':'s')+' en la planilla ('+(f.length-nuevas.length)+' ya importado'+(f.length-nuevas.length===1?'':'s')+'). Vienen tildados los que tienen algo para tratar; destildá los que no.</div>'+
+    nuevas.map(function(x){ return fila(x, f.indexOf(x)); }).join('')+
+    '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;"><button class="btn btn-ghost btn-sm" style="width:auto;" onclick="document.getElementById(\'pvModal\').remove()">Cancelar</button>'+
+    '<button class="btn btn-dark btn-sm" id="pvGo" style="width:auto;" onclick="postventaImportar_()">Traer a la Bandeja</button></div>';
+}
+function postventaImportar_(){
+  var c = mantCreds_(); if(!c) return;
+  var claves = [].slice.call(document.querySelectorAll('.pvChk:checked')).map(function(e){ return window._pvFilas[Number(e.getAttribute('data-i'))].clave; });
+  if(!claves.length){ showToast('No hay ninguno tildado'); return; }
+  var g = document.getElementById('pvGo'); g.disabled = true; g.textContent = 'Trayendo…';
+  gasPost('postventaImportar', Object.assign({claves:claves}, c)).then(function(res){
+    var m = document.getElementById('pvModal'); if(m) m.remove();
+    if(!res.ok){ showToast(res.error||'No se pudo importar'); return; }
+    showToast(res.importadas+' traído'+(res.importadas===1?'':'s')+' a la Bandeja'+(res.errores?' ('+res.errores+' con error)':''));
+    try{ guardarCache_('eventosPendientes', []); }catch(e){}
+    if(window._vistaActual==='bandeja') renderBandeja();
+  }).catch(function(){ g.disabled=false; g.textContent='Traer a la Bandeja'; showToast('No se pudo conectar con el servidor.'); });
 }
 function respaldarPlanillaUI_(){
   var c = mantCreds_(); if(!c) return;
