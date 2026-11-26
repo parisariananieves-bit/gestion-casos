@@ -3026,13 +3026,16 @@ function informePanelHtml_(){
   var hoy = new Date(), ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
   return '<div class="panel" id="informePanel" style="margin-bottom:18px;">'+
     '<div class="panel-head"><div><h3>Informe del período</h3><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Elegí fechas, responsable y marca. Se puede descargar en Excel o PDF.</div></div>'+
-      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="informeExcel_()"><span class="material-symbols-outlined" style="font-size:16px;">table_view</span> Excel</button>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="informeTextoModal_()"><span class="material-symbols-outlined" style="font-size:16px;">forward_to_inbox</span> Texto para enviar</button><button class="btn btn-ghost btn-sm" onclick="informeExcel_()"><span class="material-symbols-outlined" style="font-size:16px;">table_view</span> Excel</button>'+
       '<button class="btn btn-primary btn-sm" style="width:auto;" onclick="informePDF_()"><span class="material-symbols-outlined" style="font-size:16px;">picture_as_pdf</span> PDF</button></div></div>'+
     '<div style="display:flex;gap:10px;flex-wrap:wrap;padding:12px 18px;align-items:end;">'+
       '<label style="font-size:11px;color:var(--text-dim);">Desde<br><input type="date" id="infDesde" value="'+informeISO_(ini)+'" onchange="informeCalcular_()"></label>'+
       '<label style="font-size:11px;color:var(--text-dim);">Hasta<br><input type="date" id="infHasta" value="'+informeISO_(hoy)+'" onchange="informeCalcular_()"></label>'+
       '<label style="font-size:11px;color:var(--text-dim);">Responsable<br><select id="infResp" onchange="informeCalcular_()"><option value="">Todos</option></select></label>'+
       '<label style="font-size:11px;color:var(--text-dim);">Marca<br><select id="infMarca" onchange="informeCalcular_()"><option value="">Todas</option></select></label>'+
+      '<label style="font-size:11px;color:var(--text-dim);">Unidad de negocio<br><select id="infUnidad" onchange="informeCalcular_()"><option value="">Todas</option></select></label>'+
+      '<label style="font-size:11px;color:var(--text-dim);">Sector<br><select id="infSector" onchange="informeCalcular_()"><option value="">Todos</option></select></label>'+
+      '<div style="font-size:11px;color:var(--text-dim);">Sucursal<br><div id="infSucursales" style="display:flex;gap:10px;flex-wrap:wrap;padding:6px 0;font-size:12px;color:var(--text);"></div></div>'+
       '<button class="btn btn-ghost btn-sm" onclick="informeRango_(\'mes\')">Este mes</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="informeRango_(\'ant\')">Mes anterior</button>'+
       '<button class="btn btn-ghost btn-sm" onclick="informeRango_(\'anio\')">Este año</button>'+
@@ -3049,10 +3052,14 @@ function informeRango_(tipo){
 function informeIniciar_(){
   var usar = function(casos){
     _informe_.casos = casos || [];
-    var rs = {}, ms = {};
-    _informe_.casos.forEach(function(c){ if(c.responsable) rs[c.responsable]=1; if(c.marca) ms[c.marca]=1; });
+    var rs = {}, ms = {}, us = {}, ss = {}, sus = {};
+    _informe_.casos.forEach(function(c){ if(c.responsable) rs[c.responsable]=1; if(c.marca) ms[c.marca]=1; if(c.unidad) us[c.unidad]=1; if(c.sector) ss[c.sector]=1; if(c.sucursal) sus[c.sucursal]=1; });
     var selR = document.getElementById('infResp'), selM = document.getElementById('infMarca');
     if(!selR || !selM) return;
+    var selU = document.getElementById('infUnidad'), selS = document.getElementById('infSector'), boxSuc = document.getElementById('infSucursales');
+    Object.keys(us).sort().forEach(function(u){ selU.insertAdjacentHTML('beforeend','<option>'+informeEsc_(u)+'</option>'); });
+    Object.keys(ss).sort().forEach(function(x){ selS.insertAdjacentHTML('beforeend','<option>'+informeEsc_(x)+'</option>'); });
+    boxSuc.innerHTML = Object.keys(sus).sort().map(function(x){ return '<label style="display:flex;gap:4px;align-items:center;cursor:pointer;"><input type="checkbox" class="infSuc" value="'+informeEsc_(x)+'" onchange="informeCalcular_()"> '+informeEsc_(x)+'</label>'; }).join('') || '<span style="color:var(--text-faint);">—</span>';
     Object.keys(rs).sort().forEach(function(r){ selR.insertAdjacentHTML('beforeend','<option>'+informeEsc_(r)+'</option>'); });
     Object.keys(ms).sort().forEach(function(m){ selM.insertAdjacentHTML('beforeend','<option>'+informeEsc_(m)+'</option>'); });
     informeCalcular_();
@@ -3066,7 +3073,9 @@ function informeCalcular_(){
   var desde = dv ? new Date(dv+'T00:00:00') : null, hasta = hv ? new Date(hv+'T23:59:59') : null;
   var resp = document.getElementById('infResp').value, marca = document.getElementById('infMarca').value;
   var dentro = function(f){ if(!f) return false; if(desde && f<desde) return false; if(hasta && f>hasta) return false; return true; };
-  var base = _informe_.casos.filter(function(c){ return (!resp || c.responsable===resp) && (!marca || c.marca===marca); });
+  var unidad = document.getElementById('infUnidad').value, sector = document.getElementById('infSector').value;
+  var sucs = [].filter.call(document.querySelectorAll('.infSuc'), function(x){ return x.checked; }).map(function(x){ return x.value; });
+  var base = _informe_.casos.filter(function(c){ return (!resp || c.responsable===resp) && (!marca || c.marca===marca) && (!unidad || c.unidad===unidad) && (!sector || c.sector===sector) && (!sucs.length || sucs.indexOf(c.sucursal)>-1); });
   var ingresados = base.filter(function(c){ return dentro(parseFechaGC_(c.fechaCreacion)); });
   var cerrados = base.filter(function(c){ return !estaAbierto_(c) && dentro(parseFechaGC_(c.cerradoFecha||c.fechaUltimaActualizacion)); });
   var dias = cerrados.map(function(c){ var a=parseFechaGC_(c.fechaCreacion), b=parseFechaGC_(c.cerradoFecha||c.fechaUltimaActualizacion); return (a&&b)? Math.max(0,(b-a)/86400000) : null; }).filter(function(x){ return x!==null; });
@@ -3079,7 +3088,10 @@ function informeCalcular_(){
   ingresados.forEach(function(c){ var k=c.responsable||'Sin asignar'; (porResp[k]=porResp[k]||{ing:0,cer:0,abi:0}).ing++; if(estaAbierto_(c)) porResp[k].abi++; });
   cerrados.forEach(function(c){ var k=c.responsable||'Sin asignar'; (porResp[k]=porResp[k]||{ing:0,cer:0,abi:0}).cer++; });
   var r = {
-    desde:dv, hasta:hv, resp:resp, marca:marca, ingresados:ingresados.length, cerrados:cerrados.length, abiertos:abiertosHoy.length,
+    desde:dv, hasta:hv, resp:resp, marca:marca, unidad:unidad, sector:sector, sucs:sucs,
+    resolucion: agrupar(cerrados, function(c){ return c.cerradoMotivo || 'Sin motivo de cierre cargado'; }),
+    porUnidad: agrupar(ingresados, function(c){ return c.unidad; }), porSector: agrupar(ingresados, function(c){ return c.sector; }),
+    sinResolver: ingresados.filter(estaAbierto_).length, ingresados:ingresados.length, cerrados:cerrados.length, abiertos:abiertosHoy.length,
     prom:prom, cumplimiento: conSla ? Math.round(enPlazo/conSla*100) : null, vencidosHoy: base.filter(function(c){ return slaVencido_(c); }).length,
     motivos: agrupar(ingresados, function(c){ return c.motivo; }).slice(0,8), marcas: agrupar(ingresados, function(c){ return c.marca; }),
     sucursales: agrupar(ingresados, function(c){ return c.sucursal; }), prioridades: agrupar(ingresados, function(c){ return c.prioridad; }),
@@ -3098,16 +3110,66 @@ function informeCalcular_(){
       kpi(r.ingresados,'Casos ingresados')+kpi(r.cerrados,'Casos cerrados')+kpi(r.abiertos,'Siguen abiertos (de los ingresados)')+
       kpi(r.prom!==null ? r.prom+' días' : '—','Tiempo promedio de resolución')+kpi(r.cumplimiento!==null ? r.cumplimiento+'%' : '—','Cerrados dentro del plazo (SLA)')+kpi(r.vencidosHoy,'Fuera de plazo hoy')+
     '</div>'+
-    '<div style="display:flex;gap:18px;flex-wrap:wrap;">'+lista('Motivos más repetidos', r.motivos)+lista('Por marca', r.marcas)+lista('Por sucursal', r.sucursales)+lista('Por prioridad', r.prioridades)+'</div>'+
+    '<div style="display:flex;gap:18px;flex-wrap:wrap;">'+lista('Motivos más repetidos', r.motivos)+lista('Cómo se resolvieron', r.resolucion)+lista('Por unidad de negocio', r.porUnidad)+lista('Por sector', r.porSector)+lista('Por marca', r.marcas)+lista('Por sucursal', r.sucursales)+lista('Por prioridad', r.prioridades)+'</div>'+
     '<div style="font-weight:700;font-size:12.5px;margin:16px 0 6px;">Por responsable</div>'+
     '<table class="tbl"><thead><tr><th>Responsable</th><th style="text-align:center;">Ingresados</th><th style="text-align:center;">Cerrados</th><th style="text-align:center;">Abiertos</th></tr></thead><tbody>'+
     (r.responsables.length ? r.responsables.map(function(x){ return '<tr><td>'+informeEsc_(x.nombre)+'</td><td style="text-align:center;">'+x.ing+'</td><td style="text-align:center;">'+x.cer+'</td><td style="text-align:center;">'+x.abi+'</td></tr>'; }).join('') : '<tr><td colspan="4" style="color:var(--text-faint);">Sin casos en el período.</td></tr>')+
     '</tbody></table>';
 }
+// Texto armado para mandar (mail / WhatsApp): resumen en palabras, listo para copiar.
+function informeTextoArmado_(){
+  var r = _informe_.resumen; if(!r) return '';
+  var n = function(x, sing, plur){ return x+' '+(x===1?sing:plur); };
+  var top = function(arr, k){ return arr.slice(0,k).map(function(x){ return x.valor+' ('+x.cantidad+')'; }).join(', '); };
+  var f = function(v){ return v ? v.split('-').reverse().join('/') : '…'; };
+  var alcance = [r.unidad, r.sector, (r.sucs&&r.sucs.length)?r.sucs.join(' y '):'', r.marca].filter(Boolean).join(' · ') || 'todas las áreas';
+  var t = [];
+  t.push('Informe de Gestión de Casos — '+f(r.desde)+' al '+f(r.hasta));
+  t.push('Alcance: '+alcance+(r.resp?' · Responsable: '+r.resp:''));
+  t.push('');
+  t.push('• Ingresaron '+n(r.ingresados,'caso','casos')+'. '+(r.sinResolver? 'Siguen abiertos '+r.sinResolver+'.' : 'Todos están resueltos.'));
+  t.push('• Se cerraron '+n(r.cerrados,'caso','casos')+' en el período'+(r.prom!==null?', con un tiempo promedio de resolución de '+r.prom+' días':'')+(r.cumplimiento!==null?' ('+r.cumplimiento+'% dentro del plazo)':'')+'.');
+  if(r.vencidosHoy) t.push('• Hoy hay '+n(r.vencidosHoy,'caso fuera de plazo','casos fuera de plazo')+'.');
+  if(r.porUnidad.length) t.push('• Por unidad de negocio: '+top(r.porUnidad,6)+'.');
+  if(r.porSector.length) t.push('• Por sector: '+top(r.porSector,6)+'.');
+  if(r.sucursales.length) t.push('• Por sucursal: '+top(r.sucursales,6)+'.');
+  t.push('');
+  if(r.resolucion.length && r.cerrados) t.push('Cómo se resolvieron: '+top(r.resolucion,6)+'.');
+  if(r.motivos.length) t.push('Lo que más se repite: '+top(r.motivos,5)+'.');
+  if(_informe_.filas.length){
+    t.push(''); t.push('Detalle:');
+    _informe_.filas.slice(0,25).forEach(function(c){ t.push('- '+c.id+' · '+(c.cliente||'—')+' · '+(c.motivo||'—')+' · '+c.estado+(c.cerradoMotivo?' ('+c.cerradoMotivo+')':'')); });
+    if(_informe_.filas.length>25) t.push('… y '+(_informe_.filas.length-25)+' más en el Excel.');
+  }
+  return t.join('\n');
+}
+function informeTextoModal_(){
+  if(!_informe_.resumen){ showToast('Esperá que termine de calcular'); return; }
+  var viejo = document.getElementById('informeTextoModalGC'); if(viejo) viejo.remove();
+  var d = document.createElement('div'); d.id = 'informeTextoModalGC';
+  d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  d.innerHTML = '<div style="background:var(--panel);color:var(--text);border:1px solid var(--hairline);border-radius:18px;max-width:640px;width:100%;max-height:90vh;display:flex;flex-direction:column;padding:22px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:16px;">Texto para enviar</b><button id="itX" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;">×</button></div>'+
+    '<p style="font-size:12.5px;color:var(--text-dim);margin:6px 0 10px;">Se arma con los filtros que elegiste. Podés editarlo antes de copiarlo o mandarlo.</p>'+
+    '<textarea id="itTexto" style="flex:1;min-height:280px;width:100%;padding:12px;border:1.5px solid var(--hairline);border-radius:10px;background:var(--panel-2);color:var(--text);font-size:12.5px;font-family:inherit;line-height:1.5;"></textarea>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap;">'+
+      '<button class="btn btn-ghost btn-sm" id="itMail">Abrir en mi mail</button>'+
+      '<button class="btn btn-primary btn-sm" id="itCopiar" style="width:auto;">Copiar texto</button></div></div>';
+  document.body.appendChild(d);
+  var ta = d.querySelector('#itTexto'); ta.value = informeTextoArmado_();
+  var cerrar = function(){ d.remove(); };
+  d.querySelector('#itX').onclick = cerrar; d.addEventListener('click', function(e){ if(e.target===d) cerrar(); });
+  d.querySelector('#itMail').onclick = function(){ window.location.href = 'mailto:?subject='+encodeURIComponent(informeTitulo_())+'&body='+encodeURIComponent(ta.value); };
+  d.querySelector('#itCopiar').onclick = function(){
+    var b = this, ok = function(){ b.textContent = '¡Copiado!'; setTimeout(function(){ b.textContent = 'Copiar texto'; }, 1200); };
+    var viejoCopiar = function(){ ta.focus(); ta.select(); try{ if(document.execCommand('copy')) ok(); else b.textContent='Seleccioná y copiá con Ctrl+C'; }catch(e){ b.textContent='Seleccioná y copiá con Ctrl+C'; } };
+    if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(ok, viejoCopiar); else viejoCopiar();
+  };
+}
 function informeTitulo_(){
   var r = _informe_.resumen; if(!r) return 'Informe';
   var f = function(v){ return v ? v.split('-').reverse().join('/') : '…'; };
-  return 'Informe de casos '+f(r.desde)+' al '+f(r.hasta)+(r.resp?' — '+r.resp:'')+(r.marca?' — '+r.marca:'');
+  return 'Informe de casos '+f(r.desde)+' al '+f(r.hasta)+(r.unidad?' — '+r.unidad:'')+(r.sector?' — '+r.sector:'')+((r.sucs&&r.sucs.length)?' — '+r.sucs.join(' y '):'')+(r.resp?' — '+r.resp:'')+(r.marca?' — '+r.marca:'');
 }
 var INFORME_COLS_ = [['ID','id'],['Creado','fechaCreacion'],['Estado','estado'],['Prioridad','prioridad'],['Cliente','cliente'],['Marca','marca'],['Modelo','modelo'],['Dominio / VIN','dominio'],['Sucursal','sucursal'],['Motivo','motivo'],['Responsable','responsable'],['Fuente','fuente'],['Cierre','cerradoFecha'],['SLA vence','slaVencimiento']];
 function informeFilasMatriz_(){
@@ -3116,7 +3178,8 @@ function informeFilasMatriz_(){
   m.push(['Casos ingresados', r.ingresados]); m.push(['Casos cerrados', r.cerrados]); m.push(['Siguen abiertos', r.abiertos]);
   m.push(['Tiempo promedio de resolución (días)', r.prom===null?'':r.prom]); m.push(['Cerrados dentro del plazo (%)', r.cumplimiento===null?'':r.cumplimiento]); m.push(['Fuera de plazo hoy', r.vencidosHoy]); m.push([]);
   m.push(['Responsable','Ingresados','Cerrados','Abiertos']); r.responsables.forEach(function(x){ m.push([x.nombre,x.ing,x.cer,x.abi]); }); m.push([]);
-  m.push(['Motivo','Cantidad']); r.motivos.forEach(function(x){ m.push([x.valor,x.cantidad]); });
+  m.push(['Motivo','Cantidad']); r.motivos.forEach(function(x){ m.push([x.valor,x.cantidad]); }); m.push([]);
+  m.push(['Cómo se resolvieron','Cantidad']); r.resolucion.forEach(function(x){ m.push([x.valor,x.cantidad]); });
   return m;
 }
 function informeDescargar_(blob, nombre){
@@ -3152,20 +3215,42 @@ function informePDF_(){
   if(!_informe_.resumen){ showToast('Esperá que termine de calcular'); return; }
   var r = _informe_.resumen, w = window.open('', '_blank');
   if(!w){ showToast('El navegador bloqueó la ventana. Permitila para descargar el PDF.'); return; }
-  var kp = function(v,t){ return '<div class="k"><b>'+v+'</b><span>'+t+'</span></div>'; };
-  var tab = function(cols, filas){ return '<table><thead><tr>'+cols.map(function(c){ return '<th>'+c+'</th>'; }).join('')+'</tr></thead><tbody>'+filas.map(function(f){ return '<tr>'+f.map(function(v){ return '<td>'+informeEsc_(v)+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table>'; };
-  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+informeEsc_(informeTitulo_())+'</title><style>'+
-    'body{font-family:Arial,sans-serif;color:#111;margin:28px;font-size:12px}h1{font-size:18px;margin:0 0 4px}h2{font-size:13px;margin:18px 0 6px}p{margin:0 0 12px;color:#555}'+
-    '.ks{display:flex;gap:8px;flex-wrap:wrap}.k{border:1px solid #ccc;border-radius:8px;padding:8px 12px;min-width:120px}.k b{display:block;font-size:20px}.k span{font-size:10.5px;color:#555}'+
-    'table{width:100%;border-collapse:collapse;margin-top:4px}th,td{border:1px solid #ddd;padding:4px 6px;text-align:left;font-size:11px}th{background:#f2f2f2}'+
-    '@media print{body{margin:12mm}}</style></head><body><h1>'+informeEsc_(informeTitulo_())+'</h1><p>Grupo París — Gestión de Casos · generado el '+fmtFechaGC_(new Date())+'</p>'+
-    '<div class="ks">'+kp(r.ingresados,'Ingresados')+kp(r.cerrados,'Cerrados')+kp(r.abiertos,'Siguen abiertos')+kp(r.prom!==null?r.prom+' días':'—','Tiempo prom. de resolución')+kp(r.cumplimiento!==null?r.cumplimiento+'%':'—','Cerrados en plazo')+kp(r.vencidosHoy,'Fuera de plazo hoy')+'</div>'+
-    '<h2>Por responsable</h2>'+tab(['Responsable','Ingresados','Cerrados','Abiertos'], r.responsables.map(function(x){ return [x.nombre,x.ing,x.cer,x.abi]; }))+
-    '<h2>Motivos más repetidos</h2>'+tab(['Motivo','Cantidad'], r.motivos.map(function(x){ return [x.valor,x.cantidad]; }))+
-    '<h2>Por marca</h2>'+tab(['Marca','Cantidad'], r.marcas.map(function(x){ return [x.valor,x.cantidad]; }))+
-    '<h2>Detalle de casos ('+_informe_.filas.length+')</h2>'+tab(['ID','Creado','Estado','Prior.','Cliente','Marca','Motivo','Responsable'], _informe_.filas.map(function(c){ return [c.id,fmtFechaGC_(c.fechaCreacion),c.estado,c.prioridad,c.cliente,c.marca,c.motivo,c.responsable]; }))+
-    '</body></html>');
-  w.document.close(); setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 400);
+  var E = informeEsc_, f = function(v){ return v ? v.split('-').reverse().join('/') : '…'; };
+  var alcance = [r.unidad, r.sector, (r.sucs&&r.sucs.length)?r.sucs.join(' y '):'', r.marca, r.resp].filter(Boolean);
+  var logo = window.location.origin+'/assets/logos/gp-l.png';
+  var kp = function(v,t,c){ return '<div class="k"><b'+(c?' style="color:'+c+'"':'')+'>'+v+'</b><span>'+t+'</span></div>'; };
+  var barras = function(titulo, arr, color){
+    var max = Math.max.apply(null,[1].concat(arr.map(function(x){ return x.cantidad; })));
+    return '<div class="bx"><h3>'+titulo+'</h3>'+(arr.length ? arr.slice(0,8).map(function(x){
+      return '<div class="br"><div class="bt"><span>'+E(x.valor)+'</span><b>'+x.cantidad+'</b></div><div class="bb"><i style="width:'+Math.round(x.cantidad/max*100)+'%;background:'+color+'"></i></div></div>';
+    }).join('') : '<div class="nada">Sin datos en el período.</div>')+'</div>';
+  };
+  var pill = function(est){ var c = (est==='cerrado'||est==='resuelto')?'#1f8a4c':(est==='nuevo'?'#2a6fdb':'#b7791f'); return '<span class="pl" style="color:'+c+';border-color:'+c+'">'+E(est)+'</span>'; };
+  var frase = r.ingresados+' caso'+(r.ingresados===1?'':'s')+' ingresado'+(r.ingresados===1?'':'s')+' y '+r.cerrados+' cerrado'+(r.cerrados===1?'':'s')+' en el período'+
+    (r.prom!==null?', con un tiempo promedio de resolución de '+r.prom+' días':'')+'. '+(r.sinResolver?'Siguen abiertos '+r.sinResolver+'.':'No quedan casos abiertos de los ingresados.')+
+    (r.motivos.length?' Lo que más se repitió: <b>'+E(r.motivos[0].valor)+'</b> ('+r.motivos[0].cantidad+').':'');
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+E(informeTitulo_())+'</title><style>'+
+    '*{box-sizing:border-box}body{font-family:"Segoe UI",Arial,sans-serif;color:#1b2430;margin:0;padding:28px 34px;font-size:12px;line-height:1.45}'+
+    '.top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b2430;padding-bottom:12px;margin-bottom:14px}.top img{height:38px}.top .d{text-align:right;color:#5b6676;font-size:11px}'+
+    'h1{font-size:21px;margin:0 0 6px}.al{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.al span{background:#eef1f6;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600}'+
+    '.res{background:#f5f7fb;border-left:4px solid #2a6fdb;border-radius:6px;padding:11px 14px;font-size:13px;margin-bottom:14px}'+
+    '.ks{display:flex;gap:8px;margin-bottom:6px}.k{flex:1;border:1px solid #dde2ea;border-radius:10px;padding:9px 11px}.k b{display:block;font-size:22px}.k span{font-size:10.5px;color:#5b6676}'+
+    'h2{font-size:14px;margin:20px 0 8px;padding-bottom:4px;border-bottom:1px solid #dde2ea}'+
+    '.g{display:grid;grid-template-columns:1fr 1fr;gap:6px 26px}.bx h3{font-size:12px;margin:12px 0 6px}.br{margin-bottom:6px}.bt{display:flex;justify-content:space-between;font-size:11.5px}.bb{height:6px;background:#eef1f6;border-radius:4px;overflow:hidden;margin-top:2px}.bb i{display:block;height:100%;border-radius:4px}.nada{color:#8a94a3;font-size:11px}'+
+    'table{width:100%;border-collapse:collapse}th{text-align:left;font-size:10.5px;color:#5b6676;border-bottom:2px solid #dde2ea;padding:5px 6px}td{padding:5px 6px;border-bottom:1px solid #eef1f6;font-size:11px}'+
+    '.pl{border:1px solid;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700}.pie{margin-top:22px;color:#8a94a3;font-size:10px;text-align:center}tr,.bx{break-inside:avoid}'+
+    '@media print{body{padding:0}@page{margin:14mm}}</style></head><body>'+
+    '<div class="top"><img src="'+logo+'" alt="Grupo París"><div class="d">Gestión de Casos — Calidad<br>Generado el '+fmtFechaGC_(new Date())+'</div></div>'+
+    '<h1>Informe de casos · '+f(r.desde)+' al '+f(r.hasta)+'</h1>'+
+    '<div class="al">'+(alcance.length ? alcance.map(function(x){ return '<span>'+E(x)+'</span>'; }).join('') : '<span>Todas las áreas</span>')+'</div>'+
+    '<div class="res">'+frase+'</div>'+
+    '<div class="ks">'+kp(r.ingresados,'Ingresados')+kp(r.cerrados,'Cerrados','#1f8a4c')+kp(r.sinResolver,'Siguen abiertos','#b7791f')+kp(r.prom!==null?r.prom+' d':'—','Tiempo prom. de resolución')+kp(r.cumplimiento!==null?r.cumplimiento+'%':'—','Cerrados en plazo')+'</div>'+
+    '<h2>Qué pasó</h2><div class="g">'+barras('Motivos más repetidos', r.motivos,'#2a6fdb')+barras('Cómo se resolvieron', r.resolucion,'#1f8a4c')+barras('Por unidad de negocio', r.porUnidad,'#6b5bd2')+barras('Por sector', r.porSector,'#6b5bd2')+barras('Por sucursal', r.sucursales,'#d98a1f')+barras('Por marca', r.marcas,'#d98a1f')+'</div>'+
+    '<h2>Por responsable</h2><table><thead><tr><th>Responsable</th><th>Ingresados</th><th>Cerrados</th><th>Abiertos</th></tr></thead><tbody>'+r.responsables.map(function(x){ return '<tr><td>'+E(x.nombre)+'</td><td>'+x.ing+'</td><td>'+x.cer+'</td><td>'+x.abi+'</td></tr>'; }).join('')+'</tbody></table>'+
+    '<h2>Detalle de casos ('+_informe_.filas.length+')</h2><table><thead><tr><th>Caso</th><th>Creado</th><th>Estado</th><th>Cliente</th><th>Motivo</th><th>Cómo se resolvió</th><th>Responsable</th></tr></thead><tbody>'+
+      _informe_.filas.map(function(c){ return '<tr><td><b>'+E(c.id)+'</b></td><td>'+E(fmtFechaGC_(c.fechaCreacion).split(' ')[0])+'</td><td>'+pill(c.estado)+'</td><td>'+E(c.cliente||'—')+'</td><td>'+E(c.motivo||'—')+'</td><td>'+E(c.cerradoMotivo||'—')+'</td><td>'+E(c.responsable||'—')+'</td></tr>'; }).join('')+'</tbody></table>'+
+    '<div class="pie">Grupo París · Gestión de Casos</div></body></html>');
+  w.document.close(); setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 700);
 }
 function pintarGraficosReportes_(res){
   var c = coloresGrafico_();
