@@ -64,12 +64,18 @@ input,textarea{font-family:inherit; font-size:14.5px;}
 .file-item .thumb img{width:100%;height:100%;object-fit:cover;}
 .file-item .name{flex:1;font-size:12.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .file-item button{background:none;border:none;color:var(--ink-faint);}
+.arch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+.arch{border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--bg-2);}
+.arch-prev{height:96px;border-radius:9px;background:#e9edf3;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;color:#6b7686;}
+.arch-prev img{width:100%;height:100%;object-fit:cover;}
+.arch-n{font-size:11px;margin-top:6px;color:var(--ink-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.arch-a{font-size:11px;color:var(--blue);font-weight:650;text-decoration:none;}
 .btn-submit{width:100%; background:linear-gradient(135deg,var(--blue),var(--blue-deep)); color:#fff; border:none; border-radius:13px; padding:14px; font-weight:700; font-size:14.5px;}
 .btn-submit:disabled{opacity:.55;}
 .msg{border-radius:11px; padding:11px 14px; font-size:13px; margin-bottom:14px;}
 .msg-err{background:var(--danger-soft); color:var(--danger);}
 .msg-ok{background:var(--ok-soft); color:var(--ok);}
-#estado-screen,#invalid-screen,#ok-screen,#login-screen{display:none;}
+#estado-screen,#invalid-screen,#ok-screen{display:none;}
 .center-note{text-align:center; padding:40px 18px;}
 .center-note .material-symbols-outlined{font-size:40px; color:var(--blue); margin-bottom:10px;}
 </style>
@@ -89,16 +95,6 @@ input,textarea{font-family:inherit; font-size:14.5px;}
     <p style="color:var(--ink-dim);">Puede que ya haya vencido. Si necesitás agregar información a tu reclamo, contactate con Grupo París para que te generen un nuevo enlace.</p>
   </div>
 
-  <div id="login-screen" class="center-note" style="text-align:left;">
-    <span class="material-symbols-outlined" style="display:block;text-align:center;">lock</span>
-    <h1 class="headline" style="font-size:19px;margin-bottom:6px;text-align:center;">Link del equipo</h1>
-    <p style="color:var(--ink-dim);font-size:13px;text-align:center;margin-bottom:16px;">Ingresá con tu usuario de Gestión de Casos (el mismo del Planning) para ver todo el caso.</p>
-    <div class="field"><label>Usuario</label><input id="loginUsuario" type="text" autocomplete="username" style="width:100%;padding:11px 13px;border:1.5px solid var(--line,#d8dde6);border-radius:10px;font-size:14px;"></div>
-    <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" style="width:100%;padding:11px 13px;border:1.5px solid var(--line,#d8dde6);border-radius:10px;font-size:14px;" onkeydown="if(event.key==='Enter')ingresarEquipo_()"></div>
-    <div class="msg msg-err" id="loginError" style="display:none;"></div>
-    <button class="btn-submit" id="btnIngresar" onclick="ingresarEquipo_()">Ingresar</button>
-  </div>
-
   <div id="estado-screen">
     <div class="card">
       <div class="caso-box">
@@ -115,6 +111,11 @@ input,textarea{font-family:inherit; font-size:14.5px;}
       <div id="datosBody"></div>
     </div>
 
+    <div class="card" id="cardArchivos" style="display:none;">
+      <h2 id="archivosTitulo">Fotos y archivos del cliente</h2>
+      <div class="arch-grid" id="archivosGrid"></div>
+    </div>
+
     <div class="card" id="cardHistorial" style="display:none;">
       <h2 id="histTitulo">Qué se hizo hasta ahora</h2>
       <div class="tl" id="timeline"></div>
@@ -123,7 +124,10 @@ input,textarea{font-family:inherit; font-size:14.5px;}
     <div class="msg msg-err" id="formError" style="display:none;"></div>
 
     <div class="card">
-      <div class="field" id="fieldNombre" style="display:none;"><label>Tu nombre</label><input id="nombreEquipo" type="text" placeholder="Para saber quién dejó el comentario" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--bg-2);"></div>
+      <div id="fieldNombre" style="display:none;">
+        <div class="field"><label>Tu nombre</label><input id="nombreEquipo" type="text" maxlength="60" placeholder="Nombre y apellido" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--bg-2);"></div>
+        <div class="field"><label>Tu puesto o sector</label><input id="puestoEquipo" type="text" maxlength="60" placeholder="Ej: Supervisor de Postventa" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--bg-2);"></div>
+      </div>
       <div class="field"><label>Comentario adicional</label><textarea id="comentario" placeholder="Contanos cualquier novedad..."></textarea></div>
       <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click();">
         <span class="material-symbols-outlined">cloud_upload</span>
@@ -161,46 +165,22 @@ function gasPost(action, params){
   return fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:action, params:params||{}}) }).then(function(r){ return r.json(); });
 }
 
-var USR = '', PWD = '', NOMBRE_EQUIPO = '', SECTOR_EQUIPO = '';
 (function init(){
   var qs = new URLSearchParams(window.location.search);
   CASO_ID = qs.get('id'); TOKEN = qs.get('token'); CLAVE = qs.get('clave') || '';
   if(!CASO_ID || !TOKEN){ mostrarInvalido_(); return; }
-  try{ USR = sessionStorage.getItem('gc_eq_u_'+CASO_ID) || ''; PWD = sessionStorage.getItem('gc_eq_p_'+CASO_ID) || ''; }catch(e){}
-  cargarConfigBackend().then(cargarCaso_).catch(mostrarInvalido_);
-})();
-function cargarCaso_(){
-  return gasPost('reclamoValidarToken', {id:CASO_ID, token:TOKEN, clave:CLAVE, usuario:USR, password:PWD}).then(function(res){
+  cargarConfigBackend().then(function(){
+    return gasPost('reclamoValidarToken', {id:CASO_ID, token:TOKEN, clave:CLAVE});
+  }).then(function(res){
     document.getElementById('loading-screen').style.display = 'none';
-    if(res && res.requiereLogin){
-      document.getElementById('estado-screen').style.display = 'none';
-      document.getElementById('login-screen').style.display = 'block';
-      var e = document.getElementById('loginError');
-      if(USR){ e.textContent = res.error; e.style.display = 'block'; try{ sessionStorage.removeItem('gc_eq_u_'+CASO_ID); sessionStorage.removeItem('gc_eq_p_'+CASO_ID); }catch(x){} USR=''; PWD=''; }
-      return;
-    }
     if(!res.ok){ mostrarInvalido_(); return; }
-    document.getElementById('login-screen').style.display = 'none';
     document.getElementById('estado-screen').style.display = 'block';
     document.getElementById('casoNum').textContent = res.caso.id;
     document.getElementById('casoMeta').textContent = (res.caso.marca||'')+' '+(res.caso.modelo||'')+' · '+(res.caso.motivo||'');
     document.getElementById('casoEstado').textContent = res.caso.estado;
-    NOMBRE_EQUIPO = res.usuarioEquipo || '';
-    SECTOR_EQUIPO = res.sectorEquipo || '';
     pintarHistorial_(res);
-    if(NOMBRE_EQUIPO){ var fn = document.getElementById('fieldNombre'); if(fn){ fn.style.display='block'; fn.innerHTML = '<label>Nombre</label><div style="font-weight:700;font-size:14px;margin-bottom:10px;">'+esc_(NOMBRE_EQUIPO)+'</div>'+
-      '<label>Puesto o sector <span style="font-weight:400;color:var(--ink-dim);">(para que se sepa quién responde)</span></label>'+
-      '<input id="puestoEquipo" type="text" maxlength="60" value="'+esc_(SECTOR_EQUIPO)+'" placeholder="Ej: Supervisor de Postventa" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--bg-2);">'; } }
   }).catch(mostrarInvalido_);
-}
-function ingresarEquipo_(){
-  USR = document.getElementById('loginUsuario').value.trim(); PWD = document.getElementById('loginPassword').value;
-  var e = document.getElementById('loginError');
-  if(!USR || !PWD){ e.textContent = 'Poné tu usuario y contraseña.'; e.style.display = 'block'; return; }
-  var btn = document.getElementById('btnIngresar'); btn.disabled = true; btn.textContent = 'Verificando…';
-  try{ sessionStorage.setItem('gc_eq_u_'+CASO_ID, USR); sessionStorage.setItem('gc_eq_p_'+CASO_ID, PWD); }catch(x){}
-  cargarCaso_().then(function(){ btn.disabled = false; btn.textContent = 'Ingresar'; });
-}
+})();
 function dato_(label, valor, full){
   if(valor===undefined || valor===null || String(valor).trim()==='') return '';
   return '<div'+(full?' class="full"':'')+'><b>'+label+'</b>'+esc_(valor)+'</div>';
@@ -230,6 +210,7 @@ function pintarHistorial_(res){
   if(equipo){
     document.getElementById('txtIntro').innerHTML = '<span class="badge-eq"><span class="material-symbols-outlined" style="font-size:14px;">group</span>Vista del equipo</span><br>Acá ves todo lo que se hizo en este caso. Podés dejar un comentario para el equipo de Calidad: queda registrado con tu nombre y el cliente no lo ve.';
     document.getElementById('fieldNombre').style.display = 'block';
+    try{ document.getElementById('nombreEquipo').value = localStorage.getItem('gc_eq_nombre')||''; document.getElementById('puestoEquipo').value = localStorage.getItem('gc_eq_puesto')||''; }catch(e){}
     document.getElementById('btnEnviar').textContent = 'Guardar comentario';
     document.getElementById('datosTitulo').textContent = 'Datos del caso';
     document.getElementById('histTitulo').textContent = 'Todo lo que se hizo';
@@ -250,6 +231,7 @@ function pintarHistorial_(res){
     dato_('Solución que esperás', d.solucionEsperada, true) +
     (d.evidencias ? dato_('Archivos adjuntos', d.evidencias+' archivo(s)') : '') +
   '</div>';
+  if(equipo && c.evidenciasLista && c.evidenciasLista.length) pintarArchivosCliente_(c.evidenciasLista);
   if(nov.length){
     document.getElementById('cardHistorial').style.display = 'block';
     document.getElementById('timeline').innerHTML = nov.map(function(n){
@@ -257,6 +239,40 @@ function pintarHistorial_(res){
         '<div class="tl-txt">'+esc_(n.texto)+'</div><div class="tl-who">'+esc_(n.autor)+(equipo && n.interno ? '<span class="tl-int">interno</span>' : '')+'</div></div></div>';
     }).join('');
   }
+}
+// Archivos que subió el cliente (solo vista de equipo). Las fotos se ven acá mismo; videos y PDF se abren al tocar.
+function pintarArchivosCliente_(lista){
+  var card = document.getElementById('cardArchivos'); if(!card) return;
+  card.style.display = 'block';
+  document.getElementById('archivosTitulo').textContent = 'Fotos y archivos del cliente ('+lista.length+')';
+  var cont = document.getElementById('archivosGrid');
+  cont.innerHTML = lista.map(function(a, i){
+    var img = String(a.tipo||'').indexOf('image')===0;
+    return '<div class="arch" id="arch'+i+'">'+
+      '<div class="arch-prev" onclick="abrirArchivoCliente_('+i+')">'+(img ? '<span class="material-symbols-outlined">hourglass_top</span>' : '<span class="material-symbols-outlined">'+(String(a.tipo||'').indexOf('video')===0?'movie':'description')+'</span>')+'</div>'+
+      '<div class="arch-n" title="'+esc_(a.nombre)+'">'+esc_(a.nombre)+'</div>'+
+      '<a href="#" class="arch-a" onclick="abrirArchivoCliente_('+i+',true);return false;">'+(img?'Descargar':'Abrir / descargar')+'</a></div>';
+  }).join('');
+  window._archivosCliente_ = lista;
+  lista.forEach(function(a, i){ if(String(a.tipo||'').indexOf('image')===0) pedirArchivo_(a).then(function(f){ var p = document.querySelector('#arch'+i+' .arch-prev'); if(p && f) p.innerHTML = '<img src="data:'+f.tipo+';base64,'+f.base64+'" alt="">'; else if(p) p.innerHTML = '<span class="material-symbols-outlined">broken_image</span>'; }); });
+}
+var _cacheArchivos_ = {};
+function pedirArchivo_(a){
+  if(_cacheArchivos_[a.driveId]) return _cacheArchivos_[a.driveId];
+  var pr = gasPost('reclamoArchivo', {id:CASO_ID, token:TOKEN, clave:CLAVE, driveId:a.driveId}).then(function(r){ if(!r.ok){ delete _cacheArchivos_[a.driveId]; return null; } return r; }).catch(function(){ delete _cacheArchivos_[a.driveId]; return null; });
+  _cacheArchivos_[a.driveId] = pr; return pr;
+}
+function abrirArchivoCliente_(i, descargar){
+  var a = (window._archivosCliente_||[])[i]; if(!a) return;
+  var w = descargar ? null : window.open('', '_blank');
+  pedirArchivo_(a).then(function(f){
+    if(!f){ if(w) w.close(); alert('No se pudo abrir el archivo.'); return; }
+    var bin = atob(f.base64), bytes = new Uint8Array(bin.length); for(var k=0;k<bin.length;k++) bytes[k] = bin.charCodeAt(k);
+    var url = URL.createObjectURL(new Blob([bytes], {type:f.tipo}));
+    if(descargar){ var l = document.createElement('a'); l.href = url; l.download = f.nombre; document.body.appendChild(l); l.click(); l.remove(); }
+    else if(w) w.location.href = url;
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+  });
 }
 function mostrarInvalido_(){
   document.getElementById('loading-screen').style.display = 'none';
@@ -289,11 +305,13 @@ function quitarArchivo_(elId){ ARCHIVOS_ = ARCHIVOS_.filter(function(f){ return 
 function enviarSeguimiento_(){
   var err = document.getElementById('formError'); err.style.display='none';
   var comentario = document.getElementById('comentario').value.trim();
-  var nombre = NOMBRE_EQUIPO;
+  var nombre = (document.getElementById('nombreEquipo').value||'').trim(), puesto = (document.getElementById('puestoEquipo').value||'').trim();
+  if(CLAVE && (!nombre || !puesto)){ err.textContent='Poné tu nombre y tu puesto para que se sepa quién responde.'; err.style.display='block'; return; }
+  try{ localStorage.setItem('gc_eq_nombre', nombre); localStorage.setItem('gc_eq_puesto', puesto); }catch(e){}
   if(!comentario && !ARCHIVOS_.length){ err.textContent='Escribí un comentario o adjuntá al menos un archivo.'; err.style.display='block'; return; }
   var btn = document.getElementById('btnEnviar'); btn.disabled = true; btn.textContent = 'Enviando…';
   gasPost('reclamoSeguimiento', {
-    id: CASO_ID, token: TOKEN, clave: CLAVE, usuario: USR, password: PWD, nombre: nombre, puesto: (document.getElementById('puestoEquipo')||{}).value||'', comentario: comentario,
+    id: CASO_ID, token: TOKEN, clave: CLAVE, nombre: nombre, puesto: puesto, comentario: comentario,
     archivos: ARCHIVOS_.filter(function(f){return f.base64;}).map(function(f){ return {nombre:f.nombre, tipo:f.tipo, base64:f.base64}; })
   }).then(function(res){
     if(!res.ok){ err.textContent = res.error||'No pudimos enviar la información.'; err.style.display='block'; btn.disabled=false; btn.textContent=(CLAVE?'Guardar comentario':'Enviar información'); return; }

@@ -2446,7 +2446,7 @@ function copiarLinkEquipo_(idCaso){
       return;
     }
     var link = window.location.origin+'/seguimiento?id='+encodeURIComponent(idCaso)+'&token='+encodeURIComponent(res.token)+'&clave='+encodeURIComponent(res.clave);
-    mostrarLinkModal_('Link para equipo', link, 'Muestra TODO lo que se hizo en el caso. Quien lo abra tiene que ingresar con su usuario de Gestión de Casos (o del Planning), y sus comentarios quedan con su nombre. Pasalo solo a gente interna.');
+    mostrarLinkModal_('Link para equipo', link, 'Muestra TODO: datos del cliente, fotos y archivos, y lo que se hizo. No pide usuario, así que cualquiera que tenga el link lo ve. Quien responda pone su nombre y puesto. Pasalo solo a gente interna.');
   }).catch(function(){ showToast('No se pudo conectar con el servidor para generar el link.'); });
 }
 // Muestra el link en una ventana con botón "Copiar": copiar desde un clic directo
