@@ -161,7 +161,7 @@ function gasPost(action, params){
   return fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:action, params:params||{}}) }).then(function(r){ return r.json(); });
 }
 
-var USR = '', PWD = '', NOMBRE_EQUIPO = '';
+var USR = '', PWD = '', NOMBRE_EQUIPO = '', SECTOR_EQUIPO = '';
 (function init(){
   var qs = new URLSearchParams(window.location.search);
   CASO_ID = qs.get('id'); TOKEN = qs.get('token'); CLAVE = qs.get('clave') || '';
@@ -186,8 +186,11 @@ function cargarCaso_(){
     document.getElementById('casoMeta').textContent = (res.caso.marca||'')+' '+(res.caso.modelo||'')+' · '+(res.caso.motivo||'');
     document.getElementById('casoEstado').textContent = res.caso.estado;
     NOMBRE_EQUIPO = res.usuarioEquipo || '';
+    SECTOR_EQUIPO = res.sectorEquipo || '';
     pintarHistorial_(res);
-    if(NOMBRE_EQUIPO){ var fn = document.getElementById('fieldNombre'); if(fn){ fn.style.display='block'; fn.innerHTML = '<label>Vas a comentar como</label><div style="font-weight:700;font-size:14px;">'+esc_(NOMBRE_EQUIPO)+'</div>'; } }
+    if(NOMBRE_EQUIPO){ var fn = document.getElementById('fieldNombre'); if(fn){ fn.style.display='block'; fn.innerHTML = '<label>Nombre</label><div style="font-weight:700;font-size:14px;margin-bottom:10px;">'+esc_(NOMBRE_EQUIPO)+'</div>'+
+      '<label>Puesto o sector <span style="font-weight:400;color:var(--ink-dim);">(para que se sepa quién responde)</span></label>'+
+      '<input id="puestoEquipo" type="text" maxlength="60" value="'+esc_(SECTOR_EQUIPO)+'" placeholder="Ej: Supervisor de Postventa" style="width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;background:var(--bg-2);">'; } }
   }).catch(mostrarInvalido_);
 }
 function ingresarEquipo_(){
@@ -290,7 +293,7 @@ function enviarSeguimiento_(){
   if(!comentario && !ARCHIVOS_.length){ err.textContent='Escribí un comentario o adjuntá al menos un archivo.'; err.style.display='block'; return; }
   var btn = document.getElementById('btnEnviar'); btn.disabled = true; btn.textContent = 'Enviando…';
   gasPost('reclamoSeguimiento', {
-    id: CASO_ID, token: TOKEN, clave: CLAVE, usuario: USR, password: PWD, nombre: nombre, comentario: comentario,
+    id: CASO_ID, token: TOKEN, clave: CLAVE, usuario: USR, password: PWD, nombre: nombre, puesto: (document.getElementById('puestoEquipo')||{}).value||'', comentario: comentario,
     archivos: ARCHIVOS_.filter(function(f){return f.base64;}).map(function(f){ return {nombre:f.nombre, tipo:f.tipo, base64:f.base64}; })
   }).then(function(res){
     if(!res.ok){ err.textContent = res.error||'No pudimos enviar la información.'; err.style.display='block'; btn.disabled=false; btn.textContent=(CLAVE?'Guardar comentario':'Enviar información'); return; }
