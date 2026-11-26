@@ -69,7 +69,7 @@ input,textarea{font-family:inherit; font-size:14.5px;}
 .msg{border-radius:11px; padding:11px 14px; font-size:13px; margin-bottom:14px;}
 .msg-err{background:var(--danger-soft); color:var(--danger);}
 .msg-ok{background:var(--ok-soft); color:var(--ok);}
-#estado-screen,#invalid-screen,#ok-screen{display:none;}
+#estado-screen,#invalid-screen,#ok-screen,#login-screen{display:none;}
 .center-note{text-align:center; padding:40px 18px;}
 .center-note .material-symbols-outlined{font-size:40px; color:var(--blue); margin-bottom:10px;}
 </style>
@@ -87,6 +87,16 @@ input,textarea{font-family:inherit; font-size:14.5px;}
     <span class="material-symbols-outlined">error</span>
     <h1 class="headline" style="font-size:19px;margin-bottom:8px;">Este enlace no es válido</h1>
     <p style="color:var(--ink-dim);">Puede que ya haya vencido. Si necesitás agregar información a tu reclamo, contactate con Grupo París para que te generen un nuevo enlace.</p>
+  </div>
+
+  <div id="login-screen" class="center-note" style="text-align:left;">
+    <span class="material-symbols-outlined" style="display:block;text-align:center;">lock</span>
+    <h1 class="headline" style="font-size:19px;margin-bottom:6px;text-align:center;">Link del equipo</h1>
+    <p style="color:var(--ink-dim);font-size:13px;text-align:center;margin-bottom:16px;">Ingresá con tu usuario de Gestión de Casos (el mismo del Planning) para ver todo el caso.</p>
+    <div class="field"><label>Usuario</label><input id="loginUsuario" type="text" autocomplete="username" style="width:100%;padding:11px 13px;border:1.5px solid var(--line,#d8dde6);border-radius:10px;font-size:14px;"></div>
+    <div class="field"><label>Contraseña</label><input id="loginPassword" type="password" autocomplete="current-password" style="width:100%;padding:11px 13px;border:1.5px solid var(--line,#d8dde6);border-radius:10px;font-size:14px;" onkeydown="if(event.key==='Enter')ingresarEquipo_()"></div>
+    <div class="msg msg-err" id="loginError" style="display:none;"></div>
+    <button class="btn-submit" id="btnIngresar" onclick="ingresarEquipo_()">Ingresar</button>
   </div>
 
   <div id="estado-screen">
@@ -151,22 +161,43 @@ function gasPost(action, params){
   return fetch(API_URL, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action:action, params:params||{}}) }).then(function(r){ return r.json(); });
 }
 
+var USR = '', PWD = '', NOMBRE_EQUIPO = '';
 (function init(){
   var qs = new URLSearchParams(window.location.search);
   CASO_ID = qs.get('id'); TOKEN = qs.get('token'); CLAVE = qs.get('clave') || '';
   if(!CASO_ID || !TOKEN){ mostrarInvalido_(); return; }
-  cargarConfigBackend().then(function(){
-    return gasPost('reclamoValidarToken', {id:CASO_ID, token:TOKEN, clave:CLAVE});
-  }).then(function(res){
+  try{ USR = sessionStorage.getItem('gc_eq_u_'+CASO_ID) || ''; PWD = sessionStorage.getItem('gc_eq_p_'+CASO_ID) || ''; }catch(e){}
+  cargarConfigBackend().then(cargarCaso_).catch(mostrarInvalido_);
+})();
+function cargarCaso_(){
+  return gasPost('reclamoValidarToken', {id:CASO_ID, token:TOKEN, clave:CLAVE, usuario:USR, password:PWD}).then(function(res){
     document.getElementById('loading-screen').style.display = 'none';
+    if(res && res.requiereLogin){
+      document.getElementById('estado-screen').style.display = 'none';
+      document.getElementById('login-screen').style.display = 'block';
+      var e = document.getElementById('loginError');
+      if(USR){ e.textContent = res.error; e.style.display = 'block'; try{ sessionStorage.removeItem('gc_eq_u_'+CASO_ID); sessionStorage.removeItem('gc_eq_p_'+CASO_ID); }catch(x){} USR=''; PWD=''; }
+      return;
+    }
     if(!res.ok){ mostrarInvalido_(); return; }
+    document.getElementById('login-screen').style.display = 'none';
     document.getElementById('estado-screen').style.display = 'block';
     document.getElementById('casoNum').textContent = res.caso.id;
     document.getElementById('casoMeta').textContent = (res.caso.marca||'')+' '+(res.caso.modelo||'')+' · '+(res.caso.motivo||'');
     document.getElementById('casoEstado').textContent = res.caso.estado;
+    NOMBRE_EQUIPO = res.usuarioEquipo || '';
     pintarHistorial_(res);
+    if(NOMBRE_EQUIPO){ var fn = document.getElementById('fieldNombre'); if(fn){ fn.style.display='block'; fn.innerHTML = '<label>Vas a comentar como</label><div style="font-weight:700;font-size:14px;">'+esc_(NOMBRE_EQUIPO)+'</div>'; } }
   }).catch(mostrarInvalido_);
-})();
+}
+function ingresarEquipo_(){
+  USR = document.getElementById('loginUsuario').value.trim(); PWD = document.getElementById('loginPassword').value;
+  var e = document.getElementById('loginError');
+  if(!USR || !PWD){ e.textContent = 'Poné tu usuario y contraseña.'; e.style.display = 'block'; return; }
+  var btn = document.getElementById('btnIngresar'); btn.disabled = true; btn.textContent = 'Verificando…';
+  try{ sessionStorage.setItem('gc_eq_u_'+CASO_ID, USR); sessionStorage.setItem('gc_eq_p_'+CASO_ID, PWD); }catch(x){}
+  cargarCaso_().then(function(){ btn.disabled = false; btn.textContent = 'Ingresar'; });
+}
 function dato_(label, valor, full){
   if(valor===undefined || valor===null || String(valor).trim()==='') return '';
   return '<div'+(full?' class="full"':'')+'><b>'+label+'</b>'+esc_(valor)+'</div>';
@@ -255,12 +286,11 @@ function quitarArchivo_(elId){ ARCHIVOS_ = ARCHIVOS_.filter(function(f){ return 
 function enviarSeguimiento_(){
   var err = document.getElementById('formError'); err.style.display='none';
   var comentario = document.getElementById('comentario').value.trim();
-  var nombre = (document.getElementById('nombreEquipo').value||'').trim();
-  if(CLAVE && !nombre){ err.textContent='Poné tu nombre para dejar el comentario.'; err.style.display='block'; return; }
+  var nombre = NOMBRE_EQUIPO;
   if(!comentario && !ARCHIVOS_.length){ err.textContent='Escribí un comentario o adjuntá al menos un archivo.'; err.style.display='block'; return; }
   var btn = document.getElementById('btnEnviar'); btn.disabled = true; btn.textContent = 'Enviando…';
   gasPost('reclamoSeguimiento', {
-    id: CASO_ID, token: TOKEN, clave: CLAVE, nombre: nombre, comentario: comentario,
+    id: CASO_ID, token: TOKEN, clave: CLAVE, usuario: USR, password: PWD, nombre: nombre, comentario: comentario,
     archivos: ARCHIVOS_.filter(function(f){return f.base64;}).map(function(f){ return {nombre:f.nombre, tipo:f.tipo, base64:f.base64}; })
   }).then(function(res){
     if(!res.ok){ err.textContent = res.error||'No pudimos enviar la información.'; err.style.display='block'; btn.disabled=false; btn.textContent=(CLAVE?'Guardar comentario':'Enviar información'); return; }

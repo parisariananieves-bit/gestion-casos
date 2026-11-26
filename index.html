@@ -2446,7 +2446,7 @@ function copiarLinkEquipo_(idCaso){
       return;
     }
     var link = window.location.origin+'/seguimiento?id='+encodeURIComponent(idCaso)+'&token='+encodeURIComponent(res.token)+'&clave='+encodeURIComponent(res.clave);
-    mostrarLinkModal_('Link para equipo', link, 'Muestra TODO lo que se hizo en el caso y deja comentar con nombre. Pasalo solo a gente interna, no al cliente.');
+    mostrarLinkModal_('Link para equipo', link, 'Muestra TODO lo que se hizo en el caso. Quien lo abra tiene que ingresar con su usuario de Gestión de Casos (o del Planning), y sus comentarios quedan con su nombre. Pasalo solo a gente interna.');
   }).catch(function(){ showToast('No se pudo conectar con el servidor para generar el link.'); });
 }
 // Muestra el link en una ventana con botón "Copiar": copiar desde un clic directo
@@ -2958,7 +2958,7 @@ function renderReportes(){
   gasGet('reporte').then(function(res){
     if(!res.ok){ document.getElementById('content').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     window._reporteCache = res;
-    var html = '<div class="kpi-grid">'+
+    var html = informePanelHtml_()+'<div class="kpi-grid">'+
       kpiCardClick_(res.total,'Casos totales','var(--caso-deep)','var(--caso-soft)','folder_open', "setView('casos')")+
       kpiCard_(res.tasaResolucion+'%','Tasa de resolución','var(--ok)','var(--ok-soft)','trending_up')+
       kpiCardClick_(res.resueltos,'Resueltos / cerrados','var(--ok)','var(--ok-soft)','task_alt', "verListaFiltrada_('Casos resueltos o cerrados',{soloResueltos:true})")+
@@ -3012,7 +3012,160 @@ function renderReportes(){
 
     document.getElementById('content').innerHTML = html;
     pintarGraficosReportes_(res);
+    informeIniciar_();
   });
+}
+// ============================================================
+// INFORME DEL PERÍODO (Reportes): filtros, resumen y descarga en Excel / PDF
+// Se calcula en el navegador con los casos ya cargados — no toca el backend.
+// ============================================================
+var _informe_ = {casos:[], filas:[], resumen:null};
+function informeEsc_(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function informeISO_(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+function informePanelHtml_(){
+  var hoy = new Date(), ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+  return '<div class="panel" id="informePanel" style="margin-bottom:18px;">'+
+    '<div class="panel-head"><div><h3>Informe del período</h3><div style="font-size:11px;color:var(--text-faint);margin-top:2px;">Elegí fechas, responsable y marca. Se puede descargar en Excel o PDF.</div></div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-ghost btn-sm" onclick="informeExcel_()"><span class="material-symbols-outlined" style="font-size:16px;">table_view</span> Excel</button>'+
+      '<button class="btn btn-primary btn-sm" style="width:auto;" onclick="informePDF_()"><span class="material-symbols-outlined" style="font-size:16px;">picture_as_pdf</span> PDF</button></div></div>'+
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;padding:12px 18px;align-items:end;">'+
+      '<label style="font-size:11px;color:var(--text-dim);">Desde<br><input type="date" id="infDesde" value="'+informeISO_(ini)+'" onchange="informeCalcular_()"></label>'+
+      '<label style="font-size:11px;color:var(--text-dim);">Hasta<br><input type="date" id="infHasta" value="'+informeISO_(hoy)+'" onchange="informeCalcular_()"></label>'+
+      '<label style="font-size:11px;color:var(--text-dim);">Responsable<br><select id="infResp" onchange="informeCalcular_()"><option value="">Todos</option></select></label>'+
+      '<label style="font-size:11px;color:var(--text-dim);">Marca<br><select id="infMarca" onchange="informeCalcular_()"><option value="">Todas</option></select></label>'+
+      '<button class="btn btn-ghost btn-sm" onclick="informeRango_(\'mes\')">Este mes</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="informeRango_(\'ant\')">Mes anterior</button>'+
+      '<button class="btn btn-ghost btn-sm" onclick="informeRango_(\'anio\')">Este año</button>'+
+    '</div><div id="informeCuerpo" style="padding:4px 18px 18px;"><div style="color:var(--text-faint);font-size:12.5px;">Calculando…</div></div></div>';
+}
+function informeRango_(tipo){
+  var h = new Date(), d, a;
+  if(tipo==='mes'){ d = new Date(h.getFullYear(), h.getMonth(), 1); a = h; }
+  else if(tipo==='ant'){ d = new Date(h.getFullYear(), h.getMonth()-1, 1); a = new Date(h.getFullYear(), h.getMonth(), 0); }
+  else { d = new Date(h.getFullYear(), 0, 1); a = h; }
+  document.getElementById('infDesde').value = informeISO_(d); document.getElementById('infHasta').value = informeISO_(a);
+  informeCalcular_();
+}
+function informeIniciar_(){
+  var usar = function(casos){
+    _informe_.casos = casos || [];
+    var rs = {}, ms = {};
+    _informe_.casos.forEach(function(c){ if(c.responsable) rs[c.responsable]=1; if(c.marca) ms[c.marca]=1; });
+    var selR = document.getElementById('infResp'), selM = document.getElementById('infMarca');
+    if(!selR || !selM) return;
+    Object.keys(rs).sort().forEach(function(r){ selR.insertAdjacentHTML('beforeend','<option>'+informeEsc_(r)+'</option>'); });
+    Object.keys(ms).sort().forEach(function(m){ selM.insertAdjacentHTML('beforeend','<option>'+informeEsc_(m)+'</option>'); });
+    informeCalcular_();
+  };
+  if(window._casosCache && window._casosCache.length) usar(window._casosCache);
+  else gasGet('casos').then(function(r){ if(r && r.ok){ window._casosCache = r.casos||[]; usar(window._casosCache); } else { var b=document.getElementById('informeCuerpo'); if(b) b.innerHTML='<div style="color:var(--danger);">No se pudieron cargar los casos.</div>'; } });
+}
+function informeCalcular_(){
+  var cuerpo = document.getElementById('informeCuerpo'); if(!cuerpo) return;
+  var dv = document.getElementById('infDesde').value, hv = document.getElementById('infHasta').value;
+  var desde = dv ? new Date(dv+'T00:00:00') : null, hasta = hv ? new Date(hv+'T23:59:59') : null;
+  var resp = document.getElementById('infResp').value, marca = document.getElementById('infMarca').value;
+  var dentro = function(f){ if(!f) return false; if(desde && f<desde) return false; if(hasta && f>hasta) return false; return true; };
+  var base = _informe_.casos.filter(function(c){ return (!resp || c.responsable===resp) && (!marca || c.marca===marca); });
+  var ingresados = base.filter(function(c){ return dentro(parseFechaGC_(c.fechaCreacion)); });
+  var cerrados = base.filter(function(c){ return !estaAbierto_(c) && dentro(parseFechaGC_(c.cerradoFecha||c.fechaUltimaActualizacion)); });
+  var dias = cerrados.map(function(c){ var a=parseFechaGC_(c.fechaCreacion), b=parseFechaGC_(c.cerradoFecha||c.fechaUltimaActualizacion); return (a&&b)? Math.max(0,(b-a)/86400000) : null; }).filter(function(x){ return x!==null; });
+  var prom = dias.length ? Math.round(dias.reduce(function(a,b){return a+b;},0)/dias.length*10)/10 : null;
+  var enPlazo = 0, conSla = 0;
+  cerrados.forEach(function(c){ var sv=parseFechaGC_(c.slaVencimiento), cf=parseFechaGC_(c.cerradoFecha||c.fechaUltimaActualizacion); if(sv && cf){ conSla++; if(cf<=sv) enPlazo++; } });
+  var abiertosHoy = ingresados.filter(estaAbierto_);
+  var agrupar = function(lista, fn){ var m={}; lista.forEach(function(c){ var k=fn(c)||'—'; m[k]=(m[k]||0)+1; }); return Object.keys(m).map(function(k){ return {valor:k, cantidad:m[k]}; }).sort(function(a,b){ return b.cantidad-a.cantidad; }); };
+  var porResp = {};
+  ingresados.forEach(function(c){ var k=c.responsable||'Sin asignar'; (porResp[k]=porResp[k]||{ing:0,cer:0,abi:0}).ing++; if(estaAbierto_(c)) porResp[k].abi++; });
+  cerrados.forEach(function(c){ var k=c.responsable||'Sin asignar'; (porResp[k]=porResp[k]||{ing:0,cer:0,abi:0}).cer++; });
+  var r = {
+    desde:dv, hasta:hv, resp:resp, marca:marca, ingresados:ingresados.length, cerrados:cerrados.length, abiertos:abiertosHoy.length,
+    prom:prom, cumplimiento: conSla ? Math.round(enPlazo/conSla*100) : null, vencidosHoy: base.filter(function(c){ return slaVencido_(c); }).length,
+    motivos: agrupar(ingresados, function(c){ return c.motivo; }).slice(0,8), marcas: agrupar(ingresados, function(c){ return c.marca; }),
+    sucursales: agrupar(ingresados, function(c){ return c.sucursal; }), prioridades: agrupar(ingresados, function(c){ return c.prioridad; }),
+    responsables: Object.keys(porResp).sort().map(function(k){ return {nombre:k, ing:porResp[k].ing, cer:porResp[k].cer, abi:porResp[k].abi}; })
+  };
+  _informe_.resumen = r;
+  // detalle: ingresados + cerrados del período (sin repetir)
+  var vistos = {}, filas = [];
+  ingresados.concat(cerrados).forEach(function(c){ if(!vistos[c.id]){ vistos[c.id]=1; filas.push(c); } });
+  filas.sort(function(a,b){ return (parseFechaGC_(a.fechaCreacion)||0) - (parseFechaGC_(b.fechaCreacion)||0); });
+  _informe_.filas = filas;
+  var kpi = function(v, t){ return '<div style="flex:1 1 130px;background:var(--panel-2);border:1px solid var(--hairline);border-radius:12px;padding:10px 12px;"><div style="font-size:22px;font-weight:800;">'+v+'</div><div style="font-size:11px;color:var(--text-dim);">'+t+'</div></div>'; };
+  var lista = function(titulo, arr){ return '<div style="flex:1 1 220px;"><div style="font-weight:700;font-size:12.5px;margin-bottom:6px;">'+titulo+'</div>'+(arr.length ? arr.map(function(x){ return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid var(--hairline);"><span>'+informeEsc_(x.valor)+'</span><b>'+x.cantidad+'</b></div>'; }).join('') : '<div style="font-size:12px;color:var(--text-faint);">Sin datos en el período.</div>')+'</div>'; };
+  cuerpo.innerHTML =
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px;">'+
+      kpi(r.ingresados,'Casos ingresados')+kpi(r.cerrados,'Casos cerrados')+kpi(r.abiertos,'Siguen abiertos (de los ingresados)')+
+      kpi(r.prom!==null ? r.prom+' días' : '—','Tiempo promedio de resolución')+kpi(r.cumplimiento!==null ? r.cumplimiento+'%' : '—','Cerrados dentro del plazo (SLA)')+kpi(r.vencidosHoy,'Fuera de plazo hoy')+
+    '</div>'+
+    '<div style="display:flex;gap:18px;flex-wrap:wrap;">'+lista('Motivos más repetidos', r.motivos)+lista('Por marca', r.marcas)+lista('Por sucursal', r.sucursales)+lista('Por prioridad', r.prioridades)+'</div>'+
+    '<div style="font-weight:700;font-size:12.5px;margin:16px 0 6px;">Por responsable</div>'+
+    '<table class="tbl"><thead><tr><th>Responsable</th><th style="text-align:center;">Ingresados</th><th style="text-align:center;">Cerrados</th><th style="text-align:center;">Abiertos</th></tr></thead><tbody>'+
+    (r.responsables.length ? r.responsables.map(function(x){ return '<tr><td>'+informeEsc_(x.nombre)+'</td><td style="text-align:center;">'+x.ing+'</td><td style="text-align:center;">'+x.cer+'</td><td style="text-align:center;">'+x.abi+'</td></tr>'; }).join('') : '<tr><td colspan="4" style="color:var(--text-faint);">Sin casos en el período.</td></tr>')+
+    '</tbody></table>';
+}
+function informeTitulo_(){
+  var r = _informe_.resumen; if(!r) return 'Informe';
+  var f = function(v){ return v ? v.split('-').reverse().join('/') : '…'; };
+  return 'Informe de casos '+f(r.desde)+' al '+f(r.hasta)+(r.resp?' — '+r.resp:'')+(r.marca?' — '+r.marca:'');
+}
+var INFORME_COLS_ = [['ID','id'],['Creado','fechaCreacion'],['Estado','estado'],['Prioridad','prioridad'],['Cliente','cliente'],['Marca','marca'],['Modelo','modelo'],['Dominio / VIN','dominio'],['Sucursal','sucursal'],['Motivo','motivo'],['Responsable','responsable'],['Fuente','fuente'],['Cierre','cerradoFecha'],['SLA vence','slaVencimiento']];
+function informeFilasMatriz_(){
+  var r = _informe_.resumen, m = [];
+  m.push([informeTitulo_()]); m.push([]);
+  m.push(['Casos ingresados', r.ingresados]); m.push(['Casos cerrados', r.cerrados]); m.push(['Siguen abiertos', r.abiertos]);
+  m.push(['Tiempo promedio de resolución (días)', r.prom===null?'':r.prom]); m.push(['Cerrados dentro del plazo (%)', r.cumplimiento===null?'':r.cumplimiento]); m.push(['Fuera de plazo hoy', r.vencidosHoy]); m.push([]);
+  m.push(['Responsable','Ingresados','Cerrados','Abiertos']); r.responsables.forEach(function(x){ m.push([x.nombre,x.ing,x.cer,x.abi]); }); m.push([]);
+  m.push(['Motivo','Cantidad']); r.motivos.forEach(function(x){ m.push([x.valor,x.cantidad]); });
+  return m;
+}
+function informeDescargar_(blob, nombre){
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = nombre; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function informeExcel_(){
+  if(!_informe_.resumen){ showToast('Esperá que termine de calcular'); return; }
+  var nombre = 'informe-casos-'+(_informe_.resumen.desde||'')+'_'+(_informe_.resumen.hasta||'')+'.xlsx';
+  var hacer = function(){
+    var wb = XLSX.utils.book_new();
+    var ws1 = XLSX.utils.aoa_to_sheet(informeFilasMatriz_()); ws1['!cols'] = [{wch:38},{wch:14},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws1, 'Resumen');
+    var det = [INFORME_COLS_.map(function(c){ return c[0]; })].concat(_informe_.filas.map(function(c){ return INFORME_COLS_.map(function(k){ var v=c[k[1]]; return /fecha|SLA|Cierre|Creado/i.test(k[0]) ? fmtFechaGC_(v) : (v==null?'':v); }); }));
+    var ws2 = XLSX.utils.aoa_to_sheet(det); ws2['!cols'] = INFORME_COLS_.map(function(){ return {wch:18}; });
+    XLSX.utils.book_append_sheet(wb, ws2, 'Casos');
+    XLSX.writeFile(wb, nombre);
+    showToast('Excel descargado');
+  };
+  if(window.XLSX){ hacer(); return; }
+  showToast('Preparando el Excel…');
+  var sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+  sc.onload = hacer;
+  sc.onerror = function(){ // plan B: CSV que Excel abre igual
+    var rows = [INFORME_COLS_.map(function(c){ return c[0]; })].concat(_informe_.filas.map(function(c){ return INFORME_COLS_.map(function(k){ return c[k[1]]==null?'':c[k[1]]; }); }));
+    var csv = '﻿'+rows.map(function(r){ return r.map(function(v){ return '"'+String(v).replace(/"/g,'""')+'"'; }).join(';'); }).join('\r\n');
+    informeDescargar_(new Blob([csv],{type:'text/csv;charset=utf-8'}), nombre.replace('.xlsx','.csv'));
+    showToast('Se descargó en CSV (Excel lo abre igual)');
+  };
+  document.head.appendChild(sc);
+}
+function informePDF_(){
+  if(!_informe_.resumen){ showToast('Esperá que termine de calcular'); return; }
+  var r = _informe_.resumen, w = window.open('', '_blank');
+  if(!w){ showToast('El navegador bloqueó la ventana. Permitila para descargar el PDF.'); return; }
+  var kp = function(v,t){ return '<div class="k"><b>'+v+'</b><span>'+t+'</span></div>'; };
+  var tab = function(cols, filas){ return '<table><thead><tr>'+cols.map(function(c){ return '<th>'+c+'</th>'; }).join('')+'</tr></thead><tbody>'+filas.map(function(f){ return '<tr>'+f.map(function(v){ return '<td>'+informeEsc_(v)+'</td>'; }).join('')+'</tr>'; }).join('')+'</tbody></table>'; };
+  w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+informeEsc_(informeTitulo_())+'</title><style>'+
+    'body{font-family:Arial,sans-serif;color:#111;margin:28px;font-size:12px}h1{font-size:18px;margin:0 0 4px}h2{font-size:13px;margin:18px 0 6px}p{margin:0 0 12px;color:#555}'+
+    '.ks{display:flex;gap:8px;flex-wrap:wrap}.k{border:1px solid #ccc;border-radius:8px;padding:8px 12px;min-width:120px}.k b{display:block;font-size:20px}.k span{font-size:10.5px;color:#555}'+
+    'table{width:100%;border-collapse:collapse;margin-top:4px}th,td{border:1px solid #ddd;padding:4px 6px;text-align:left;font-size:11px}th{background:#f2f2f2}'+
+    '@media print{body{margin:12mm}}</style></head><body><h1>'+informeEsc_(informeTitulo_())+'</h1><p>Grupo París — Gestión de Casos · generado el '+fmtFechaGC_(new Date())+'</p>'+
+    '<div class="ks">'+kp(r.ingresados,'Ingresados')+kp(r.cerrados,'Cerrados')+kp(r.abiertos,'Siguen abiertos')+kp(r.prom!==null?r.prom+' días':'—','Tiempo prom. de resolución')+kp(r.cumplimiento!==null?r.cumplimiento+'%':'—','Cerrados en plazo')+kp(r.vencidosHoy,'Fuera de plazo hoy')+'</div>'+
+    '<h2>Por responsable</h2>'+tab(['Responsable','Ingresados','Cerrados','Abiertos'], r.responsables.map(function(x){ return [x.nombre,x.ing,x.cer,x.abi]; }))+
+    '<h2>Motivos más repetidos</h2>'+tab(['Motivo','Cantidad'], r.motivos.map(function(x){ return [x.valor,x.cantidad]; }))+
+    '<h2>Por marca</h2>'+tab(['Marca','Cantidad'], r.marcas.map(function(x){ return [x.valor,x.cantidad]; }))+
+    '<h2>Detalle de casos ('+_informe_.filas.length+')</h2>'+tab(['ID','Creado','Estado','Prior.','Cliente','Marca','Motivo','Responsable'], _informe_.filas.map(function(c){ return [c.id,fmtFechaGC_(c.fechaCreacion),c.estado,c.prioridad,c.cliente,c.marca,c.motivo,c.responsable]; }))+
+    '</body></html>');
+  w.document.close(); setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 400);
 }
 function pintarGraficosReportes_(res){
   var c = coloresGrafico_();
@@ -3125,6 +3278,12 @@ function renderActas(){
         '<button class="btn btn-ghost" style="width:auto;" onclick="cerrarFormActa_()">Cancelar</button>'+
       '</div>'+
     '</div></div>'+
+    '<div id="filtroActas" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:end;">'+
+      '<input id="actaBuscar" type="text" placeholder="Buscar por título, tema, asistente o responsable…" oninput="pintarActas_()" style="flex:1 1 260px;padding:9px 12px;border:1.5px solid var(--hairline);border-radius:9px;font-size:12.5px;background:var(--panel);color:var(--text);">'+
+      '<label style="font-size:11px;color:var(--text-dim);">Desde<br><input type="date" id="actaDesde" onchange="pintarActas_()"></label>'+
+      '<label style="font-size:11px;color:var(--text-dim);">Hasta<br><input type="date" id="actaHasta" onchange="pintarActas_()"></label>'+
+      '<button class="btn btn-ghost btn-sm" onclick="document.getElementById(\'actaBuscar\').value=\'\';document.getElementById(\'actaDesde\').value=\'\';document.getElementById(\'actaHasta\').value=\'\';pintarActas_();">Limpiar</button>'+
+    '</div>'+
     '<div id="listadoActas"><div class="empty-state">Cargando…</div></div>'+
     '<div class="hidden" id="listadoCompromisosWrap">'+
       '<div class="quick-views" id="quickViewsCompromisos">'+
@@ -3247,8 +3406,24 @@ function pintarCasosSeleccionadosMinuta_(){
 function cargarYPintarActas_(){
   gasGet('actas').then(function(res){
     if(!res.ok){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">'+res.error+'</div></div>'; return; }
-    var actas = (res.actas||[]).sort(function(a,b){ return new Date(b.fecha||0) - new Date(a.fecha||0); });
-    if(actas.length===0){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">Todavía no hay minutas cargadas.</div></div>'; return; }
+    window._actasCache = (res.actas||[]).sort(function(a,b){ return new Date(b.fecha||0) - new Date(a.fecha||0); });
+    pintarActas_();
+  });
+}
+function pintarActas_(){
+  (function(){
+    var todas = window._actasCache || [];
+    var q = ((document.getElementById('actaBuscar')||{}).value||'').trim().toLowerCase();
+    var dv = (document.getElementById('actaDesde')||{}).value, hv = (document.getElementById('actaHasta')||{}).value;
+    var desde = dv ? new Date(dv+'T00:00:00') : null, hasta = hv ? new Date(hv+'T23:59:59') : null;
+    var actas = todas.filter(function(a){
+      var f = parseFechaGC_(a.fecha) || new Date(a.fecha||0);
+      if(desde && f<desde) return false; if(hasta && f>hasta) return false;
+      if(!q) return true;
+      return [a.titulo,a.objetivo,a.temas,a.asistentes,a.responsableReunion,a.proximosPasos,(a.casosVinculados||[]).join(' ')].join(' ').toLowerCase().indexOf(q)>-1;
+    });
+    if(todas.length===0){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">Todavía no hay minutas cargadas.</div></div>'; return; }
+    if(actas.length===0){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">Ninguna minuta coincide con la búsqueda.</div></div>'; return; }
     document.getElementById('listadoActas').innerHTML = '<div class="panel">'+
       actas.map(function(a){
         return '<div class="minuta-card">'+
@@ -3262,7 +3437,7 @@ function cargarYPintarActas_(){
         '</div>';
       }).join('')+
     '</div>';
-  });
+  })();
 }
 function verMinutaDetalle_(id){
   document.getElementById('overlay').classList.add('show');
@@ -3409,6 +3584,52 @@ function renderEquipo(){
     '</div></div>';
   cargarYPintarEquipo_();
 }
+// Reasignación masiva: pasar de un responsable a otro varios casos abiertos de una vez
+// (por ejemplo cuando alguien se va de vacaciones). Usa el mismo "asignarCaso" de siempre, uno por uno.
+function abrirReasignarMasivo_(nombreOrigen){
+  var casos = (window._casosCache||[]).filter(function(c){ return c.responsable===nombreOrigen && estaAbierto_(c); });
+  var destinos = (window._equipoUsuarios_||[]).filter(function(u){ return u.activo && u.nombre!==nombreOrigen; });
+  if(!casos.length){ showToast('No tiene casos abiertos'); return; }
+  var esc = function(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); };
+  var viejo = document.getElementById('reasignarModalGC'); if(viejo) viejo.remove();
+  var d = document.createElement('div'); d.id = 'reasignarModalGC';
+  d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px;';
+  d.innerHTML = '<div style="background:var(--panel);color:var(--text);border:1px solid var(--hairline);border-radius:18px;max-width:560px;width:100%;max-height:88vh;overflow:auto;padding:22px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;"><b style="font-size:16px;">Reasignar casos de '+esc(nombreOrigen)+'</b><button id="raX" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;">×</button></div>'+
+    '<p style="font-size:12.5px;color:var(--text-dim);margin:6px 0 12px;">Tildá los casos que querés pasar y elegí a quién. Cada uno queda anotado en su historial.</p>'+
+    '<label style="font-size:11px;color:var(--text-dim);">Pasar a<br><select id="raDestino" style="width:100%;padding:9px;border:1.5px solid var(--hairline);border-radius:9px;background:var(--panel-2);color:var(--text);">'+
+      destinos.map(function(u){ return '<option value="'+esc(u.nombre)+'">'+esc(u.nombre)+(u.sector?' — '+esc(u.sector):'')+'</option>'; }).join('')+'</select></label>'+
+    '<div style="margin:12px 0 6px;display:flex;justify-content:space-between;font-size:12px;"><b>Casos abiertos ('+casos.length+')</b><a href="#" id="raTodos" style="color:var(--caso);">Marcar / desmarcar todos</a></div>'+
+    '<div style="border:1px solid var(--hairline);border-radius:10px;max-height:260px;overflow:auto;">'+
+      casos.map(function(c){ return '<label style="display:flex;gap:8px;align-items:center;padding:7px 10px;border-bottom:1px solid var(--hairline);font-size:12px;cursor:pointer;"><input type="checkbox" class="raChk" value="'+esc(c.id)+'" checked><span class="mono" style="color:var(--caso);font-weight:700;">'+esc(c.id)+'</span><span style="flex:1;">'+esc(c.cliente||'—')+' · '+esc(c.motivo||'')+'</span></label>'; }).join('')+'</div>'+
+    '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;"><span id="raEstado" style="flex:1;font-size:12px;color:var(--text-dim);align-self:center;"></span>'+
+      '<button class="btn btn-ghost btn-sm" id="raCancelar">Cancelar</button><button class="btn btn-primary btn-sm" id="raOk" style="width:auto;">Reasignar</button></div></div>';
+  document.body.appendChild(d);
+  var cerrar = function(){ d.remove(); };
+  d.querySelector('#raX').onclick = cerrar; d.querySelector('#raCancelar').onclick = cerrar;
+  d.addEventListener('click', function(e){ if(e.target===d) cerrar(); });
+  d.querySelector('#raTodos').onclick = function(e){ e.preventDefault(); var cks=d.querySelectorAll('.raChk'); var alguno=[].some.call(cks,function(c){return !c.checked;}); [].forEach.call(cks,function(c){ c.checked = alguno; }); };
+  d.querySelector('#raOk').onclick = function(){
+    var ids = [].filter.call(d.querySelectorAll('.raChk'), function(c){ return c.checked; }).map(function(c){ return c.value; });
+    var destino = d.querySelector('#raDestino').value;
+    if(!ids.length){ showToast('Elegí al menos un caso'); return; }
+    if(!destino){ showToast('No hay a quién reasignar'); return; }
+    var btn = d.querySelector('#raOk'); btn.disabled = true;
+    var s = sesionActual(), hechos = 0, fallos = [], estado = d.querySelector('#raEstado');
+    (function siguiente(){
+      if(!ids.length){
+        guardarCache_('casos', window._casosCache);
+        showToast(hechos+' caso'+(hechos===1?'':'s')+' reasignado'+(hechos===1?'':'s')+' a '+destino+(fallos.length?' · '+fallos.length+' fallaron':''));
+        cerrar(); cargarYPintarEquipo_(); return;
+      }
+      var id = ids.shift(); estado.textContent = 'Reasignando '+(hechos+fallos.length+1)+' de '+(hechos+fallos.length+ids.length+1)+'…';
+      gasPost('asignarCaso', {id:id, responsable:destino, autor:s?s.nombre:''}).then(function(res){
+        if(res && res.ok){ hechos++; var c = casoEnCache_(id); if(c) c.responsable = destino; } else fallos.push(id);
+        siguiente();
+      }).catch(function(){ fallos.push(id); siguiente(); });
+    })();
+  };
+}
 function cargarYPintarEquipo_(){
   var s = sesionActual();
   var pass = _passwordSesionActual_();
@@ -3491,6 +3712,12 @@ function cambiarActivoUsuarioUI_(usuario, activo){
   });
 }
 function pintarTablaEquipo_(usuarios){
+  window._equipoUsuarios_ = usuarios;
+  if(!window._casosCache){
+    gasGet('casos').then(function(r){ if(r && r.ok){ window._casosCache = r.casos||[]; pintarTablaEquipo_(usuarios); } });
+  }
+  var abiertosDe = function(nombre){ return (window._casosCache||[]).filter(function(c){ return c.responsable===nombre && estaAbierto_(c); }).length; };
+  var maxAb = Math.max.apply(null, [1].concat(usuarios.map(function(u){ return abiertosDe(u.nombre); })));
   var etiquetasRol = {calidad:'Calidad', sector:'Sector', referente:'Referente'};
   var filas = usuarios.map(function(u){
     return '<tr style="cursor:default;">'+
@@ -3500,14 +3727,16 @@ function pintarTablaEquipo_(usuarios){
       '<td>'+(u.sector||'—')+'</td>'+
       '<td>'+(u.email||'—')+'</td>'+
       '<td>'+(u.activo ? '<span class="pill pill-resuelto">Activo</span>' : '<span class="pill pill-cerrado">Inactivo</span>')+'</td>'+
+      '<td style="min-width:110px;"><div style="display:flex;align-items:center;gap:8px;"><b>'+abiertosDe(u.nombre)+'</b><div style="flex:1;height:6px;background:var(--panel-2);border-radius:4px;overflow:hidden;"><div style="height:100%;width:'+Math.round(abiertosDe(u.nombre)/maxAb*100)+'%;background:var(--caso);"></div></div></div></td>'+
       '<td style="white-space:nowrap;">'+
+        (abiertosDe(u.nombre)>0 ? '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="abrirReasignarMasivo_(\''+String(u.nombre).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')">Reasignar casos</button> ' : '')+
         '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick=\'abrirFormUsuario_('+JSON.stringify(u)+')\'>Editar</button> '+
         '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="cambiarActivoUsuarioUI_(\''+u.usuario+'\','+(!u.activo)+')">'+(u.activo?'Desactivar':'Activar')+'</button>'+
       '</td>'+
     '</tr>';
   }).join('');
   document.getElementById('tablaEquipo').innerHTML = usuarios.length ?
-    '<table class="tbl"><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Sector</th><th>Email</th><th>Estado</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>' :
+    '<table class="tbl"><thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Sector</th><th>Email</th><th>Estado</th><th>Casos abiertos</th><th></th></tr></thead><tbody>'+filas+'</tbody></table>' :
     '<div class="empty-state">No hay usuarios cargados.</div>';
 }
 
@@ -3528,6 +3757,38 @@ function renderConfig(){
     pintarConfig_();
   });
 }
+function mantCreds_(){ var s = sesionActual(), p = _passwordSesionActual_(); return (s && p) ? {actorUsuario:s.usuario, actorPassword:p} : null; }
+function mantenimientoContar_(){
+  var c = mantCreds_(), info = document.getElementById('mantArchivarInfo'); if(!c || !info) return;
+  gasPost('mantenimientoEstado', Object.assign({meses:6}, c)).then(function(res){
+    info = document.getElementById('mantArchivarInfo'); if(!info) return;
+    if(!res.ok){ info.textContent = res.error || 'No se pudo consultar.'; return; }
+    info.innerHTML = res.paraArchivar ? 'Hay <b>'+res.paraArchivar+'</b> caso'+(res.paraArchivar===1?'':'s')+' listo'+(res.paraArchivar===1?'':'s')+' para archivar.' : 'No hay casos para archivar todavía.';
+    var b = document.getElementById('mantArchivarBtn'); if(b) b.disabled = !res.paraArchivar;
+  }).catch(function(){ var i=document.getElementById('mantArchivarInfo'); if(i) i.textContent='No se pudo conectar con el servidor.'; });
+}
+function archivarCasosViejosUI_(){
+  var c = mantCreds_(); if(!c) return;
+  if(!confirm('Se van a pasar a la hoja Casos_Archivo los casos cerrados hace más de 6 meses. ¿Seguimos?')) return;
+  var b = document.getElementById('mantArchivarBtn'); b.disabled = true; b.textContent = 'Archivando…';
+  gasPost('archivarCasosViejos', Object.assign({meses:6}, c)).then(function(res){
+    b.textContent = 'Archivar ahora';
+    if(!res.ok){ showToast(res.error||'No se pudo archivar'); b.disabled = false; return; }
+    showToast(res.archivados+' caso'+(res.archivados===1?'':'s')+' archivado'+(res.archivados===1?'':'s'));
+    window._casosCache = null; try{ guardarCache_('casos', []); }catch(e){}
+    mantenimientoContar_();
+  }).catch(function(){ b.textContent='Archivar ahora'; b.disabled=false; showToast('No se pudo conectar con el servidor.'); });
+}
+function respaldarPlanillaUI_(){
+  var c = mantCreds_(); if(!c) return;
+  var b = document.getElementById('mantRespaldoBtn'), i = document.getElementById('mantRespaldoInfo');
+  b.disabled = true; b.textContent = 'Copiando…'; i.textContent = '';
+  gasPost('respaldarPlanilla', c).then(function(res){
+    b.disabled = false; b.textContent = 'Hacer respaldo ahora';
+    if(!res.ok){ i.textContent = res.error||'No se pudo hacer el respaldo.'; return; }
+    i.innerHTML = '✓ Listo: <a href="'+res.url+'" target="_blank" rel="noopener" style="color:var(--caso);">abrir copia</a>';
+  }).catch(function(){ b.disabled=false; b.textContent='Hacer respaldo ahora'; i.textContent='No se pudo conectar con el servidor.'; });
+}
 function pintarConfig_(){
   var cat = window._catalogosCache||{};
   var conf = window._configCache||{};
@@ -3537,6 +3798,7 @@ function pintarConfig_(){
     tabBtn_('catalogos','Catálogos',tabActiva)+
     tabBtn_('parametros','Parámetros y SLA',tabActiva)+
     tabBtn_('automatizacion','Automatización',tabActiva)+
+    tabBtn_('mantenimiento','Mantenimiento',tabActiva)+
   '</div>';
 
   if(tabActiva==='catalogos'){
@@ -3575,6 +3837,19 @@ function pintarConfig_(){
         'Contadores internos (no editables): '+CONFIG_SOLO_LECTURA_.map(function(k){ return k+' = '+(conf[k]!==undefined?conf[k]:0); }).join(' · ')+
       '</div>'+
     '</div></div>';
+  }
+
+  if(tabActiva==='mantenimiento'){
+    html += '<div class="panel"><div class="panel-head"><h3>Archivar casos viejos</h3></div><div style="padding:16px 18px;">'+
+      '<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:10px;">Pasa a la hoja <b>Casos_Archivo</b> los casos cerrados o resueltos hace más de 6 meses, con todas sus novedades. Sirve para que la planilla no se ponga lenta. No se pierde nada: quedan guardados en esa hoja, pero ya no aparecen en la app.</div>'+
+      '<div id="mantArchivarInfo" style="font-size:12.5px;margin-bottom:12px;">Contando…</div>'+
+      '<button class="btn btn-dark btn-sm" id="mantArchivarBtn" style="width:auto;" disabled onclick="archivarCasosViejosUI_()">Archivar ahora</button>'+
+    '</div></div>'+
+    '<div class="panel"><div class="panel-head"><h3>Respaldo de la planilla</h3></div><div style="padding:16px 18px;">'+
+      '<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:12px;">Guarda una copia completa de la planilla en la carpeta de Drive <b>Respaldos Gestión de Casos</b>. Se conservan los últimos 8 respaldos.</div>'+
+      '<button class="btn btn-dark btn-sm" id="mantRespaldoBtn" style="width:auto;" onclick="respaldarPlanillaUI_()">Hacer respaldo ahora</button> <span id="mantRespaldoInfo" style="font-size:12px;color:var(--text-dim);margin-left:8px;"></span>'+
+    '</div></div>';
+    setTimeout(mantenimientoContar_, 0);
   }
 
   if(tabActiva==='automatizacion'){
