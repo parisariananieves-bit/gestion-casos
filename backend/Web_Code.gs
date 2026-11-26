@@ -24,6 +24,7 @@ function doGet(e){
     else if(action==='actas') result = apiListarActas();
     else if(action==='acta') result = apiObtenerActa(e.parameter);
     else if(action==='compromisos') result = apiListarCompromisos(e.parameter);
+    else if(action==='reuniones') result = apiListarReuniones();
     else result = responseOk_({mensaje:'API Gestión de Casos funcionando'});
   }catch(err){
     result = responseError_(err);
@@ -48,6 +49,8 @@ function doPost(e){
     else if(action==='toggleDefensaConsumidor') result = apiToggleDefensaConsumidor(p);
     else if(action==='guardarAnalisisCausaRaiz') result = apiGuardarAnalisisCausaRaiz(p);
     else if(action==='crearActa') result = apiCrearActa(p);
+    else if(action==='guardarReunion') result = apiGuardarReunion(p);
+    else if(action==='eliminarReunion') result = apiEliminarReunion(p);
     else if(action==='marcarCompromisoCumplido') result = apiMarcarCompromisoCumplido(p);
     else if(action==='confirmarEventoComoCaso') result = apiConfirmarEventoComoCaso(p);
     else if(action==='descartarEvento') result = apiDescartarEvento(p);

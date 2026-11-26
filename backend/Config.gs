@@ -24,7 +24,8 @@ var HOJAS_GC = {
   AUDITORIAS: 'Auditorias', // placeholder — se completa en una etapa futura
   ANALISIS_CAUSA_RAIZ: 'AnalisisCausaRaiz',
   ACTAS: 'Actas',
-  COMPROMISOS: 'Compromisos'
+  COMPROMISOS: 'Compromisos',
+  REUNIONES: 'Reuniones'
 };
 
 // Análisis de causa raíz (5 Porqués) — uno por caso, editable.
@@ -49,6 +50,23 @@ var COLUMNAS_ANALISIS_CAUSA_RAIZ = [
 // Minutas de reunión (Etapa 5 — antes "Actas", ampliado). Se pueden
 // vincular a uno o más casos reales (por ID, nunca texto libre) y cada
 // caso tratado tiene sus propios compromisos en la hoja Compromisos.
+// Reuniones semanales de casos (por unidad de negocio y sucursal). diaSemana: 1=lunes … 7=domingo.
+var COLUMNAS_REUNIONES = [
+  {k:'id', h:'ID'},
+  {k:'titulo', h:'Título'},
+  {k:'unidad', h:'Unidad de negocio'},
+  {k:'sucursal', h:'Sucursal'},
+  {k:'diaSemana', h:'Día de la semana (1=lun … 7=dom)'},
+  {k:'hora', h:'Hora'},
+  {k:'duracionMin', h:'Duración (min)'},
+  {k:'lugar', h:'Lugar / link'},
+  {k:'participantes', h:'Participantes (emails)'},
+  {k:'googleEventId', h:'ID evento Google Calendar'},
+  {k:'activo', h:'Activa', bool:true},
+  {k:'creadoPor', h:'Creado por'},
+  {k:'fechaCreacion', h:'Fecha de creación'}
+];
+
 var COLUMNAS_ACTAS = [
   {k:'id', h:'ID'},
   {k:'fecha', h:'Fecha'},
