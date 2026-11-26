@@ -117,23 +117,13 @@ function esClaveEquipoValida_(caso, clave){
 // Valida el link seguro de seguimiento (caso + token [+ clave de equipo]).
 // Sin clave: datos mínimos + historial visible para el cliente.
 // Con clave: vista completa para el equipo.
-function svcReclamoValidarToken_(idCaso, token, clave, usuario, password){
+function svcReclamoValidarToken_(idCaso, token, clave){
   if(!idCaso || !token) return responseError_('Falta el caso o el token.');
   var caso = dbCasosBuscarPorId_(idCaso);
   if(!caso || !caso.tokenSeguimiento || caso.tokenSeguimiento !== token){
     return responseError_('El enlace no es válido o ya venció.');
   }
   var equipo = esClaveEquipoValida_(caso, clave);
-  var usuarioEquipo = null;
-  if(equipo){
-    // El link de equipo ya no alcanza por sí solo: hay que ingresar con el usuario y contraseña
-    // de Gestión de Casos (los mismos del Planning). Así el comentario queda con el nombre real.
-    if(usuario && password) usuarioEquipo = dbUsuariosVerificar_(usuario, password);
-    if(!usuarioEquipo){
-      if(usuario) Utilities.sleep(600);   // frena probar contraseñas a ciegas
-      return {ok:false, requiereLogin:true, error: usuario ? 'Usuario o contraseña incorrectos.' : 'Este link es del equipo: ingresá con tu usuario de Gestión de Casos.'};
-    }
-  }
   var segs = equipo ? dbSeguimientosPorCaso_(idCaso) : [];   // el cliente no ve el historial: solo el estado
   var novedades = segs.map(function(x){
     return {
@@ -148,9 +138,7 @@ function svcReclamoValidarToken_(idCaso, token, clave, usuario, password){
       fechaCreacion: caso.fechaCreacion, motivo: caso.motivo,
       cliente: caso.cliente, dominio: caso.dominio   // nombre y patente/VIN para que reconozca su caso
     },
-    novedades: novedades, vistaEquipo: equipo,
-    usuarioEquipo: usuarioEquipo ? usuarioEquipo.nombre : '',
-    sectorEquipo: usuarioEquipo ? String(usuarioEquipo.sector||'') : ''
+    novedades: novedades, vistaEquipo: equipo
   };
   // Lo que el propio cliente cargó en su reclamo (se muestra en su link; el DNI va enmascarado
   // porque el link suele compartirse por WhatsApp).
@@ -162,6 +150,11 @@ function svcReclamoValidarToken_(idCaso, token, clave, usuario, password){
     sucursal: caso.sucursal, sector: caso.sector, motivo: caso.motivo, descripcion: caso.descripcion,
     solucionEsperada: caso.solucionEsperada, evidencias: nEvid
   };
+  // Lista de archivos que subió el cliente (para mostrarlos en la vista de equipo; el contenido se pide aparte).
+  if(equipo){
+    var lista = []; try{ lista = JSON.parse(caso.evidencias||'[]'); }catch(e){}
+    out.caso.evidenciasLista = lista.map(function(ev){ return {nombre:ev.nombre, tipo:ev.tipo, tamano:ev.tamano, driveId:ev.driveId, fecha:ev.fecha}; });
+  }
   if(equipo){
     out.caso.cliente = caso.cliente; out.caso.telefono = caso.telefono; out.caso.sucursal = caso.sucursal;
     out.caso.dominio = caso.dominio; out.caso.descripcion = caso.descripcion; out.caso.responsable = caso.responsable;
@@ -183,12 +176,13 @@ function svcCasoLinksSeguimiento_(idCaso){
 // El cliente agrega comentario y/o archivos a un caso YA EXISTENTE a
 // través del link seguro — nunca crea un reclamo nuevo (punto 7 de la
 // especificación).
-function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clave, nombre, usuario, password, puesto){
-  var validacion = svcReclamoValidarToken_(idCaso, token, clave, usuario, password);
+function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clave, nombre, puesto){
+  var validacion = svcReclamoValidarToken_(idCaso, token, clave);
   if(!validacion.ok) return validacion;
   var equipo = !!validacion.vistaEquipo;
-  var puestoTxt = String(puesto || validacion.sectorEquipo || '').trim().slice(0,60);
-  var autor = equipo ? (String(validacion.usuarioEquipo||'').trim() || 'Equipo') + (puestoTxt ? ' — ' + puestoTxt : '') + ' (link de equipo)' : 'Cliente';
+  var nombreTxt = String(nombre||'').trim().slice(0,60), puestoTxt = String(puesto||'').trim().slice(0,60);
+  if(equipo && !nombreTxt) return responseError_('Poné tu nombre para dejar el comentario.');
+  var autor = equipo ? nombreTxt + (puestoTxt ? ' — ' + puestoTxt : '') + ' (link de equipo)' : 'Cliente';
   if(!comentario && (!archivos || !archivos.length)) return responseError_('Escribí un comentario o adjuntá al menos un archivo.');
 
   var subida = {evidencias: [], errores: []};
@@ -221,4 +215,18 @@ function svcReclamoAgregarSeguimiento_(idCaso, token, comentario, archivos, clav
   utilNotificarResponsableNuevaInfoCliente_(dbCasosBuscarPorId_(idCaso));
 
   return responseOk_({evidenciasGuardadas: subida.evidencias.length, erroresEvidencias: subida.errores});
+}
+
+// Entrega el contenido de un archivo que subió el cliente, SOLO si el link tiene la clave de equipo
+// y el archivo pertenece a ese caso. La carpeta de Drive sigue privada: el archivo viaja por acá.
+function svcReclamoArchivo_(idCaso, token, clave, driveId){
+  var caso = dbCasosBuscarPorId_(idCaso);
+  if(!caso || !caso.tokenSeguimiento || caso.tokenSeguimiento !== token || !esClaveEquipoValida_(caso, clave)) return responseError_('El enlace no es válido.');
+  var lista = []; try{ lista = JSON.parse(caso.evidencias||'[]'); }catch(e){}
+  var ev = lista.filter(function(x){ return String(x.driveId)===String(driveId); })[0];
+  if(!ev) return responseError_('Ese archivo no pertenece a este caso.');
+  try{
+    var blob = DriveApp.getFileById(ev.driveId).getBlob();
+    return responseOk_({nombre: ev.nombre, tipo: ev.tipo || blob.getContentType(), base64: Utilities.base64Encode(blob.getBytes())});
+  }catch(e){ return responseError_('No se pudo abrir el archivo.'); }
 }

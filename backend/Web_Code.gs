@@ -72,6 +72,7 @@ function doPost(e){
     else if(action==='reclamoPublico') result = apiReclamoPublicoCrear(p);
     else if(action==='reclamoValidarToken') result = apiReclamoValidarToken(p);
     else if(action==='reclamoSeguimiento') result = apiReclamoSeguimientoAgregar(p);
+    else if(action==='reclamoArchivo') result = apiReclamoArchivo(p);
     else result = responseError_('Acción desconocida: '+action);
   }catch(err){
     result = responseError_(err);
