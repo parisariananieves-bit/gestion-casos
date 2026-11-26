@@ -4020,7 +4020,7 @@ function archivarCasosViejosUI_(){
 // ---- Traer clientes de la planilla de Postventa a la Bandeja ----
 function postventaAbrir_(){
   var c = mantCreds_(); if(!c){ showToast('Volvé a iniciar sesión.'); return; }
-  var d = modalGC_('pvModal','<b style="font-size:16px;">Traer de Postventa</b><div id="pvCuerpo" style="margin-top:12px;font-size:13px;color:var(--text-dim);">Leyendo la planilla…</div>');
+  window._pvDesde=''; var d = modalGC_('pvModal','<b style="font-size:16px;">Traer de Postventa</b><div id="pvCuerpo" style="margin-top:12px;font-size:13px;color:var(--text-dim);">Leyendo la planilla…</div>');
   gasPost('postventaPrevisualizar', c).then(function(res){
     var b = document.getElementById('pvCuerpo'); if(!b) return;
     if(!res.ok){ b.innerHTML = '<span style="color:var(--bad,#c0392b);">'+gcEscAttr_(res.error||'No se pudo leer.')+'</span>'; return; }
@@ -4031,8 +4031,12 @@ function postventaAbrir_(){
 function pvPintar_(){
   var b = document.getElementById('pvCuerpo'); if(!b) return;
   var f = window._pvFilas||[];
-  var nuevas = f.filter(function(x){return !x.yaImportado;});
-  if(!nuevas.length){ b.innerHTML = 'No hay clientes nuevos para traer. Ya está todo importado ('+f.length+' en la planilla).'; return; }
+  var desde = (window._pvDesde||'');
+  var aIso = function(t){ var m=String(t||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/); return m ? m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2) : ''; };
+  var nuevas = f.filter(function(x){ return !x.yaImportado && (!desde || (aIso(x.fecha) && aIso(x.fecha)>=desde)); });
+  var filtro = '<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;"><label style="font-size:12px;color:var(--text-dim);">Desde la fecha de la encuesta</label><input type="date" id="pvDesde" value="'+desde+'" onchange="window._pvDesde=this.value;pvPintar_()" style="padding:6px 9px;border:1.5px solid var(--hairline);border-radius:9px;background:var(--panel-2);color:var(--text);font-size:12.5px;">'+(desde?'<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="window._pvDesde=\'\';pvPintar_()">Ver todo</button>':'')+'</div>';
+  if(!nuevas.length){ b.innerHTML = filtro + (desde ? 'No hay clientes nuevos desde esa fecha.' : 'No hay clientes nuevos para traer. Ya está todo importado ('+f.length+' en la planilla).'); return; }
+  if(false){ b.innerHTML = 'No hay clientes nuevos para traer. Ya está todo importado ('+f.length+' en la planilla).'; return; }
   var fila = function(x,i){
     var tag = x.resueltaEnPlanilla ? ' · ya resuelto en planilla' : '';
     return '<label style="display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--hairline);cursor:pointer;">'+
@@ -4042,7 +4046,7 @@ function pvPintar_(){
       (x.comentario?'<div style="font-size:12.5px;margin-top:3px;">'+gcEscAttr_(x.comentario.length>220?x.comentario.slice(0,220)+'…':x.comentario)+'</div>':'<div style="font-size:12px;color:var(--text-faint);margin-top:3px;">Sin comentario</div>')+
       '</div></label>';
   };
-  b.innerHTML = '<div style="margin-bottom:8px;">Hay <b>'+nuevas.length+'</b> cliente'+(nuevas.length===1?'':'s')+' nuevo'+(nuevas.length===1?'':'s')+' en la planilla ('+(f.length-nuevas.length)+' ya importado'+(f.length-nuevas.length===1?'':'s')+'). Vienen tildados los que tienen algo para tratar; destildá los que no.</div>'+
+  b.innerHTML = filtro+'<div style="margin-bottom:8px;">Hay <b>'+nuevas.length+'</b> cliente'+(nuevas.length===1?'':'s')+' nuevo'+(nuevas.length===1?'':'s')+' en la planilla ('+(f.length-nuevas.length)+' ya importado'+(f.length-nuevas.length===1?'':'s')+'). Vienen tildados los que tienen algo para tratar; destildá los que no.</div>'+
     nuevas.map(function(x){ return fila(x, f.indexOf(x)); }).join('')+
     '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px;"><button class="btn btn-ghost btn-sm" style="width:auto;" onclick="document.getElementById(\'pvModal\').remove()">Cancelar</button>'+
     '<button class="btn btn-dark btn-sm" id="pvGo" style="width:auto;" onclick="postventaImportar_()">Traer a la Bandeja</button></div>';
