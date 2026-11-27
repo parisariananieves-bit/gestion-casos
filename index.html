@@ -625,6 +625,20 @@ table.tbl tr.r-nueva td:first-child{padding-left:20px;}
 .compromiso-card .cc-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; gap:10px;}
 .compromiso-card .cc-head .cc-caso{font-weight:800; color:var(--caso); font-size:12.5px;}
 .minuta-card{border-bottom:1px solid var(--hairline); padding:14px 0;}
+.mn-card{display:grid; grid-template-columns:64px 1fr auto; gap:16px; align-items:start; background:var(--panel); border:1.5px solid var(--hairline); border-radius:var(--radius-m,14px); padding:14px 16px; margin-bottom:10px;}
+.mn-fecha{display:flex; flex-direction:column; align-items:center; justify-content:center; background:var(--caso-soft); color:var(--caso); border-radius:12px; padding:8px 4px; line-height:1.05;}
+.mn-fecha b{font-size:24px; font-weight:800;} .mn-fecha span{font-size:11px; font-weight:800; letter-spacing:.6px; margin-top:2px;} .mn-fecha small{font-size:10px; opacity:.75; margin-top:2px;}
+.mn-main{min-width:0;} .mn-main h3{font-size:14.5px; margin:0 0 2px; font-weight:800;}
+.mn-meta{font-size:11.5px; color:var(--text-faint);} .mn-obj{margin-top:6px; font-size:12.5px; color:var(--text-dim);}
+.mn-chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; align-items:center;}
+.mn-cnt{font-size:11px; font-weight:700; color:var(--text-dim); margin-right:2px;}
+.mn-chip{background:var(--caso-soft); color:var(--caso); border-radius:20px; padding:2px 10px; font-size:11px; font-weight:700; cursor:pointer; white-space:nowrap;} .mn-chip.mn-mas{cursor:default; opacity:.8;}
+.mn-acc{display:flex; flex-direction:column; gap:6px; align-items:stretch;} .mn-acc .btn{white-space:nowrap;}
+.mn-del{color:var(--danger) !important;}
+input[type=date], input[type=time]{background:var(--panel-2); color:var(--text); border:1.5px solid var(--hairline); border-radius:9px; padding:7px 10px; font-family:inherit; font-size:12.5px; color-scheme:dark;}
+body.light-mode input[type=date], body.light-mode input[type=time]{color-scheme:light;}
+input[type=date]:focus, input[type=time]:focus{outline:none; border-color:var(--caso); box-shadow:0 0 0 3px var(--caso-soft);}
+@media (max-width:720px){ .mn-card{grid-template-columns:52px 1fr;} .mn-acc{grid-column:1/-1; flex-direction:row; flex-wrap:wrap;} }
 .minuta-card:last-child{border-bottom:none;}
 #minutaPrintRoot{display:none;}
 @media print{
@@ -3538,7 +3552,7 @@ function renderActas(){
       '<button class="btn btn-primary" style="width:auto;" onclick="abrirFormActa_()">+ Nueva minuta</button>'+
     '</div>'+
     '<div class="panel hidden" id="panelFormActa"><div style="padding:18px;">'+
-      '<h3 style="font-size:13px;margin-bottom:14px;">Nueva minuta de reunión</h3>'+
+      '<h3 style="font-size:13px;margin-bottom:14px;" id="formActaTitulo">Nueva minuta de reunión</h3>'+
       '<div class="form-grid">'+
         campo_('Título','actaTitulo','text','','full')+
         campo_('Fecha','actaFecha','date')+
@@ -3557,7 +3571,7 @@ function renderActas(){
         '<div id="minutaCasosSeleccionados"><div class="empty-state" style="padding:14px;font-size:11.5px;">Todavía no seleccionaste ningún caso.</div></div>'+
       '</div>'+
       '<div style="display:flex;gap:8px;margin-top:16px;">'+
-        '<button class="btn btn-primary" style="width:auto;" onclick="guardarActaUI_()">Guardar minuta</button>'+
+        '<button class="btn btn-primary" style="width:auto;" id="btnGuardarActa" onclick="guardarActaUI_()">Guardar minuta</button>'+
         '<button class="btn btn-ghost" style="width:auto;" onclick="cerrarFormActa_()">Cancelar</button>'+
       '</div>'+
     '</div></div>'+
@@ -3584,13 +3598,15 @@ function cambiarTabMinutas_(tab){
   document.getElementById('tabMinutas').classList.toggle('active', tab==='minutas');
   document.getElementById('tabCompromisos').classList.toggle('active', tab==='compromisos');
   document.getElementById('listadoActas').classList.toggle('hidden', tab!=='minutas');
+  var fa = document.getElementById('filtroActas'); if(fa) fa.style.display = (tab==='minutas') ? 'flex' : 'none';
   document.getElementById('listadoCompromisosWrap').classList.toggle('hidden', tab!=='compromisos');
   document.getElementById('panelFormActa').classList.add('hidden');
   if(tab==='compromisos') cargarYPintarCompromisos_('');
 }
-function abrirFormActa_(){
+function abrirFormActa_(pre, modo){
   cambiarTabMinutas_('minutas');
   window._minutaSeleccion = {};
+  window._actaEditId = (pre && modo==='editar') ? pre.id : null;
   var s = sesionActual();
   document.getElementById('panelFormActa').classList.remove('hidden');
   document.getElementById('actaFecha').valueAsDate = new Date();
@@ -3603,6 +3619,30 @@ function abrirFormActa_(){
   document.getElementById('actaProximosPasos').value = '';
   document.getElementById('minutaBuscarCaso').value = '';
   document.getElementById('minutaResultadosCasos').innerHTML = '<div class="empty-state" style="padding:14px;font-size:11.5px;">Escribí para buscar un caso.</div>';
+  var tit = document.getElementById('formActaTitulo'), bg = document.getElementById('btnGuardarActa');
+  if(tit) tit.textContent = modo==='editar' ? 'Editar minuta' : (modo==='repetir' ? 'Nueva minuta (a partir de una anterior)' : 'Nueva minuta de reunión');
+  if(bg) bg.textContent = modo==='editar' ? 'Guardar cambios' : 'Guardar minuta';
+  if(pre){
+    var iso = function(v){ var d = parseFechaGC_(v); if(!d) return ''; var p=function(n){return String(n).padStart(2,'0');}; return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+    var set = function(id,v){ var e=document.getElementById(id); if(e) e.value = v||''; };
+    set('actaTitulo', pre.titulo); set('actaHora', pre.hora); set('actaResponsableReunion', pre.responsableReunion||(s?s.nombre:'')); set('actaAsistentes', pre.asistentes);
+    set('actaObjetivo', pre.objetivo);
+    if(modo==='editar'){
+      set('actaFecha', iso(pre.fecha)); set('actaTemas', pre.temas); set('actaProximosPasos', pre.proximosPasos);
+      var casosC = window._casosCache || [], conComp = {};
+      (pre.compromisos||[]).forEach(function(co){
+        conComp[String(co.casoId)] = true;
+        window._minutaSeleccion[co.casoId] = { caso: casosC.find(function(c){return String(c.id)===String(co.casoId);}) || {id:co.casoId}, soloMencionado:false,
+          resumen:co.resumen||'', problema:co.problema||'', analisis:co.analisis||'', decision:co.decision||'', accion:co.accion||'',
+          responsableCompromiso:co.responsableCompromiso||'', fechaLimite:iso(co.fechaLimite), observaciones:co.observaciones||'' };
+      });
+      (pre.casosVinculados||[]).forEach(function(cid){
+        if(conComp[String(cid)]) return;
+        window._minutaSeleccion[cid] = { caso: casosC.find(function(c){return String(c.id)===String(cid);}) || {id:cid}, soloMencionado:true,
+          resumen:'', problema:'', analisis:'', decision:'', accion:'', responsableCompromiso:'', fechaLimite:'', observaciones:'' };
+      });
+    }
+  }
   pintarCasosSeleccionadosMinuta_();
   if(!window._casosCache){ gasGet('casos').then(function(r){ if(r.ok) window._casosCache = r.casos||[]; }); }
   document.getElementById('panelFormActa').scrollIntoView({behavior:'smooth', block:'start'});
@@ -3698,20 +3738,42 @@ function guardarActaUI_(){
     compromisos.push({casoId:cid, resumen:sel.resumen, problema:sel.problema, analisis:sel.analisis, decision:sel.decision, accion:sel.accion,
       responsableCompromiso:sel.responsableCompromiso, fechaLimite:sel.fechaLimite, observaciones:sel.observaciones});
   });
-  var btn = document.querySelector('#panelFormActa .btn-primary'); if(btn){ btn.disabled = true; btn.textContent = 'Guardando…'; }
-  var rehabilitar = function(){ if(btn){ btn.disabled = false; btn.textContent = 'Guardar minuta'; } };
-  gasPost('crearActa', {
+  var btn = document.getElementById('btnGuardarActa'); if(btn){ btn.disabled = true; btn.textContent = 'Guardando…'; }
+  var rehabilitar = function(){ if(btn){ btn.disabled = false; btn.textContent = window._actaEditId ? 'Guardar cambios' : 'Guardar minuta'; } };
+  var creds = window._actaEditId ? mantCreds_() : {};
+  if(window._actaEditId && !creds){ rehabilitar(); showToast('Volvé a iniciar sesión.'); return; }
+  gasPost(window._actaEditId ? 'editarActa' : 'crearActa', Object.assign({id:window._actaEditId||undefined}, creds, {
     titulo:titulo, fecha:v('actaFecha'), hora:v('actaHora'), responsableReunion:v('actaResponsableReunion'), asistentes:v('actaAsistentes'),
     objetivo:v('actaObjetivo'), temas:v('actaTemas'), proximosPasos:v('actaProximosPasos'),
     compromisosPorCaso:compromisos, casosSoloMencionados:solo, autor:s?s.nombre:''
-  }).then(function(res){
+  })).then(function(res){
     rehabilitar();
     if(!res || !res.ok){ showToast((res && res.error) || 'No se pudo guardar la minuta'); return; }
-    showToast('Minuta guardada');
+    showToast(window._actaEditId ? 'Cambios guardados' : 'Minuta guardada');
+    window._actaEditId = null;
     window._minutaSeleccion = {};
     cerrarFormActa_();
     cargarYPintarActas_();
   }).catch(function(){ rehabilitar(); showToast('No se pudo conectar con el servidor.'); });
+}
+function editarMinuta_(id, modo){
+  var abrir = function(a){
+    var go = function(){ abrirFormActa_(a, modo); };
+    if(!window._casosCache){ gasGet('casos').then(function(r){ if(r.ok) window._casosCache = r.casos||[]; go(); }).catch(go); } else go();
+  };
+  if(modo==='repetir'){ var a0 = (window._actasCache||[]).find(function(x){ return String(x.id)===String(id); }); if(a0){ abrir(a0); return; } }
+  gasGet('acta', {id:id}).then(function(res){ if(res.ok) abrir(res.acta); else showToast(res.error||'No se pudo abrir la minuta'); })
+    .catch(function(){ showToast('No se pudo conectar con el servidor.'); });
+}
+function eliminarMinuta_(id){
+  var a = (window._actasCache||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!confirm('¿Eliminar la minuta "'+(a?a.titulo:id)+'"?\n\nSe borran también sus compromisos. Esta acción no se puede deshacer.')) return;
+  var c = mantCreds_(); if(!c){ showToast('Volvé a iniciar sesión.'); return; }
+  gasPost('eliminarActa', Object.assign({id:id, autor:(sesionActual()||{}).nombre||''}, c)).then(function(res){
+    if(!res.ok){ showToast(res.error||'No se pudo eliminar'); return; }
+    showToast('Minuta eliminada');
+    cargarYPintarActas_();
+  }).catch(function(){ showToast('No se pudo conectar con el servidor.'); });
 }
 function cargarYPintarActas_(){
   gasGet('actas').then(function(res){
@@ -3734,19 +3796,35 @@ function pintarActas_(){
     });
     if(todas.length===0){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">Todavía no hay minutas cargadas.</div></div>'; return; }
     if(actas.length===0){ document.getElementById('listadoActas').innerHTML = '<div class="panel"><div class="empty-state">Ninguna minuta coincide con la búsqueda.</div></div>'; return; }
-    document.getElementById('listadoActas').innerHTML = '<div class="panel">'+
+    var MES = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+    var Q = function(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); };
+    var cal = esCalidad_();
+    var casosC = window._casosCache || [];
+    document.getElementById('listadoActas').innerHTML =
+      '<div style="font-size:11.5px;color:var(--text-faint);margin:2px 0 8px;">'+actas.length+' minuta'+(actas.length===1?'':'s')+'</div>'+
       actas.map(function(a){
-        return '<div class="minuta-card">'+
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'+
-            '<div><h3 style="font-size:13px;">'+a.titulo+'</h3>'+
-              '<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">'+(a.fecha?fmtFechaGC_(a.fecha).split(' ')[0]:'')+(a.hora?' · '+a.hora:'')+(a.responsableReunion?' · '+a.responsableReunion:'')+(a.asistentes?' · '+a.asistentes:'')+'</div></div>'+
-            '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="verMinutaDetalle_(\''+a.id+'\')">Ver / Imprimir</button>'+
+        var f = parseFechaGC_(a.fecha);
+        var ids = a.casosVinculados || [];
+        var chips = ids.slice(0,6).map(function(cid){
+          var c = casosC.find(function(x){ return String(x.id)===String(cid); });
+          return '<span class="mn-chip" onclick="setView(\'detalle\',\''+Q(cid)+'\')" title="Abrir caso">'+Q(cid)+(c&&c.cliente?' · '+Q(String(c.cliente).slice(0,22)):'')+'</span>';
+        }).join('') + (ids.length>6 ? '<span class="mn-chip mn-mas">+'+(ids.length-6)+' más</span>' : '');
+        return '<div class="mn-card">'+
+          '<div class="mn-fecha">'+(f?'<b>'+f.getDate()+'</b><span>'+MES[f.getMonth()]+'</span><small>'+f.getFullYear()+'</small>':'<b>—</b>')+'</div>'+
+          '<div class="mn-main">'+
+            '<h3>'+Q(a.titulo)+'</h3>'+
+            '<div class="mn-meta">'+(a.hora?Q(a.hora)+' hs':'')+(a.responsableReunion?(a.hora?' · ':'')+'Responsable: '+Q(a.responsableReunion):'')+(a.asistentes?' · '+Q(a.asistentes):'')+'</div>'+
+            (a.objetivo ? '<div class="mn-obj">'+Q(a.objetivo.length>200?a.objetivo.slice(0,200)+'…':a.objetivo)+'</div>' : '')+
+            (ids.length ? '<div class="mn-chips"><span class="mn-cnt">'+ids.length+' caso'+(ids.length===1?'':'s')+'</span>'+chips+'</div>' : '<div class="mn-chips"><span class="mn-cnt" style="opacity:.7;">Sin casos vinculados</span></div>')+
           '</div>'+
-          (a.objetivo ? '<div style="margin-top:8px;font-size:12.3px;color:var(--text-dim);"><b style="color:var(--text);">Objetivo:</b> '+a.objetivo+'</div>' : '')+
-          (a.casosVinculados && a.casosVinculados.length ? '<div style="margin-top:8px;">'+a.casosVinculados.map(function(cid){ return '<span class="pill" style="background:var(--caso-soft);color:var(--caso);margin-right:6px;cursor:pointer;" onclick="setView(\'detalle\',\''+cid+'\')">'+cid+'</span>'; }).join('')+'</div>' : '')+
+          '<div class="mn-acc">'+
+            '<button class="btn btn-primary btn-sm" style="width:auto;" onclick="verMinutaDetalle_(\''+Q(a.id)+'\')">Ver / Imprimir</button>'+
+            (cal ? '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="editarMinuta_(\''+Q(a.id)+'\',\'editar\')">Editar</button>' : '')+
+            '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="editarMinuta_(\''+Q(a.id)+'\',\'repetir\')" title="Crea una minuta nueva con los mismos participantes y datos">Repetir</button>'+
+            (cal ? '<button class="btn btn-ghost btn-sm mn-del" style="width:auto;" onclick="eliminarMinuta_(\''+Q(a.id)+'\')">Eliminar</button>' : '')+
+          '</div>'+
         '</div>';
-      }).join('')+
-    '</div>';
+      }).join('');
   })();
 }
 function verMinutaDetalle_(id){
@@ -3786,19 +3864,40 @@ function cargarYPintarCompromisos_(estado, btnEl){
     if(!res.ok){ document.getElementById('listadoCompromisos').innerHTML = '<div class="panel"><div class="empty-state">'+res.error+'</div></div>'; return; }
     var compromisos = res.compromisos||[];
     if(!compromisos.length){ document.getElementById('listadoCompromisos').innerHTML = '<div class="panel"><div class="empty-state">No hay compromisos en esta categoría.</div></div>'; return; }
-    document.getElementById('listadoCompromisos').innerHTML = '<div class="panel"><table class="tbl"><thead><tr><th>Caso</th><th>Acción acordada</th><th>Responsable</th><th>Fecha límite</th><th>Estado</th><th>Minuta</th><th></th></tr></thead><tbody>'+
+    var Q = function(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); };
+    var casosC = window._casosCache || [], actasC = window._actasCache || [];
+    var hoy = new Date(); hoy.setHours(0,0,0,0);
+    var vence = function(co){
+      var f = parseFechaGC_(co.fechaLimite); if(!f) return '<span style="color:var(--text-faint);">Sin fecha</span>';
+      var txt = fmtFechaGC_(f).split(' ')[0];
+      if(co.estadoReal==='cumplido') return txt;
+      var d = Math.round((f.getTime()-hoy.getTime())/86400000);
+      var extra = d<0 ? '<div style="font-size:10.5px;color:var(--danger);font-weight:700;">vencido hace '+(-d)+' día'+(d===-1?'':'s')+'</div>' : (d===0 ? '<div style="font-size:10.5px;color:var(--warn,#b7791f);font-weight:700;">vence hoy</div>' : '<div style="font-size:10.5px;color:var(--text-faint);">en '+d+' día'+(d===1?'':'s')+'</div>');
+      return txt+extra;
+    };
+    var orden = {vencido:0, pendiente:1, cumplido:2};
+    compromisos = compromisos.slice().sort(function(a,b){ return (orden[a.estadoReal]-orden[b.estadoReal]) || ((parseFechaGC_(a.fechaLimite)||0)-(parseFechaGC_(b.fechaLimite)||0)); });
+    var nV = compromisos.filter(function(c){return c.estadoReal==='vencido';}).length, nP = compromisos.filter(function(c){return c.estadoReal==='pendiente';}).length, nC = compromisos.filter(function(c){return c.estadoReal==='cumplido';}).length;
+    document.getElementById('listadoCompromisos').innerHTML =
+      '<div style="font-size:11.5px;color:var(--text-faint);margin:2px 0 8px;">'+compromisos.length+' compromiso'+(compromisos.length===1?'':'s')+' · <span style="color:var(--danger);font-weight:700;">'+nV+' vencido'+(nV===1?'':'s')+'</span> · '+nP+' pendiente'+(nP===1?'':'s')+' · '+nC+' cumplido'+(nC===1?'':'s')+'</div>'+
+      '<div class="panel"><table class="tbl"><thead><tr><th>Caso</th><th>Acción acordada</th><th>Responsable</th><th>Vence</th><th>Estado</th><th>Minuta</th><th></th></tr></thead><tbody>'+
       compromisos.map(function(co){
-        return '<tr>'+
-          '<td class="mono" style="color:var(--caso);font-weight:700;cursor:pointer;" onclick="setView(\'detalle\',\''+co.casoId+'\')">'+co.casoId+'</td>'+
-          '<td>'+(co.accion||co.decision||'—')+'</td>'+
-          '<td>'+(co.responsableCompromiso||'—')+'</td>'+
-          '<td>'+(co.fechaLimite||'—')+'</td>'+
-          '<td><span class="compromiso-badge '+co.estadoReal+'">'+co.estadoReal+'</span></td>'+
-          '<td><span style="cursor:pointer;color:var(--caso);" onclick="verMinutaDetalle_(\''+co.actaId+'\')">'+co.actaId+'</span></td>'+
-          '<td>'+(co.estadoReal!=='cumplido' ? '<button class="btn btn-ghost btn-sm" style="width:auto;padding:4px 10px;" onclick="marcarCompromisoCumplidoUI_(\''+co.id+'\',false)">Marcar cumplido</button>' : '')+'</td>'+
+        var c = casosC.find(function(x){ return String(x.id)===String(co.casoId); }) || {};
+        var a = actasC.find(function(x){ return String(x.id)===String(co.actaId); });
+        return '<tr'+(co.estadoReal==='vencido'?' style="background:var(--danger-soft);"':'')+'>'+
+          '<td><span class="mono" style="color:var(--caso);font-weight:700;cursor:pointer;" onclick="setView(\'detalle\',\''+Q(co.casoId)+'\')">'+Q(co.casoId)+'</span>'+
+            ((c.cliente||c.dominio)?'<div style="font-size:11px;color:var(--text-dim);">'+Q(c.cliente||'')+(c.dominio?' · '+Q(c.dominio):'')+'</div>':'')+'</td>'+
+          '<td style="min-width:200px;">'+Q(co.accion||co.decision||'—')+'</td>'+
+          '<td>'+Q(co.responsableCompromiso||'—')+'</td>'+
+          '<td style="white-space:nowrap;">'+vence(co)+'</td>'+
+          '<td><span class="compromiso-badge '+Q(co.estadoReal)+'">'+Q(co.estadoReal)+'</span></td>'+
+          '<td><span style="cursor:pointer;color:var(--caso);" onclick="verMinutaDetalle_(\''+Q(co.actaId)+'\')">'+Q(a?a.titulo:co.actaId)+'</span></td>'+
+          '<td>'+(co.estadoReal!=='cumplido' ? '<button class="btn btn-ghost btn-sm" style="width:auto;padding:4px 10px;white-space:nowrap;" onclick="marcarCompromisoCumplidoUI_(\''+Q(co.id)+'\',false)">Marcar cumplido</button>' : '')+'</td>'+
         '</tr>';
       }).join('')+
     '</tbody></table></div>';
+    if(!window._actasCache) gasGet('actas').then(function(r){ if(r.ok){ window._actasCache = r.actas||[]; } }).catch(function(){});
+    if(!window._casosCache) gasGet('casos').then(function(r){ if(r.ok){ window._casosCache = r.casos||[]; } }).catch(function(){});
   });
 }
 function imprimirMinuta_(id){
@@ -3849,6 +3948,7 @@ var MINUTA_CSS_ =
   '.mdoc .md-acc{background:#eaf6ee;border-left:4px solid #1f8a4c;border-radius:6px;padding:9px 12px;margin-top:4px}.mdoc .md-acc small{display:block;font-size:10.5px;color:#1f6b3e;font-weight:700;margin-bottom:2px}'+
   '.mdoc .md-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.mdoc .md-chips span{background:#eef1f6;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600}'+
   '.mdoc .md-obs{font-size:12px;color:#44505f;margin-top:8px}'+
+  '.mdoc .md-ok{margin-left:auto;border:1px solid #1f8a4c;background:#fff;color:#1f8a4c;border-radius:20px;padding:2px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit}.mdoc .md-ok:hover{background:#eaf6ee}'+
   '.mdoc .md-ment{display:flex;gap:6px;flex-wrap:wrap}.mdoc .md-ment span{background:#eef1f6;border-radius:8px;padding:3px 10px;font-size:11.5px}.mdoc .md-ment b{color:#2a6fdb}'+
   '.mdoc .md-firmas{display:none;gap:40px;margin-top:46px}.mdoc .md-firmas div{flex:1;border-top:1px solid #1b2430;padding-top:5px;font-size:11px;color:#5b6676;text-align:center}'+
   '.mdoc .md-pie{margin-top:22px;color:#8a94a3;font-size:10px;text-align:center}'+
@@ -3889,7 +3989,8 @@ function minutaDocHtml_(a, imprimir, logo){
           '<span class="md-st '+E(co.estadoReal)+'">'+E(co.estadoReal)+'</span></div>'+
         '<div class="md-cb">'+campo('Resumen de la situación',co.resumen)+campo('Problema identificado',co.problema)+campo('Análisis realizado',co.analisis)+campo('Decisión tomada',co.decision)+
           (co.accion ? '<div class="md-acc"><small>Acción acordada</small>'+T(co.accion)+'</div>' : '')+
-          '<div class="md-chips"><span>Responsable: '+E(co.responsableCompromiso||'—')+'</span><span>Vence: '+E(fechaLim(co.fechaLimite))+'</span></div>'+
+          '<div class="md-chips"><span>Responsable: '+E(co.responsableCompromiso||'—')+'</span><span>Vence: '+E(fechaLim(co.fechaLimite))+'</span>'+
+            ((!imprimir && co.estadoReal!=='cumplido' && co.id) ? '<button class="md-ok" onclick="marcarCompromisoCumplidoUI_(\''+E(co.id)+'\',true)">✓ Marcar cumplido</button>' : '')+'</div>'+
           (co.observaciones ? '<div class="md-obs"><b>Observaciones:</b> '+T(co.observaciones)+'</div>' : '')+
         '</div></div>';
     }).join('');
