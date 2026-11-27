@@ -121,3 +121,63 @@ function svcCompromisoMarcarCumplido_(id, autor){
   }
   return responseOk_({});
 }
+
+// Editar una minuta ya guardada: cambia los datos generales, actualiza los compromisos
+// que ya existían (por id), agrega los nuevos y borra los de casos que se sacaron.
+// El estado (pendiente/cumplido) de un compromiso existente NO se toca.
+function svcActaActualizar_(id, datos, autor){
+  var acta = dbActasListar_().find(function(a){ return String(a.id)===String(id); });
+  if(!acta) return responseError_('No se encontró la minuta.');
+  if(!datos.titulo) return responseError_('Falta el título de la reunión.');
+  var nuevos = Array.isArray(datos.compromisosPorCaso) ? datos.compromisosPorCaso : [];
+  var solo = Array.isArray(datos.casosSoloMencionados) ? datos.casosSoloMencionados.map(String) : [];
+  var existentes = dbCompromisosPorActa_(id);
+  var vinculados = nuevos.map(function(cp){ return String(cp.casoId); }).filter(Boolean);
+  solo.forEach(function(cid){ if(cid && vinculados.indexOf(cid)===-1) vinculados.push(cid); });
+
+  // Compromisos de casos que ya no están en la minuta → se borran.
+  existentes.forEach(function(co){
+    if(!nuevos.some(function(cp){ return String(cp.casoId)===String(co.casoId); })) dbCompromisoEliminar_(co.id);
+  });
+  nuevos.forEach(function(cp){
+    if(!cp.casoId || !dbCasosBuscarPorId_(cp.casoId)) return;
+    var previo = existentes.find(function(co){ return String(co.casoId)===String(cp.casoId); });
+    var campos = {
+      resumen:cp.resumen||'', problema:cp.problema||'', analisis:cp.analisis||'', decision:cp.decision||'', accion:cp.accion||'',
+      responsableCompromiso:cp.responsableCompromiso||'', fechaLimite:cp.fechaLimite||'', observaciones:cp.observaciones||''
+    };
+    if(previo){ dbCompromisoActualizarCampos_(previo.id, campos); return; }
+    var c = {id: utilNuevoIdCompromiso_(), actaId:id, casoId:cp.casoId, estado:'pendiente', fechaCreacion:utilAhoraTexto_(), fechaCumplido:''};
+    Object.keys(campos).forEach(function(k){ c[k] = campos[k]; });
+    dbCompromisosAgregar_(c);
+  });
+  // Casos que se suman a la minuta quedan anotados en su historial.
+  vinculados.forEach(function(cid){
+    if((acta.casosVinculados||[]).indexOf(cid)>-1 || !dbCasosBuscarPorId_(cid)) return;
+    dbSeguimientosAgregar_({
+      id: utilNuevoIdSeguimiento_(), casoId: cid, fecha: utilAhoraTexto_(), autor: autor||'Sistema', tipo:'sistema',
+      texto: '📝 Se agregó a la minuta "'+datos.titulo+'" ('+id+')', visibleParaReportante:false
+    });
+  });
+  dbActaActualizar_(id, {
+    fecha: datos.fecha || acta.fecha, hora: datos.hora||'', titulo: datos.titulo, objetivo: datos.objetivo||'',
+    responsableReunion: datos.responsableReunion||'', asistentes: datos.asistentes||'', temas: datos.temas||'',
+    casosVinculados: vinculados, proximosPasos: datos.proximosPasos||''
+  });
+  return responseOk_({id:id});
+}
+
+function svcActaEliminar_(id, autor){
+  var acta = dbActasListar_().find(function(a){ return String(a.id)===String(id); });
+  if(!acta) return responseError_('No se encontró la minuta.');
+  dbCompromisosPorActa_(id).forEach(function(co){ dbCompromisoEliminar_(co.id); });
+  dbActaEliminar_(id);
+  (acta.casosVinculados||[]).forEach(function(cid){
+    if(!dbCasosBuscarPorId_(cid)) return;
+    dbSeguimientosAgregar_({
+      id: utilNuevoIdSeguimiento_(), casoId: cid, fecha: utilAhoraTexto_(), autor: autor||'Sistema', tipo:'sistema',
+      texto: '🗑️ Se eliminó la minuta "'+acta.titulo+'" ('+id+')', visibleParaReportante:false
+    });
+  });
+  return responseOk_({});
+}

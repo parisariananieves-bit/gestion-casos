@@ -49,6 +49,8 @@ function doPost(e){
     else if(action==='toggleDefensaConsumidor') result = apiToggleDefensaConsumidor(p);
     else if(action==='guardarAnalisisCausaRaiz') result = apiGuardarAnalisisCausaRaiz(p);
     else if(action==='crearActa') result = apiCrearActa(p);
+    else if(action==='editarActa') result = apiEditarActa(p);
+    else if(action==='eliminarActa') result = apiEliminarActa(p);
     else if(action==='guardarReunion') result = apiGuardarReunion(p);
     else if(action==='eliminarReunion') result = apiEliminarReunion(p);
     else if(action==='marcarCompromisoCumplido') result = apiMarcarCompromisoCumplido(p);

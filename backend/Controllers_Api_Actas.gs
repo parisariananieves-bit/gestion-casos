@@ -28,3 +28,18 @@ function apiMarcarCompromisoCumplido(params){
   if(!params || !params.id) return responseError_('Falta el ID del compromiso.');
   return svcCompromisoMarcarCumplido_(params.id, params.autor);
 }
+
+function apiEditarActa(params){
+  if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede editar minutas.');
+  if(!params.id) return responseError_('Falta el ID de la minuta.');
+  return svcActaActualizar_(params.id, {
+    fecha: params.fecha, hora: params.hora, titulo: params.titulo, objetivo: params.objetivo,
+    responsableReunion: params.responsableReunion, asistentes: params.asistentes, temas: params.temas, proximosPasos: params.proximosPasos,
+    compromisosPorCaso: params.compromisosPorCaso, casosSoloMencionados: params.casosSoloMencionados
+  }, params.autor);
+}
+function apiEliminarActa(params){
+  if(!svcMantenimientoAutorizar_(params)) return responseError_('Solo el rol Calidad puede eliminar minutas.');
+  if(!params.id) return responseError_('Falta el ID de la minuta.');
+  return svcActaEliminar_(params.id, params.autor);
+}

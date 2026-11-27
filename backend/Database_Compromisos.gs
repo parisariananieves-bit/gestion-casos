@@ -70,3 +70,10 @@ function dbCompromisoActualizarCampos_(id, campos){
   });
   return true;
 }
+
+function dbCompromisoEliminar_(id){
+  var idx = dbCompromisoFilaPorId_(id);
+  if(idx===-1) return false;
+  getHojaCompromisos_().deleteRow(idx);
+  return true;
+}

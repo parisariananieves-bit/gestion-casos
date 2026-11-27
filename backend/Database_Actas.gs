@@ -41,3 +41,33 @@ function dbActaCrear_(obj){
   }));
   return obj.id;
 }
+
+function dbActaFilaPorId_(id){
+  var hoja = getHojaActas_();
+  var lastRow = hoja.getLastRow();
+  if(lastRow<2) return -1;
+  var ids = hoja.getRange(2,1,lastRow-1,1).getValues();
+  for(var i=0;i<ids.length;i++){ if(String(ids[i][0])===String(id)) return i+2; }
+  return -1;
+}
+
+function dbActaActualizar_(id, campos){
+  var idx = dbActaFilaPorId_(id);
+  if(idx===-1) return false;
+  var hoja = getHojaActas_();
+  Object.keys(campos).forEach(function(k){
+    var colIdx = COLUMNAS_ACTAS.findIndex(function(c){return c.k===k;});
+    if(colIdx<0) return;
+    var v = campos[k];
+    if(k==='casosVinculados') v = (v||[]).join(', ');
+    hoja.getRange(idx, colIdx+1).setValue(v===undefined||v===null ? '' : v);
+  });
+  return true;
+}
+
+function dbActaEliminar_(id){
+  var idx = dbActaFilaPorId_(id);
+  if(idx===-1) return false;
+  getHojaActas_().deleteRow(idx);
+  return true;
+}
