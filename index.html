@@ -3623,7 +3623,7 @@ function filtrarCasosParaMinutaBusqueda_(){
     var sel = !!window._minutaSeleccion[c.id];
     return '<div class="caso-pick-item'+(sel?' selected':'')+'" onclick="toggleCasoEnMinuta_(\''+c.id+'\')">'+
       '<input type="checkbox" '+(sel?'checked':'')+' onclick="event.stopPropagation();toggleCasoEnMinuta_(\''+c.id+'\')">'+
-      '<span class="cpi-id">'+c.id+'</span><span style="flex:1;">'+(c.cliente||'—')+' · '+(c.marca||'—')+'</span>'+
+      '<span class="cpi-id">'+c.id+'</span><span style="flex:1;">'+(c.cliente||'—')+' · '+(c.marca||'—')+(c.dominio?' · <span class="mono" style="color:var(--text-dim);">'+String(c.dominio).replace(/</g,'&lt;')+'</span>':'')+'</span>'+
       '<span class="pill pill-'+c.estado+'" style="font-size:10px;">'+c.estado+'</span>'+
     '</div>';
   }).join('');
@@ -3665,7 +3665,7 @@ function pintarCasosSeleccionadosMinuta_(){
     var sel = window._minutaSeleccion[cid];
     var c = sel.caso||{};
     return '<div class="compromiso-card">'+
-      '<div class="cc-head"><span class="cc-caso">'+cid+(c.cliente?' — '+c.cliente:'')+'</span>'+
+      '<div class="cc-head"><span class="cc-caso">'+cid+(c.cliente?' — '+c.cliente:'')+(c.dominio?' · '+String(c.dominio).replace(/</g,'&lt;'):'')+'</span>'+
         '<div style="display:flex;gap:12px;align-items:center;">'+
           '<label style="font-size:11px;color:var(--text-dim);display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" '+(sel.soloMencionado?'checked':'')+' onchange="marcarSoloMencionadoMinuta_(\''+cid+'\',this.checked)"> Solo mencionado (sin compromiso)</label>'+
           '<button class="btn btn-ghost btn-sm" style="width:auto;padding:4px 10px;" onclick="toggleCasoEnMinuta_(\''+cid+'\')">Quitar</button>'+
@@ -3739,7 +3739,7 @@ function pintarActas_(){
         return '<div class="minuta-card">'+
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'+
             '<div><h3 style="font-size:13px;">'+a.titulo+'</h3>'+
-              '<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">'+(a.fecha||'')+(a.hora?' · '+a.hora:'')+(a.responsableReunion?' · '+a.responsableReunion:'')+(a.asistentes?' · '+a.asistentes:'')+'</div></div>'+
+              '<div style="font-size:11px;color:var(--text-faint);margin-top:2px;">'+(a.fecha?fmtFechaGC_(a.fecha).split(' ')[0]:'')+(a.hora?' · '+a.hora:'')+(a.responsableReunion?' · '+a.responsableReunion:'')+(a.asistentes?' · '+a.asistentes:'')+'</div></div>'+
             '<button class="btn btn-ghost btn-sm" style="width:auto;" onclick="verMinutaDetalle_(\''+a.id+'\')">Ver / Imprimir</button>'+
           '</div>'+
           (a.objetivo ? '<div style="margin-top:8px;font-size:12.3px;color:var(--text-dim);"><b style="color:var(--text);">Objetivo:</b> '+a.objetivo+'</div>' : '')+
@@ -3758,29 +3758,8 @@ function verMinutaDetalle_(id){
     if(!res.ok){ document.getElementById('minutaModalBody').innerHTML = '<div class="empty-state">'+res.error+'</div>'; return; }
     window._minutaActualDetalle = res.acta;
     var a = res.acta;
-    document.getElementById('minutaModalTitulo').textContent = a.titulo;
-    document.getElementById('minutaModalBody').innerHTML =
-      '<div style="font-size:11.5px;color:var(--text-faint);margin-bottom:12px;">'+(a.fecha||'')+(a.hora?' · '+a.hora:'')+(a.responsableReunion?' · Responsable: '+a.responsableReunion:'')+'</div>'+
-      (a.objetivo ? '<div style="margin-bottom:8px;font-size:12.6px;"><b>Objetivo:</b> '+a.objetivo+'</div>' : '')+
-      (a.asistentes ? '<div style="margin-bottom:8px;font-size:12.6px;"><b>Participantes:</b> '+a.asistentes+'</div>' : '')+
-      (a.temas ? '<div style="margin-bottom:8px;font-size:12.6px;"><b>Temas tratados:</b> '+a.temas+'</div>' : '')+
-      '<h4 style="font-size:12px;color:var(--text-dim);margin:14px 0 8px;">Casos tratados</h4>'+
-      ((a.compromisos && a.compromisos.length) ? a.compromisos.map(function(co){
-        return '<div class="compromiso-card">'+
-          '<div class="cc-head"><span class="cc-caso" style="cursor:pointer;" onclick="cerrarModalMinuta_();setView(\'detalle\',\''+co.casoId+'\')">'+co.casoId+'</span>'+
-            '<span class="compromiso-badge '+co.estadoReal+'">'+co.estadoReal+'</span></div>'+
-          (co.resumen?'<div style="font-size:12px;margin-bottom:4px;"><b>Resumen:</b> '+co.resumen+'</div>':'')+
-          (co.problema?'<div style="font-size:12px;margin-bottom:4px;"><b>Problema:</b> '+co.problema+'</div>':'')+
-          (co.analisis?'<div style="font-size:12px;margin-bottom:4px;"><b>Análisis:</b> '+co.analisis+'</div>':'')+
-          (co.decision?'<div style="font-size:12px;margin-bottom:4px;"><b>Decisión:</b> '+co.decision+'</div>':'')+
-          (co.accion?'<div style="font-size:12px;margin-bottom:4px;"><b>Acción acordada:</b> '+co.accion+'</div>':'')+
-          '<div style="font-size:11.5px;color:var(--text-faint);margin-top:6px;">'+(co.responsableCompromiso?'Responsable: '+co.responsableCompromiso+' · ':'')+(co.fechaLimite?'Vence: '+co.fechaLimite:'')+'</div>'+
-          (co.observaciones?'<div style="font-size:11.8px;margin-top:6px;color:var(--text-dim);">'+co.observaciones+'</div>':'')+
-          (co.estadoReal!=='cumplido' ? '<button class="btn btn-ghost btn-sm" style="width:auto;margin-top:8px;" onclick="marcarCompromisoCumplidoUI_(\''+co.id+'\',true)">Marcar cumplido</button>' : '')+
-        '</div>';
-      }).join('') : '<div class="empty-state" style="padding:14px;">Ningún caso con compromiso puntual en esta minuta.</div>')+
-      (a.proximosPasos ? '<div style="margin-top:14px;font-size:12.6px;"><b>Próximos pasos:</b> '+a.proximosPasos+'</div>' : '')+
-      '<button class="btn btn-primary" style="width:auto;margin-top:16px;" onclick="imprimirMinuta_(\''+a.id+'\')"><span class="material-symbols-outlined" style="font-size:15px;vertical-align:-3px;">print</span> Imprimir / Exportar PDF</button>';
+    document.getElementById('minutaModalTitulo').textContent = '';
+    document.getElementById('minutaModalBody').innerHTML = minutaDocHtml_(a, false);
   });
 }
 function cerrarModalMinuta_(){
@@ -3824,26 +3803,17 @@ function cargarYPintarCompromisos_(estado, btnEl){
 }
 function imprimirMinuta_(id){
   var render = function(a){
-    var html = '<h1>'+a.titulo+'</h1>'+
-      '<div class="mp-sub">'+(a.fecha||'')+(a.hora?' · '+a.hora:'')+(a.responsableReunion?' · Responsable: '+a.responsableReunion:'')+'</div>'+
-      (a.objetivo?'<div style="margin-bottom:8px;"><b>Objetivo:</b> '+a.objetivo+'</div>':'')+
-      (a.asistentes?'<div style="margin-bottom:8px;"><b>Participantes:</b> '+a.asistentes+'</div>':'')+
-      (a.temas?'<div style="margin-bottom:8px;"><b>Temas tratados:</b> '+a.temas+'</div>':'')+
-      '<h2>Casos tratados</h2>'+
-      ((a.compromisos && a.compromisos.length) ? a.compromisos.map(function(co){
-        return '<div class="mp-caso">'+
-          '<b>'+co.casoId+'</b> — Estado del compromiso: '+co.estadoReal+'<br>'+
-          (co.resumen?'<b>Resumen:</b> '+co.resumen+'<br>':'')+
-          (co.problema?'<b>Problema:</b> '+co.problema+'<br>':'')+
-          (co.analisis?'<b>Análisis:</b> '+co.analisis+'<br>':'')+
-          (co.decision?'<b>Decisión:</b> '+co.decision+'<br>':'')+
-          (co.accion?'<b>Acción acordada:</b> '+co.accion+'<br>':'')+
-          'Responsable: '+(co.responsableCompromiso||'—')+' · Fecha límite: '+(co.fechaLimite||'—')+
-          (co.observaciones?'<br>Observaciones: '+co.observaciones:'')+
-        '</div>';
-      }).join('') : '<div>Ningún caso con compromiso puntual.</div>')+
-      (a.proximosPasos?'<h2>Próximos pasos</h2><div>'+a.proximosPasos+'</div>':'');
-    document.getElementById('minutaPrintRoot').innerHTML = html;
+    var logo = location.origin+'/assets/logos/gp-l.png';
+    var w = null; try{ w = window.open('', '_blank'); }catch(e){}
+    if(w){
+      w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+minutaEsc_('Minuta — '+a.titulo)+'</title><style>'+MINUTA_CSS_+
+        'body{margin:0;padding:26px 34px;background:#fff}.mdoc{max-width:820px;margin:0 auto;border:none;box-shadow:none;padding:0}@media print{body{padding:0}@page{margin:14mm}}</style></head><body>'+
+        minutaDocHtml_(a, true, logo)+'</body></html>');
+      w.document.close(); setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, 600);
+      return;
+    }
+    // Si el navegador bloqueó la ventana nueva, se imprime desde esta misma pantalla.
+    document.getElementById('minutaPrintRoot').innerHTML = minutaDocHtml_(a, true, logo);
     document.body.classList.add('print-minuta-mode');
     var limpiar = function(){ document.body.classList.remove('print-minuta-mode'); window.removeEventListener('afterprint', limpiar); };
     window.addEventListener('afterprint', limpiar);
@@ -3852,6 +3822,89 @@ function imprimirMinuta_(id){
   };
   if(window._minutaActualDetalle && String(window._minutaActualDetalle.id)===String(id)){ render(window._minutaActualDetalle); return; }
   gasGet('acta', {id:id}).then(function(res){ if(res.ok) render(res.acta); else showToast(res.error); });
+}
+
+// ---- Documento de la minuta (mismo diseño para verla en pantalla y para imprimirla) ----
+function minutaEsc_(t){ return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function minutaTxt_(t){ return minutaEsc_(t).replace(/\r?\n/g,'<br>'); }
+var MINUTA_CSS_ =
+  '.mdoc{font-family:"Segoe UI",Roboto,Arial,sans-serif;color:#1b2430;background:#fff;font-size:13px;line-height:1.5;border-radius:14px;padding:26px 30px;text-align:left}'+
+  '.mdoc *{box-sizing:border-box}'+
+  '.mdoc .md-top{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1b2430;padding-bottom:12px;margin-bottom:16px;gap:12px}'+
+  '.mdoc .md-top img{height:36px}.mdoc .md-top .md-tag{text-align:right;color:#5b6676;font-size:11px;line-height:1.35}.mdoc .md-top .md-tag b{display:block;color:#1b2430;font-size:12px;letter-spacing:.2px}'+
+  '.mdoc h1{font-size:23px;line-height:1.2;margin:0 0 12px;font-weight:800}'+
+  '.mdoc .md-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:0;border:1px solid #dde2ea;border-radius:10px;overflow:hidden;margin-bottom:14px}'+
+  '.mdoc .md-meta div{padding:9px 13px;border-bottom:1px solid #eef1f6;min-width:0}.mdoc .md-meta div:nth-child(odd){border-right:1px solid #eef1f6}'+
+  '.mdoc .md-meta div:nth-last-child(-n+2){border-bottom:none}.mdoc .md-meta .full{grid-column:1/-1;border-right:none}'+
+  '.mdoc .md-meta small{display:block;font-size:10.5px;color:#5b6676;font-weight:600;margin-bottom:1px}.mdoc .md-meta span{font-size:13px;font-weight:600;overflow-wrap:anywhere}'+
+  '.mdoc .md-res{display:flex;gap:8px;margin:0 0 6px}.mdoc .md-res div{flex:1;border:1px solid #dde2ea;border-radius:10px;padding:8px 11px}.mdoc .md-res b{display:block;font-size:20px;line-height:1.1}.mdoc .md-res span{font-size:10.5px;color:#5b6676}'+
+  '.mdoc h2{font-size:14px;margin:20px 0 8px;padding-bottom:5px;border-bottom:1px solid #dde2ea;font-weight:800}'+
+  '.mdoc .md-bloque{background:#f5f7fb;border-left:4px solid #2a6fdb;border-radius:6px;padding:10px 14px;margin-bottom:8px}.mdoc .md-bloque small{display:block;font-size:10.5px;color:#5b6676;font-weight:700;margin-bottom:2px}'+
+  '.mdoc .md-caso{border:1px solid #dde2ea;border-radius:10px;margin-bottom:12px;overflow:hidden;break-inside:avoid;page-break-inside:avoid}'+
+  '.mdoc .md-ch{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#f5f7fb;padding:9px 13px;border-bottom:1px solid #dde2ea}'+
+  '.mdoc .md-ch .md-id{font-weight:800;color:#2a6fdb;cursor:pointer}.mdoc .md-ch .md-cli{font-size:12px;color:#44505f;margin-left:8px}'+
+  '.mdoc .md-st{border:1px solid;border-radius:20px;padding:1px 9px;font-size:10.5px;font-weight:700;white-space:nowrap}'+
+  '.mdoc .md-st.pendiente{color:#b7791f}.mdoc .md-st.cumplido{color:#1f8a4c}.mdoc .md-st.vencido{color:#c0392b}'+
+  '.mdoc .md-cb{padding:11px 13px}.mdoc .md-f{margin-bottom:8px}.mdoc .md-f small{display:block;font-size:10.5px;color:#5b6676;font-weight:700;margin-bottom:1px}'+
+  '.mdoc .md-acc{background:#eaf6ee;border-left:4px solid #1f8a4c;border-radius:6px;padding:9px 12px;margin-top:4px}.mdoc .md-acc small{display:block;font-size:10.5px;color:#1f6b3e;font-weight:700;margin-bottom:2px}'+
+  '.mdoc .md-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.mdoc .md-chips span{background:#eef1f6;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:600}'+
+  '.mdoc .md-obs{font-size:12px;color:#44505f;margin-top:8px}'+
+  '.mdoc .md-ment{display:flex;gap:6px;flex-wrap:wrap}.mdoc .md-ment span{background:#eef1f6;border-radius:8px;padding:3px 10px;font-size:11.5px}.mdoc .md-ment b{color:#2a6fdb}'+
+  '.mdoc .md-firmas{display:none;gap:40px;margin-top:46px}.mdoc .md-firmas div{flex:1;border-top:1px solid #1b2430;padding-top:5px;font-size:11px;color:#5b6676;text-align:center}'+
+  '.mdoc .md-pie{margin-top:22px;color:#8a94a3;font-size:10px;text-align:center}'+
+  '.mdoc.md-print .md-firmas{display:flex}.mdoc .md-ch .md-id{cursor:default}'+
+  '.mdoc h2{break-after:avoid;page-break-after:avoid}@media print{.mdoc .md-meta,.mdoc .md-res div,.mdoc .md-bloque{break-inside:avoid}}';
+(function(){ var st = document.createElement('style'); st.textContent = MINUTA_CSS_ + '.mdoc.md-modal{border:1px solid var(--hairline);margin:0}.mdoc .md-ch .md-id.md-link{cursor:pointer}'; document.head.appendChild(st); })();
+
+function minutaDocHtml_(a, imprimir, logo){
+  var E = minutaEsc_, T = minutaTxt_;
+  var casos = window._casosCache || [];
+  var info = function(id){ return casos.find(function(c){ return String(c.id)===String(id); }) || null; };
+  var fechaTxt = a.fecha ? fmtFechaGC_(a.fecha).split(' ')[0] : '—';
+  var comps = a.compromisos || [];
+  var idsComp = comps.map(function(c){ return String(c.casoId); });
+  var mencionados = (a.casosVinculados || []).filter(function(id){ return idsComp.indexOf(String(id))===-1; });
+  var pend = comps.filter(function(c){ return c.estadoReal!=='cumplido'; }).length;
+  var fechaLim = function(f){ return f ? fmtFechaGC_(f).split(' ')[0] : '—'; };
+  var meta = '<div><small>Fecha</small><span>'+E(fechaTxt)+(a.hora?' · '+E(a.hora)+' hs':'')+'</span></div>'+
+    '<div><small>Responsable de la reunión</small><span>'+E(a.responsableReunion||'—')+'</span></div>'+
+    '<div class="full"><small>Participantes</small><span>'+E(a.asistentes||'—')+'</span></div>';
+  var html = '<div class="mdoc '+(imprimir?'md-print':'md-modal')+'">'+
+    '<div class="md-top">'+(logo?'<img src="'+E(logo)+'" alt="Grupo París">':'<img src="/assets/logos/gp-l.png" alt="Grupo París">')+
+      '<div class="md-tag"><b>Minuta de reunión</b>Gestión de Casos — Calidad'+(a.id?'<br>'+E(a.id):'')+'</div></div>'+
+    '<h1>'+E(a.titulo||'Minuta')+'</h1>'+
+    '<div class="md-meta">'+meta+'</div>'+
+    '<div class="md-res"><div><b>'+(comps.length+mencionados.length)+'</b><span>Casos tratados</span></div><div><b>'+comps.length+'</b><span>Compromisos asumidos</span></div><div><b style="color:'+(pend?'#b7791f':'#1f8a4c')+'">'+pend+'</b><span>Pendientes de cumplir</span></div></div>'+
+    (a.objetivo ? '<h2>Objetivo</h2><div class="md-bloque">'+T(a.objetivo)+'</div>' : '')+
+    (a.temas ? '<h2>Temas tratados</h2><div>'+T(a.temas)+'</div>' : '')+
+    '<h2>Casos tratados</h2>';
+  if(comps.length){
+    html += comps.map(function(co){
+      var c = info(co.casoId) || {};
+      var sub = [c.cliente, c.dominio, c.marca].filter(Boolean).map(E).join(' · ');
+      var slug = MARCA_LOGO_SLUG_[c.marca];
+      var logoM = slug ? '<img src="'+location.origin+'/assets/logos/logo-'+slug+'.png" alt="" style="width:20px;height:20px;object-fit:contain;vertical-align:middle;margin-right:8px;border-radius:4px;" onerror="this.style.display=\'none\'">' : '';
+      var campo = function(l, v){ return v ? '<div class="md-f"><small>'+l+'</small>'+T(v)+'</div>' : ''; };
+      return '<div class="md-caso"><div class="md-ch"><div>'+logoM+'<span class="md-id'+(imprimir?'':' md-link')+'"'+(imprimir?'':' onclick="cerrarModalMinuta_();setView(\'detalle\',\''+E(co.casoId)+'\')"')+'>'+E(co.casoId)+'</span>'+(sub?'<span class="md-cli">'+sub+'</span>':'')+'</div>'+
+          '<span class="md-st '+E(co.estadoReal)+'">'+E(co.estadoReal)+'</span></div>'+
+        '<div class="md-cb">'+campo('Resumen de la situación',co.resumen)+campo('Problema identificado',co.problema)+campo('Análisis realizado',co.analisis)+campo('Decisión tomada',co.decision)+
+          (co.accion ? '<div class="md-acc"><small>Acción acordada</small>'+T(co.accion)+'</div>' : '')+
+          '<div class="md-chips"><span>Responsable: '+E(co.responsableCompromiso||'—')+'</span><span>Vence: '+E(fechaLim(co.fechaLimite))+'</span></div>'+
+          (co.observaciones ? '<div class="md-obs"><b>Observaciones:</b> '+T(co.observaciones)+'</div>' : '')+
+        '</div></div>';
+    }).join('');
+  } else if(!mencionados.length){
+    html += '<div style="color:#5b6676;">No se trataron casos puntuales en esta reunión.</div>';
+  }
+  if(mencionados.length){
+    html += '<div style="margin-top:4px;font-size:11.5px;color:#5b6676;margin-bottom:6px;">Casos mencionados, sin compromiso puntual:</div><div class="md-ment">'+
+      mencionados.map(function(id){ var c = info(id)||{}; return '<span><b>'+E(id)+'</b>'+(c.cliente?' · '+E(c.cliente):'')+(c.dominio?' · '+E(c.dominio):'')+'</span>'; }).join('')+'</div>';
+  }
+  if(a.proximosPasos) html += '<h2>Próximos pasos</h2><div class="md-bloque" style="border-left-color:#1f8a4c;">'+T(a.proximosPasos)+'</div>';
+  html += '<div class="md-firmas"><div>Responsable de la reunión</div><div>Conformidad de participantes</div></div>'+
+    '<div class="md-pie">Grupo París · Gestión de Casos'+(imprimir?' · Impreso el '+E(fmtFechaGC_(new Date())):'')+'</div>';
+  if(!imprimir) html += '<div style="margin-top:14px;display:flex;justify-content:flex-end;" class="md-acciones"><button class="btn btn-primary" style="width:auto;" onclick="imprimirMinuta_(\''+E(a.id)+'\')">Imprimir / guardar PDF</button></div>';
+  return html + '</div>';
 }
 
 function renderEquipo(){
