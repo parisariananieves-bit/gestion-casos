@@ -177,7 +177,7 @@ input,select,textarea{font-family:inherit;}
 
 .main{flex:1; min-width:0; margin-left:60px; transition:margin-left .16s ease;}
 .sidebar:hover ~ .main, .sidebar.pinned ~ .main{margin-left:226px;}
-.topbar{height:var(--topbar-h); border-bottom:1px solid var(--hairline); background:rgba(255,255,255,.86); backdrop-filter:blur(10px); display:flex; align-items:center; padding:0 22px; gap:14px; position:sticky; top:0; z-index:20; box-shadow:0 1px 0 rgba(15,17,22,.03);}
+.topbar{height:var(--topbar-h); border-bottom:1px solid var(--hairline); background:color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter:blur(10px); display:flex; align-items:center; padding:0 22px; gap:14px; position:sticky; top:0; z-index:20; box-shadow:0 1px 0 rgba(15,17,22,.03);}
 .topbar h1{font-family:'Space Grotesk',sans-serif; font-size:15px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
 .topbar .sub{font-size:11.5px; color:var(--text-faint); font-weight:600;}
 .menu-toggle{display:none; background:none; border:none; color:var(--text); padding:4px; margin-right:2px; border-radius:8px; cursor:pointer;}
@@ -560,7 +560,7 @@ table.tbl tr.r-nueva td:first-child{padding-left:20px;}
 
 .overlay{position:fixed; inset:0; background:rgba(17,17,17,.55); backdrop-filter:blur(2px); opacity:0; pointer-events:none; transition:opacity .18s; z-index:70;}
 .overlay.show{opacity:1; pointer-events:auto;}
-.modal{position:fixed; top:50%; left:50%; transform:translateY(10px) translate(-50%,-50%) scale(.98); width:min(600px,92vw); max-height:88vh; overflow-y:auto; background:#fff; border-radius:var(--radius-l); box-shadow:0 30px 80px rgba(0,0,0,.35); z-index:76; opacity:0; pointer-events:none; transition:opacity .18s, transform .18s;}
+.modal{position:fixed; top:50%; left:50%; transform:translateY(10px) translate(-50%,-50%) scale(.98); width:min(600px,92vw); max-height:88vh; overflow-y:auto; background:var(--panel); border-radius:var(--radius-l); box-shadow:0 30px 80px rgba(0,0,0,.35); z-index:76; opacity:0; pointer-events:none; transition:opacity .18s, transform .18s;}
 .modal.show{opacity:1; transform:translate(-50%,-50%) scale(1); pointer-events:auto;}
 .modal-head{display:flex; align-items:center; justify-content:space-between; padding:20px 22px 4px;}
 .modal-head h3{font-size:16px; font-weight:800; letter-spacing:-.01em; color:var(--text);}
@@ -1786,8 +1786,9 @@ function pintarTablaCasos_(){
     var prioColor = {Alta:'var(--danger)',Media:'var(--warn)',Baja:'var(--text-faint)'}[c.prioridad]||'var(--text-faint)';
     return '<tr class="'+claseFilaPrioridad_(prioridadEfectiva_(c), c.estado==='nuevo')+'" onclick="setView(\'detalle\',\''+c.id+'\')">'+
       '<td class="mono" style="color:var(--caso);font-weight:700;white-space:nowrap;">'+c.id+(esDefensa?' ⚖️':'')+'</td>'+
-      '<td><div style="font-weight:650;color:var(--text);">'+(c.cliente||'—')+'</div>'+
-        '<div style="font-size:10.5px;color:var(--text-faint);margin-top:1px;">'+(c.dominio?('<span class="mono">'+c.dominio+'</span> · '):'')+(c.motivo||c.tipoCaso||'')+'</div>'+novedadChip_(c)+proximoPasoChip_(c)+'</td>'+
+      '<td style="min-width:200px;max-width:280px;"><div style="font-weight:650;color:var(--text);">'+(c.cliente||'—')+'</div>'+
+        (c.dominio?'<div class="mono" style="font-size:10.5px;color:var(--text-dim);margin-top:1px;">'+c.dominio+'</div>':'')+
+        '<div style="font-size:10.5px;color:var(--text-faint);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="'+String(c.motivo||c.tipoCaso||'').replace(/"/g,'&quot;')+'">'+(c.motivo||c.tipoCaso||'')+'</div>'+novedadChip_(c)+proximoPasoChip_(c)+'</td>'+
       '<td><div>'+marcaConLogo_(c.marca,15)+'</div>'+(c.modelo?'<div style="font-size:10.5px;color:var(--text-faint);">'+c.modelo+'</div>':'')+'</td>'+
       '<td>'+(c.sucursal||'—')+'</td>'+
       '<td style="font-size:11.5px;color:var(--text-dim);">'+(c.unidad||'<span style="color:var(--text-faint);">—</span>')+'</td>'+
@@ -3552,7 +3553,7 @@ function renderActas(){
       '<button class="btn btn-primary" style="width:auto;" onclick="abrirFormActa_()">+ Nueva minuta</button>'+
     '</div>'+
     '<div class="panel hidden" id="panelFormActa"><div style="padding:18px;">'+
-      '<h3 style="font-size:13px;margin-bottom:14px;" id="formActaTitulo">Nueva minuta de reunión</h3>'+
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><button class="btn btn-ghost btn-sm" style="width:auto;" onclick="cerrarFormActa_()">← Volver a minutas</button><h3 style="font-size:13px;margin:0;" id="formActaTitulo">Nueva minuta de reunión</h3></div>'+
       '<div class="form-grid">'+
         campo_('Título','actaTitulo','text','','full')+
         campo_('Fecha','actaFecha','date')+
@@ -4004,7 +4005,7 @@ function minutaDocHtml_(a, imprimir, logo){
   if(a.proximosPasos) html += '<h2>Próximos pasos</h2><div class="md-bloque" style="border-left-color:#1f8a4c;">'+T(a.proximosPasos)+'</div>';
   html += '<div class="md-firmas"><div>Responsable de la reunión</div><div>Conformidad de participantes</div></div>'+
     '<div class="md-pie">Grupo París · Gestión de Casos'+(imprimir?' · Impreso el '+E(fmtFechaGC_(new Date())):'')+'</div>';
-  if(!imprimir) html += '<div style="margin-top:14px;display:flex;justify-content:flex-end;" class="md-acciones"><button class="btn btn-primary" style="width:auto;" onclick="imprimirMinuta_(\''+E(a.id)+'\')">Imprimir / guardar PDF</button></div>';
+  if(!imprimir) html += '<div style="margin-top:14px;display:flex;justify-content:space-between;gap:8px;" class="md-acciones"><button class="btn btn-ghost" style="width:auto;" onclick="cerrarModalMinuta_()">← Volver a minutas</button><button class="btn btn-primary" style="width:auto;" onclick="imprimirMinuta_(\''+E(a.id)+'\')">Imprimir / guardar PDF</button></div>';
   return html + '</div>';
 }
 
